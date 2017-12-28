@@ -1,0 +1,79 @@
+<!--
+  Copyright 2017 Google LLC
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Available Keys</title>
+  </head>
+
+  <body>
+    <dialog id="passphraseDialog">
+      <div>Passphrase:</div>
+      <input id="passphrase" name="passphrase" type="password"></input>
+      <button id="ok">OK</button>
+      <button id="cancel">Cancel</button>
+    </dialog>
+
+    <div id="errorMessage" style="color: red;">
+    </div>
+
+    <table>
+      <tr>
+
+        <td>
+          <h1>Available Keys</h1>
+          <table>
+            <tr>
+              <td>
+                <select id="available" multiple></select>
+              </td>
+              <td>
+               <div><button id="load">Load Selected</button></div>
+               <div><button id="remove">Remove Selected</button></div>
+              </td>
+            </tr>
+          </table>
+        </td>
+
+        <td>
+          <h1>Loaded Keys</h1>
+          <div>
+            <select id="loaded" multiple></select>
+          </div>
+        </td>
+
+      </tr>
+    </table>
+   
+    <h1>Add Key</h1>
+    <div>
+      <div>
+        <label>Name</label>
+        <input id="addKeyName" name="name" type="text"></input>
+      </div>
+      <div>
+        <label>Private Key (PEM format)</label>
+        <textarea id="addKeyPrivate" name="privateKey" rows="10" cols="70" style="font-family: monospace;"></textarea>
+      </div>
+      <div>
+        <button id="add">Add</button>
+      </div>
+    </div>
+
+
+    <script src="../go/options/options.js"></script>
+  </body>
+</html>

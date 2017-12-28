@@ -1,0 +1,26 @@
+{
+  "name": "Chrome SSH Agent",
+  "version": "0.0.1",
+  "description": "Provides an SSH Agent implementation for Chrome's Secure Shell extension",
+  "manifest_version": 2,
+  "background": {
+    "scripts": [
+      "go/background/background.js"
+    ]
+  },
+  "options_ui": {
+    "page": "html/options.html",
+    "chrome_style": true
+  },
+  "browser_action": {
+    "default_popup": "html/options.html"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "externally_connectable": {
+    "ids": [
+      "pnhechapfaindjhompbnflcldabbghjo"
+    ]
+  }
+}
