@@ -22,8 +22,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gopherjs/gopherjs/js"
 	"github.com/google/chrome-ssh-agent/go/storage"
+	"github.com/gopherjs/gopherjs/js"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )

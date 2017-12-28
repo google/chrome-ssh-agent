@@ -18,8 +18,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gopherjs/gopherjs/js"
 	"github.com/google/chrome-ssh-agent/go/chrome"
+	"github.com/gopherjs/gopherjs/js"
 )
 
 type Server struct {

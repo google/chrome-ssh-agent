@@ -17,8 +17,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/gopherjs/gopherjs/js"
 	"github.com/google/chrome-ssh-agent/go/keys"
+	"github.com/gopherjs/gopherjs/js"
 )
 
 var (
