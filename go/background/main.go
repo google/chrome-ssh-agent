@@ -17,9 +17,9 @@ package main
 import (
 	"log"
 
-	"github.com/ralimi/chrome-ssh-agent/go/agentport"
-	"github.com/ralimi/chrome-ssh-agent/go/chrome"
-	"github.com/ralimi/chrome-ssh-agent/go/keys"
+	"github.com/google/chrome-ssh-agent/go/agentport"
+	"github.com/google/chrome-ssh-agent/go/chrome"
+	"github.com/google/chrome-ssh-agent/go/keys"
 
 	"github.com/gopherjs/gopherjs/js"
 	"golang.org/x/crypto/ssh/agent"

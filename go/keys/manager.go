@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/gopherjs/gopherjs/js"
-	"github.com/ralimi/chrome-ssh-agent/go/chrome"
+	"github.com/google/chrome-ssh-agent/go/chrome"
 )
 
 type Server struct {
