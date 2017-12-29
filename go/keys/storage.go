@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
+package keys
 
 import (
 	"fmt"
@@ -63,7 +63,7 @@ func (s *Storage) Delete(keys []string, callback func(err error)) {
 	})
 }
 
-func New() *Storage {
+func NewStorage() *Storage {
 	return &Storage{
 		o: chrome.SyncStorage,
 	}

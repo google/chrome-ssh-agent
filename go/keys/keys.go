@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/chrome-ssh-agent/go/storage"
 	"github.com/gopherjs/gopherjs/js"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -39,13 +38,13 @@ type Available interface {
 func New(a agent.Agent) Available {
 	return &available{
 		a: a,
-		s: storage.New(),
+		s: NewStorage(),
 	}
 }
 
 type available struct {
 	a agent.Agent
-	s *storage.Storage
+	s *Storage
 }
 
 type availableKey struct {
