@@ -3,7 +3,6 @@ GOPATH	:= $(firstword $(subst :, ,$(shell $(GO) env GOPATH)))
 
 CHROME		?= /usr/bin/google-chrome
 GOPHERJS	?= $(GOPATH)/bin/gopherjs
-STATICCHECK	?= $(GOPATH)/bin/staticcheck
 pkgs		= $(shell $(GO) list ./... | grep -v /vendor/)
 
 CHROME_EXTENSION_KEY=/tmp/chrome-ssh-agent.pem
@@ -12,7 +11,7 @@ PREFIX	?= $(shell pwd)
 BIN_DIR	?= $(shell pwd)
 MAKECRX	?= $(PREFIX)/release/makecrx.sh
 
-all: format style vet staticcheck test build crx
+all: format style vet test build crx
 
 format:
 	@echo ">> formatting code"
@@ -25,10 +24,6 @@ style:
 vet:
 	@echo ">> vetting code"
 	@$(GO) vet $(pkgs)
-
-staticcheck: $(STATICCHECK) $(GOPHERJS)
-	@echo ">> running staticcheck"
-	@$(STATICCHECK) $(pkgs)
 
 test:
 	@echo ">> running tests"
@@ -50,8 +45,5 @@ crx: $(MAKECRX) build
 
 $(GOPHERJS):
 	@GOOS= GOARCH= $(GO) get -u github.com/gopherjs/gopherjs
-
-$(GOPATH)/bin/staticcheck:
-	@GOOS= GOARCH= $(GO) get -u honnef.co/go/tools/cmd/staticcheck
 
 .PHONY: all
