@@ -136,13 +136,11 @@ func makeObject(i interface{}) *js.Object {
 	panic(fmt.Sprintf("failed to read object of type %T", i))
 }
 
-func (s *Server) onMessage(message interface{}, sender *js.Object, sendResponse func(interface{})) bool {
-	omsg := makeObject(message)
-	msg := &msgHeader{Object: omsg}
-	switch msg.Type {
+func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse func(interface{})) bool {
+	switch header.Type {
 	case msgTypeAvailable:
 		s.a.Available(func(keys []string, err error) {
-			rsp := &rspAvailable{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+			rsp := &rspAvailable{msgHeader: header}
 			rsp.Type = msgTypeAvailableRsp
 			rsp.Keys = keys
 			rsp.Err = makeErrStr(err)
@@ -150,32 +148,32 @@ func (s *Server) onMessage(message interface{}, sender *js.Object, sendResponse 
 		})
 	case msgTypeLoaded:
 		s.a.Loaded(func(keys []string, err error) {
-			rsp := &rspLoaded{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+			rsp := &rspLoaded{msgHeader: header}
 			rsp.Type = msgTypeLoadedRsp
 			rsp.Keys = keys
 			rsp.Err = makeErrStr(err)
 			sendResponse(rsp)
 		})
 	case msgTypeAdd:
-		m := &msgAdd{msgHeader: &msgHeader{Object: omsg}}
+		m := &msgAdd{msgHeader: header}
 		s.a.Add(m.Name, m.PEMPrivateKey, func(err error) {
-			rsp := &rspAdd{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+			rsp := &rspAdd{msgHeader: header}
 			rsp.Type = msgTypeAddRsp
 			rsp.Err = makeErrStr(err)
 			sendResponse(rsp)
 		})
 	case msgTypeRemove:
-		m := &msgRemove{msgHeader: &msgHeader{Object: omsg}}
+		m := &msgRemove{msgHeader: header}
 		s.a.Remove(m.Name, func(err error) {
-			rsp := &rspRemove{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+			rsp := &rspRemove{msgHeader: header}
 			rsp.Type = msgTypeRemoveRsp
 			rsp.Err = makeErrStr(err)
 			sendResponse(rsp)
 		})
 	case msgTypeLoad:
-		m := &msgLoad{msgHeader: &msgHeader{Object: omsg}}
+		m := &msgLoad{msgHeader: header}
 		s.a.Load(m.Name, m.Passphrase, func(err error) {
-			rsp := &rspLoad{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+			rsp := &rspLoad{msgHeader: header}
 			rsp.Type = msgTypeLoadRsp
 			rsp.Err = makeErrStr(err)
 			sendResponse(rsp)
