@@ -191,44 +191,27 @@ func NewClient() Available {
 	return &client{}
 }
 
-func (c *client) send(msg interface{}, responseCallback func(rsp interface{}, runtimeErr error)) {
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp interface{}) {
-		if err := chrome.LastError(); err != nil {
-			responseCallback(nil, fmt.Errorf("failed to send message: %v", err))
-			return
-		}
-		if o := makeObject(rsp); o == js.Undefined {
-			responseCallback(nil, fmt.Errorf("failed to receive response; response undefined"))
-			return
-		}
-
-		responseCallback(rsp, nil)
-	})
-}
-
 func (c *client) Available(callback func(keys []string, err error)) {
 	msg := &msgAvailable{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeAvailable
-	c.send(msg, func(rsp interface{}, runtimeErr error) {
-		if runtimeErr != nil {
-			callback(nil, runtimeErr)
+	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspAvailable) {
+		if err := chrome.LastError(); err != nil {
+			callback(nil, fmt.Errorf("failed to send message: %v", err))
 			return
 		}
-		r := &rspAvailable{msgHeader: &msgHeader{Object: makeObject(rsp)}}
-		callback(r.Keys, makeErr(r.Err))
+		callback(rsp.Keys, makeErr(rsp.Err))
 	})
 }
 
 func (c *client) Loaded(callback func(keys []string, err error)) {
 	msg := &msgLoaded{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeLoaded
-	c.send(msg, func(rsp interface{}, runtimeErr error) {
-		if runtimeErr != nil {
-			callback(nil, runtimeErr)
+	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspLoaded) {
+		if err := chrome.LastError(); err != nil {
+			callback(nil, fmt.Errorf("failed to send message: %v", err))
 			return
 		}
-		r := &rspLoaded{msgHeader: &msgHeader{Object: makeObject(rsp)}}
-		callback(r.Keys, makeErr(r.Err))
+		callback(rsp.Keys, makeErr(rsp.Err))
 	})
 }
 
@@ -237,13 +220,12 @@ func (c *client) Add(name string, pemPrivateKey string, callback func(err error)
 	msg.Type = msgTypeAdd
 	msg.Name = name
 	msg.PEMPrivateKey = pemPrivateKey
-	c.send(msg, func(rsp interface{}, runtimeErr error) {
-		if runtimeErr != nil {
-			callback(runtimeErr)
+	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspAdd) {
+		if err := chrome.LastError(); err != nil {
+			callback(fmt.Errorf("failed to send message: %v", err))
 			return
 		}
-		r := &rspAdd{msgHeader: &msgHeader{Object: makeObject(rsp)}}
-		callback(makeErr(r.Err))
+		callback(makeErr(rsp.Err))
 	})
 }
 
@@ -251,13 +233,12 @@ func (c *client) Remove(name string, callback func(err error)) {
 	msg := &msgRemove{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeRemove
 	msg.Name = name
-	c.send(msg, func(rsp interface{}, runtimeErr error) {
-		if runtimeErr != nil {
-			callback(runtimeErr)
+	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspRemove) {
+		if err := chrome.LastError(); err != nil {
+			callback(fmt.Errorf("failed to send message: %v", err))
 			return
 		}
-		r := &rspRemove{msgHeader: &msgHeader{Object: makeObject(rsp)}}
-		callback(makeErr(r.Err))
+		callback(makeErr(rsp.Err))
 	})
 }
 
@@ -266,12 +247,11 @@ func (c *client) Load(name, passphrase string, callback func(err error)) {
 	msg.Type = msgTypeLoad
 	msg.Name = name
 	msg.Passphrase = passphrase
-	c.send(msg, func(rsp interface{}, runtimeErr error) {
-		if runtimeErr != nil {
-			callback(runtimeErr)
+	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspLoad) {
+		if err := chrome.LastError(); err != nil {
+			callback(fmt.Errorf("failed to send message: %v", err))
 			return
 		}
-		r := &rspLoad{msgHeader: &msgHeader{Object: makeObject(rsp)}}
-		callback(makeErr(r.Err))
+		callback(makeErr(rsp.Err))
 	})
 }
