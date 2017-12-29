@@ -39,6 +39,7 @@ zip -qr -9 -X "${ZIP}" . --include \
 	manifest.json \
 	\*.html \
 	\*.js \
+	\*CONTRIBUTING* \
 	\*README* \
 	\*LICENCE*
 
