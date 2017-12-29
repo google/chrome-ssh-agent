@@ -17,7 +17,6 @@ package keys
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -59,6 +58,14 @@ const (
 	keyPrefix = "key."
 )
 
+func newAvailableKey(m map[string]interface{}) *availableKey {
+	o := js.Global.Get("Object").New()
+	for k, v := range m {
+		o.Set(k, v)
+	}
+	return &availableKey{Object: o}
+}
+
 func (a *available) readKeys(callback func(keys []*availableKey, err error)) {
 	a.s.Get(func(data map[string]interface{}, err error) {
 		if err != nil {
@@ -71,13 +78,8 @@ func (a *available) readKeys(callback func(keys []*availableKey, err error)) {
 			if !strings.HasPrefix(k, keyPrefix) {
 				continue
 			}
-			akobj := makeObject(v)
-			if akobj == js.Undefined {
-				log.Printf("skipping key %s; value undefined", k)
-				continue
-			}
 
-			keys = append(keys, &availableKey{Object: akobj})
+			keys = append(keys, newAvailableKey(v.(map[string]interface{})))
 		}
 		callback(keys, nil)
 	})

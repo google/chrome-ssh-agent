@@ -118,24 +118,6 @@ func makeErrStr(err error) string {
 	return err.Error()
 }
 
-func makeObject(i interface{}) *js.Object {
-	if i == nil {
-		return js.Undefined
-	}
-
-	switch i.(type) {
-	case *js.Object:
-		return i.(*js.Object)
-	case map[string]interface{}:
-		o := js.Global.Get("Object").New()
-		for k, v := range i.(map[string]interface{}) {
-			o.Set(k, v)
-		}
-		return o
-	}
-	panic(fmt.Sprintf("failed to read object of type %T", i))
-}
-
 func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse func(interface{})) bool {
 	switch header.Type {
 	case msgTypeAvailable:

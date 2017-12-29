@@ -26,13 +26,7 @@ type Storage struct {
 }
 
 func (s *Storage) Set(data map[string]interface{}, callback func(err error)) {
-	// Convert data to a JS object so it is ready for storage.
-	o := js.Global.Get("Object").New()
-	for k, v := range data {
-		o.Set(k, v)
-	}
-
-	s.o.Call("set", o, func() {
+	s.o.Call("set", data, func() {
 		if err := chrome.LastError(); err != nil {
 			callback(fmt.Errorf("failed to set data: %v", err))
 			return
