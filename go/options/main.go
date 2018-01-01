@@ -26,18 +26,21 @@ var (
 
 	passphraseDialog = doc.Call("getElementById", "passphraseDialog")
 	passphraseInput  = doc.Call("getElementById", "passphrase")
-	passphraseOk     = doc.Call("getElementById", "ok")
-	passphraseCancel = doc.Call("getElementById", "cancel")
+	passphraseOk     = doc.Call("getElementById", "passphraseOk")
+	passphraseCancel = doc.Call("getElementById", "passphraseCancel")
 
-	loadedList = doc.Call("getElementById", "loaded")
+	loadedList = doc.Call("getElementById", "loadedKeys")
 
-	availableList   = doc.Call("getElementById", "available")
+	availableList   = doc.Call("getElementById", "availableKeys")
 	availableAdd    = doc.Call("getElementById", "add")
 	availableRemove = doc.Call("getElementById", "remove")
 	availableLoad   = doc.Call("getElementById", "load")
 
-	addKeyName    = doc.Call("getElementById", "addKeyName")
-	addKeyPrivate = doc.Call("getElementById", "addKeyPrivate")
+	addDialog = doc.Call("getElementById", "addDialog")
+	addName   = doc.Call("getElementById", "addName")
+	addKey    = doc.Call("getElementById", "addKey")
+	addOk     = doc.Call("getElementById", "addOk")
+	addCancel = doc.Call("getElementById", "addCancel")
 
 	errorText = doc.Call("getElementById", "errorMessage")
 )
@@ -90,6 +93,24 @@ func updateAvailableKeys(avail keys.Available) {
 	})
 }
 
+func promptAdd(callback func(name, privateKey string, ok bool)) {
+	addOk.Call("addEventListener", "click", func() {
+		n := addName.Get("value").String()
+		k := addKey.Get("value").String()
+		addName.Set("value", "")
+		addKey.Set("value", "")
+		addDialog.Call("close")
+		callback(n, k, true)
+	})
+	addCancel.Call("addEventListener", "click", func() {
+		addName.Set("value", "")
+		addKey.Set("value", "")
+		addDialog.Call("close")
+		callback("", "", false)
+	})
+	addDialog.Call("showModal")
+}
+
 func promptPassphrase(callback func(passphrase string, ok bool)) {
 	passphraseOk.Call("addEventListener", "click", func() {
 		p := passphraseInput.Get("value").String()
@@ -125,16 +146,19 @@ func main() {
 
 	// Add new key
 	availableAdd.Call("addEventListener", "click", func() {
-		avail.Add(addKeyName.Get("value").String(), addKeyPrivate.Get("value").String(), func(err error) {
-			if err != nil {
-				setError(fmt.Errorf("failed to add key: %v", err))
+		promptAdd(func(name, privateKey string, ok bool) {
+			if !ok {
 				return
 			}
+			avail.Add(name, privateKey, func(err error) {
+				if err != nil {
+					setError(fmt.Errorf("failed to add key: %v", err))
+					return
+				}
 
-			addKeyName.Set("value", "")
-			addKeyPrivate.Set("value", "")
-			setError(nil)
-			updateAvailableKeys(avail)
+				setError(nil)
+				updateAvailableKeys(avail)
+			})
 		})
 	})
 

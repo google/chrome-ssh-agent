@@ -37,6 +37,7 @@ readonly ZIP="${BUILD_TMP}/${NAME}.zip"
 # Zip all output files.
 zip -qr -9 -X "${ZIP}" . --include \
 	manifest.json \
+	\*.css \
 	\*.html \
 	\*.js \
 	\*CONTRIBUTING* \

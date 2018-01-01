@@ -1,0 +1,79 @@
+/**
+ * Copyright 2017 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.dialog {
+  margin: 10%;
+}
+
+/* Passphrase input dialg */
+
+#passphrase {
+  width: 32em;
+}
+
+/* Add key dialog */
+
+#addName {
+  width: 32em;
+}
+
+#addKey {
+  /* PEM encoded keys look nicer in monospace */
+  font-family: monospace;
+  /* Size for entering a PEM-formatted private key */
+  height: 8em;
+  width: 40em;
+}
+
+/* Options page */
+
+#options {
+  width: 36em;
+  height: 20em;
+  margin: 1em;
+  display: inline-block;
+}
+
+#errorMessage {
+  color: red;
+}
+
+#controlPane {
+  margin-bottom: 1em;
+}
+
+#availableKeysPane {
+  float: left;
+  padding-right: 2em;
+}
+
+#availableKeys {
+  height: 10em;
+  width: 16em;
+}
+
+#availableKeysControls {
+  padding-top:1em;
+}
+
+#loadedKeysPane {
+  float:right;
+}
+
+#loadedKeys {
+  height: 10em;
+  width: 16em;
+}
