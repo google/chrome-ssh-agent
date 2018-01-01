@@ -54,6 +54,14 @@ func nodeListToArray(o *js.Object) []*js.Object {
 	return result
 }
 
+func selectedValues(o *js.Object) []string {
+	var result []string
+	for _, s := range nodeListToArray(availableList.Get("selectedOptions")) {
+		result = append(result, s.Get("value").String())
+	}
+	return result
+}
+
 func removeChildren(l *js.Object) {
 	for l.Call("hasChildNodes").Bool() {
 		l.Call("removeChild", l.Get("firstChild"))
@@ -164,8 +172,7 @@ func main() {
 
 	// Remove selected keys
 	availableRemove.Call("addEventListener", "click", func() {
-		for _, s := range nodeListToArray(availableList.Get("selectedOptions")) {
-			val := s.Get("value").String()
+		for _, val := range selectedValues(availableList) {
 			avail.Remove(val, func(err error) {
 				if err != nil {
 					setError(fmt.Errorf("failed to remove key %s: %v", val, err))
@@ -180,8 +187,7 @@ func main() {
 
 	// Load a key.
 	availableLoad.Call("addEventListener", "click", func() {
-		for _, s := range nodeListToArray(availableList.Get("selectedOptions")) {
-			val := s.Get("value").String()
+		for _, val := range selectedValues(availableList) {
 			promptPassphrase(func(passphrase string, ok bool) {
 				if !ok {
 					return
