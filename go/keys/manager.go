@@ -58,8 +58,8 @@ type msgAvailable struct {
 
 type rspAvailable struct {
 	*msgHeader
-	Keys []string `js:"keys"`
-	Err  string   `js:"err"`
+	Keys []*Key `js:"keys"`
+	Err  string `js:"err"`
 }
 
 type msgLoaded struct {
@@ -68,8 +68,8 @@ type msgLoaded struct {
 
 type rspLoaded struct {
 	*msgHeader
-	Keys []string `js:"keys"`
-	Err  string   `js:"err"`
+	Keys []*LoadedKey `js:"keys"`
+	Err  string       `js:"err"`
 }
 
 type msgAdd struct {
@@ -85,7 +85,7 @@ type rspAdd struct {
 
 type msgRemove struct {
 	*msgHeader
-	Name string `js:"name"`
+	Id ID `js:"id"`
 }
 
 type rspRemove struct {
@@ -95,7 +95,7 @@ type rspRemove struct {
 
 type msgLoad struct {
 	*msgHeader
-	Name       string `js:"name"`
+	Id         ID     `js:"id"`
 	Passphrase string `js:"passphrase"`
 }
 
@@ -121,7 +121,7 @@ func makeErrStr(err error) string {
 func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse func(interface{})) bool {
 	switch header.Type {
 	case msgTypeAvailable:
-		s.a.Available(func(keys []string, err error) {
+		s.a.Available(func(keys []*Key, err error) {
 			rsp := &rspAvailable{msgHeader: header}
 			rsp.Type = msgTypeAvailableRsp
 			rsp.Keys = keys
@@ -129,7 +129,7 @@ func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse fu
 			sendResponse(rsp)
 		})
 	case msgTypeLoaded:
-		s.a.Loaded(func(keys []string, err error) {
+		s.a.Loaded(func(keys []*LoadedKey, err error) {
 			rsp := &rspLoaded{msgHeader: header}
 			rsp.Type = msgTypeLoadedRsp
 			rsp.Keys = keys
@@ -146,7 +146,7 @@ func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse fu
 		})
 	case msgTypeRemove:
 		m := &msgRemove{msgHeader: header}
-		s.a.Remove(m.Name, func(err error) {
+		s.a.Remove(m.Id, func(err error) {
 			rsp := &rspRemove{msgHeader: header}
 			rsp.Type = msgTypeRemoveRsp
 			rsp.Err = makeErrStr(err)
@@ -154,7 +154,7 @@ func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse fu
 		})
 	case msgTypeLoad:
 		m := &msgLoad{msgHeader: header}
-		s.a.Load(m.Name, m.Passphrase, func(err error) {
+		s.a.Load(m.Id, m.Passphrase, func(err error) {
 			rsp := &rspLoad{msgHeader: header}
 			rsp.Type = msgTypeLoadRsp
 			rsp.Err = makeErrStr(err)
@@ -171,7 +171,7 @@ func NewClient() Available {
 	return &client{}
 }
 
-func (c *client) Available(callback func(keys []string, err error)) {
+func (c *client) Available(callback func(keys []*Key, err error)) {
 	msg := &msgAvailable{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeAvailable
 	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspAvailable) {
@@ -183,7 +183,7 @@ func (c *client) Available(callback func(keys []string, err error)) {
 	})
 }
 
-func (c *client) Loaded(callback func(keys []string, err error)) {
+func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
 	msg := &msgLoaded{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeLoaded
 	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspLoaded) {
@@ -209,10 +209,10 @@ func (c *client) Add(name string, pemPrivateKey string, callback func(err error)
 	})
 }
 
-func (c *client) Remove(name string, callback func(err error)) {
+func (c *client) Remove(id ID, callback func(err error)) {
 	msg := &msgRemove{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeRemove
-	msg.Name = name
+	msg.Id = id
 	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspRemove) {
 		if err := chrome.LastError(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
@@ -222,10 +222,10 @@ func (c *client) Remove(name string, callback func(err error)) {
 	})
 }
 
-func (c *client) Load(name, passphrase string, callback func(err error)) {
+func (c *client) Load(id ID, passphrase string, callback func(err error)) {
 	msg := &msgLoad{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeLoad
-	msg.Name = name
+	msg.Id = id
 	msg.Passphrase = passphrase
 	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspLoad) {
 		if err := chrome.LastError(); err != nil {

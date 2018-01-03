@@ -15,6 +15,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/google/chrome-ssh-agent/go/keys"
@@ -29,13 +30,7 @@ var (
 	passphraseOk     = doc.Call("getElementById", "passphraseOk")
 	passphraseCancel = doc.Call("getElementById", "passphraseCancel")
 
-	loadedList = doc.Call("getElementById", "loadedKeys")
-
-	availableList   = doc.Call("getElementById", "availableKeys")
-	availableAdd    = doc.Call("getElementById", "add")
-	availableRemove = doc.Call("getElementById", "remove")
-	availableLoad   = doc.Call("getElementById", "load")
-
+	addButton = doc.Call("getElementById", "add")
 	addDialog = doc.Call("getElementById", "addDialog")
 	addName   = doc.Call("getElementById", "addName")
 	addKey    = doc.Call("getElementById", "addKey")
@@ -43,23 +38,16 @@ var (
 	addCancel = doc.Call("getElementById", "addCancel")
 
 	errorText = doc.Call("getElementById", "errorMessage")
+
+	keysData = doc.Call("getElementById", "keysData")
 )
 
-func nodeListToArray(o *js.Object) []*js.Object {
-	var result []*js.Object
-	length := o.Get("length").Int()
-	for i := 0; i < length; i++ {
-		result = append(result, o.Call("item", i))
-	}
-	return result
-}
-
-func selectedValues(o *js.Object) []string {
-	var result []string
-	for _, s := range nodeListToArray(availableList.Get("selectedOptions")) {
-		result = append(result, s.Get("value").String())
-	}
-	return result
+type displayedKey struct {
+	Id     keys.ID
+	Loaded bool
+	Name   string
+	Type   string
+	Blob   string
 }
 
 func removeChildren(l *js.Object) {
@@ -68,36 +56,181 @@ func removeChildren(l *js.Object) {
 	}
 }
 
-func updateSelectList(l *js.Object, elements []string) {
-	removeChildren(l)
-	for _, e := range elements {
-		opt := doc.Call("createElement", "option")
-		opt.Set("text", e)
-		l.Call("appendChild", opt)
-	}
+func newElement(kind string) *js.Object {
+	return doc.Call("createElement", kind)
 }
 
-func updateLoadedKeys(avail keys.Available) {
-	avail.Loaded(func(keys []string, err error) {
-		if err != nil {
-			setError(fmt.Errorf("failed to read loaded keys: %v", err))
+func newText(text string) *js.Object {
+	return doc.Call("createTextNode", text)
+}
+
+func appendChild(parent, child *js.Object, populate func(child *js.Object)) {
+	if populate != nil {
+		populate(child)
+	}
+	parent.Call("appendChild", child)
+}
+
+func loadKey(avail keys.Available, id keys.ID) {
+	promptPassphrase(func(passphrase string, ok bool) {
+		if !ok {
 			return
 		}
-
-		setError(nil)
-		updateSelectList(loadedList, keys)
+		avail.Load(id, passphrase, func(err error) {
+			if err != nil {
+				setError(fmt.Errorf("failed to load key: %v", err))
+				return
+			}
+			setError(nil)
+			updateKeys(avail)
+		})
 	})
 }
 
-func updateAvailableKeys(avail keys.Available) {
-	avail.Available(func(keys []string, err error) {
+func removeKey(avail keys.Available, id keys.ID) {
+	avail.Remove(id, func(err error) {
 		if err != nil {
-			setError(fmt.Errorf("failed to read available keys: %v", err))
+			setError(fmt.Errorf("failed to remove key: %v", err))
 			return
 		}
 
 		setError(nil)
-		updateSelectList(availableList, keys)
+		updateKeys(avail)
+	})
+}
+
+func setDisplayedKeys(avail keys.Available, displayed []*displayedKey) {
+	removeChildren(keysData)
+
+	for _, k := range displayed {
+		k := k
+		appendChild(keysData, newElement("tr"), func(row *js.Object) {
+			// Key name
+			appendChild(row, newElement("td"), func(cell *js.Object) {
+				appendChild(cell, newElement("div"), func(div *js.Object) {
+					div.Set("className", "keyName")
+					appendChild(div, newText(k.Name), nil)
+				})
+			})
+
+			// Controls
+			appendChild(row, newElement("td"), func(cell *js.Object) {
+				appendChild(cell, newElement("div"), func(div *js.Object) {
+					div.Set("className", "keyControls")
+					if k.Id == keys.InvalidID {
+						// We only control keys with a valid ID.
+						return
+					}
+
+					// Load button
+					if !k.Loaded {
+						appendChild(div, newElement("button"), func(btn *js.Object) {
+							btn.Set("type", "button")
+							appendChild(btn, newText("Load"), nil)
+							btn.Call("addEventListener", "click", func() {
+								loadKey(avail, k.Id)
+							})
+						})
+					}
+
+					// Remove button
+					appendChild(div, newElement("button"), func(btn *js.Object) {
+						btn.Set("type", "button")
+						appendChild(btn, newText("Remove"), nil)
+						btn.Call("addEventListener", "click", func() {
+							removeKey(avail, k.Id)
+						})
+					})
+				})
+			})
+
+			// Type
+			appendChild(row, newElement("td"), func(cell *js.Object) {
+				appendChild(cell, newElement("div"), func(div *js.Object) {
+					div.Set("className", "keyType")
+					appendChild(div, newText(k.Type), nil)
+				})
+			})
+
+			// Blob
+			appendChild(row, newElement("td"), func(cell *js.Object) {
+				appendChild(cell, newElement("div"), func(div *js.Object) {
+					div.Set("className", "keyBlob")
+					appendChild(div, newText(k.Blob), nil)
+				})
+			})
+		})
+	}
+}
+
+func mergeKeys(available []*keys.Key, loaded []*keys.LoadedKey) []*displayedKey {
+	// Build map of available keys for faster lookup
+	availableMap := make(map[keys.ID]*keys.Key)
+	for _, k := range available {
+		availableMap[k.Id] = k
+	}
+
+	var result []*displayedKey
+
+	// Add all loaded keys. Keep track of the IDs that were detected as
+	// being loaded.
+	loadedIds := make(map[keys.ID]bool)
+	for _, l := range loaded {
+		// Gather basic fields we get for any loaded key.
+		dk := &displayedKey{
+			Loaded: true,
+			Type:   l.Type,
+			Blob:   base64.StdEncoding.EncodeToString([]byte(l.Blob)),
+		}
+		// Attempt to figure out if this is a key we loaded. If so, fill
+		// in some additional information.  It is possible that a key with
+		// a non-existent ID is loaded (e.g., it was removed while loaded);
+		// in this case we claim we do not have an ID.
+		if id := keys.GetID(l); id != keys.InvalidID {
+			if ak := availableMap[id]; ak != nil {
+				loadedIds[id] = true
+				dk.Id = id
+				dk.Name = ak.Name
+			}
+		}
+		result = append(result, dk)
+	}
+
+	// Add all available keys that are not loaded.
+	for _, a := range available {
+		// Skip any that we already covered above.
+		if loadedIds[a.Id] {
+			continue
+		}
+
+		result = append(result, &displayedKey{
+			Id:     a.Id,
+			Loaded: false,
+			Name:   a.Name,
+		})
+	}
+
+	// TODO(ralimi) Sort displayed items to ensure consitent ordering over time
+
+	return result
+}
+
+func updateKeys(avail keys.Available) {
+	avail.Available(func(available []*keys.Key, err error) {
+		if err != nil {
+			setError(fmt.Errorf("failed to get available keys: %v", err))
+			return
+		}
+
+		avail.Loaded(func(loaded []*keys.LoadedKey, err error) {
+			if err != nil {
+				setError(fmt.Errorf("failed to get loaded keys: %v", err))
+				return
+			}
+
+			setError(nil)
+			setDisplayedKeys(avail, mergeKeys(available, loaded))
+		})
 	})
 }
 
@@ -148,12 +281,11 @@ func main() {
 
 	// Load settings on initial display
 	doc.Call("addEventListener", "DOMContentLoaded", func() {
-		updateLoadedKeys(avail)
-		updateAvailableKeys(avail)
+		updateKeys(avail)
 	})
 
 	// Add new key
-	availableAdd.Call("addEventListener", "click", func() {
+	addButton.Call("addEventListener", "click", func() {
 		promptAdd(func(name, privateKey string, ok bool) {
 			if !ok {
 				return
@@ -165,42 +297,8 @@ func main() {
 				}
 
 				setError(nil)
-				updateAvailableKeys(avail)
+				updateKeys(avail)
 			})
 		})
-	})
-
-	// Remove selected keys
-	availableRemove.Call("addEventListener", "click", func() {
-		for _, val := range selectedValues(availableList) {
-			avail.Remove(val, func(err error) {
-				if err != nil {
-					setError(fmt.Errorf("failed to remove key %s: %v", val, err))
-					return
-				}
-
-				setError(nil)
-				updateAvailableKeys(avail)
-			})
-		}
-	})
-
-	// Load a key.
-	availableLoad.Call("addEventListener", "click", func() {
-		for _, val := range selectedValues(availableList) {
-			promptPassphrase(func(passphrase string, ok bool) {
-				if !ok {
-					return
-				}
-				avail.Load(val, passphrase, func(err error) {
-					if err != nil {
-						setError(fmt.Errorf("failed to load key: %v", err))
-						return
-					}
-					setError(nil)
-					updateLoadedKeys(avail)
-				})
-			})
-		}
 	})
 }

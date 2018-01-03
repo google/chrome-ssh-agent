@@ -63,27 +63,20 @@
       <div id="controlPane">
         <button id="add">Add Key</button>
       </div>
-        
-      <div id="availableKeysPane">
-        <div>
-          <label for="availableKeys">Available Keys</label>
-        </div>
-        <div>
-          <select id="availableKeys" multiple></select>
-        </div>
-        <div id="availableKeysControls">
-          <button id="load">Load</button>
-          <button id="remove">Remove</button>
-        </div>
-      </div>
 
-      <div id="loadedKeysPane">
-        <div>
-          <label for="loadedKeys">Loaded Keys</label>
-        </div>
-        <div>
-          <select id="loadedKeys" multiple></select>
-        </div>
+      <div id="keysPane">
+        <table id="keysTable">
+          <thead id="keysHeader">
+            <tr>
+              <td>Name</td>
+              <td>Controls</td>
+              <td>Type</td>
+              <td>Blob</td>
+            </tr>
+          </thead>
+          <tbody id="keysData">
+          </tbody>
+        </table>
       </div>
     </div>
 

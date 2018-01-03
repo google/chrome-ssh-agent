@@ -41,8 +41,8 @@
 /* Options page */
 
 #options {
-  width: 36em;
-  height: 20em;
+  width: 40em;
+  height: 30em;
   margin: 1em;
   display: inline-block;
 }
@@ -55,25 +55,36 @@
   margin-bottom: 1em;
 }
 
-#availableKeysPane {
-  float: left;
-  padding-right: 2em;
+#keysTable {
+  border-collapse: collapse;
+  widtH: 100%;
 }
 
-#availableKeys {
-  height: 10em;
-  width: 16em;
+#keysTable td {
+  border: .1em solid #ddd;
+  padding-left: .5em;
+  padding-right: .5em;
+  padding-top: .5em;
+  padding-bottom: .5em;
 }
 
-#availableKeysControls {
-  padding-top:1em;
+#keysData tr:nth-child(even) {
+  background-color: #f2f2f2;
 }
 
-#loadedKeysPane {
-  float:right;
+#keysData tr:hover {
+  background-color: #ddd;
 }
 
-#loadedKeys {
-  height: 10em;
-  width: 16em;
+#keysHeader {
+  background-color: #438bfe;
+  color: white;
+}
+
+.keyBlob {
+  font-family: monospace;
+  overflow: auto;
+  word-wrap: break-word;
+  max-width: 16em;
+  max-height: 4em;
 }
