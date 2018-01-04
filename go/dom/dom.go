@@ -50,3 +50,7 @@ func AppendChild(parent, child *js.Object, populate func(child *js.Object)) {
 	}
 	parent.Call("appendChild", child)
 }
+
+func GetElement(id string) *js.Object {
+	return Doc.Call("getElementById", id)
+}

@@ -24,21 +24,21 @@ import (
 )
 
 var (
-	passphraseDialog = dom.Doc.Call("getElementById", "passphraseDialog")
-	passphraseInput  = dom.Doc.Call("getElementById", "passphrase")
-	passphraseOk     = dom.Doc.Call("getElementById", "passphraseOk")
-	passphraseCancel = dom.Doc.Call("getElementById", "passphraseCancel")
+	passphraseDialog = dom.GetElement("passphraseDialog")
+	passphraseInput  = dom.GetElement("passphrase")
+	passphraseOk     = dom.GetElement("passphraseOk")
+	passphraseCancel = dom.GetElement("passphraseCancel")
 
-	addButton = dom.Doc.Call("getElementById", "add")
-	addDialog = dom.Doc.Call("getElementById", "addDialog")
-	addName   = dom.Doc.Call("getElementById", "addName")
-	addKey    = dom.Doc.Call("getElementById", "addKey")
-	addOk     = dom.Doc.Call("getElementById", "addOk")
-	addCancel = dom.Doc.Call("getElementById", "addCancel")
+	addButton = dom.GetElement("add")
+	addDialog = dom.GetElement("addDialog")
+	addName   = dom.GetElement("addName")
+	addKey    = dom.GetElement("addKey")
+	addOk     = dom.GetElement("addOk")
+	addCancel = dom.GetElement("addCancel")
 
-	errorText = dom.Doc.Call("getElementById", "errorMessage")
+	errorText = dom.GetElement("errorMessage")
 
-	keysData = dom.Doc.Call("getElementById", "keysData")
+	keysData = dom.GetElement("keysData")
 )
 
 type displayedKey struct {
