@@ -33,7 +33,7 @@ const (
 	InvalidID ID = ""
 )
 
-type Key struct {
+type ConfiguredKey struct {
 	*js.Object
 	Id   ID     `js:"id"`
 	Name string `js:"name"`
@@ -46,7 +46,7 @@ type LoadedKey struct {
 	Comment string `js:"comment"`
 }
 
-func GetID(k *LoadedKey) ID {
+func (k *LoadedKey) ID() ID {
 	if !strings.HasPrefix(k.Comment, commentPrefix) {
 		return InvalidID
 	}
@@ -54,22 +54,22 @@ func GetID(k *LoadedKey) ID {
 	return ID(strings.TrimPrefix(k.Comment, commentPrefix))
 }
 
-type Available interface {
-	Available(callback func(keys []*Key, err error))
+type Manager interface {
+	Configured(callback func(keys []*ConfiguredKey, err error))
 	Add(name string, pemPrivateKey string, callback func(err error))
 	Remove(id ID, callback func(err error))
 	Loaded(callback func(keys []*LoadedKey, err error))
 	Load(id ID, passphrase string, callback func(err error))
 }
 
-func New(a agent.Agent) Available {
-	return &available{
+func NewManager(a agent.Agent) Manager {
+	return &manager{
 		a: a,
 		s: NewStorage(),
 	}
 }
 
-type available struct {
+type manager struct {
 	a agent.Agent
 	s *Storage
 }
@@ -94,7 +94,7 @@ func newStoredKey(m map[string]interface{}) *storedKey {
 	return &storedKey{Object: o}
 }
 
-func (a *available) readKeys(callback func(keys []*storedKey, err error)) {
+func (a *manager) readKeys(callback func(keys []*storedKey, err error)) {
 	a.s.Get(func(data map[string]interface{}, err error) {
 		if err != nil {
 			callback(nil, fmt.Errorf("failed to read from storage: %v", err))
@@ -113,7 +113,7 @@ func (a *available) readKeys(callback func(keys []*storedKey, err error)) {
 	})
 }
 
-func (a *available) readKey(id ID, callback func(key *storedKey, err error)) {
+func (a *manager) readKey(id ID, callback func(key *storedKey, err error)) {
 	a.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
 			callback(nil, fmt.Errorf("failed to read keys: %v", err))
@@ -131,7 +131,7 @@ func (a *available) readKey(id ID, callback func(key *storedKey, err error)) {
 	})
 }
 
-func (a *available) writeKey(name string, pemPrivateKey string, callback func(err error)) {
+func (a *manager) writeKey(name string, pemPrivateKey string, callback func(err error)) {
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
 		callback(fmt.Errorf("failed to generate new ID: %v", err))
@@ -151,7 +151,7 @@ func (a *available) writeKey(name string, pemPrivateKey string, callback func(er
 	})
 }
 
-func (a *available) removeKey(id ID, callback func(err error)) {
+func (a *manager) removeKey(id ID, callback func(err error)) {
 	a.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
 			callback(fmt.Errorf("failed to enumerate keys: %v", err))
@@ -175,16 +175,16 @@ func (a *available) removeKey(id ID, callback func(err error)) {
 	})
 }
 
-func (a *available) Available(callback func(keys []*Key, err error)) {
+func (a *manager) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	a.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
 			callback(nil, fmt.Errorf("failed to read keys: %v", err))
 			return
 		}
 
-		var result []*Key
+		var result []*ConfiguredKey
 		for _, k := range keys {
-			c := &Key{Object: js.Global.Get("Object").New()}
+			c := &ConfiguredKey{Object: js.Global.Get("Object").New()}
 			c.Id = k.Id
 			c.Name = k.Name
 			result = append(result, c)
@@ -193,7 +193,7 @@ func (a *available) Available(callback func(keys []*Key, err error)) {
 	})
 }
 
-func (a *available) Add(name string, pemPrivateKey string, callback func(err error)) {
+func (a *manager) Add(name string, pemPrivateKey string, callback func(err error)) {
 	if name == "" {
 		callback(errors.New("name must not be empty"))
 		return
@@ -204,13 +204,13 @@ func (a *available) Add(name string, pemPrivateKey string, callback func(err err
 	})
 }
 
-func (a *available) Remove(id ID, callback func(err error)) {
+func (a *manager) Remove(id ID, callback func(err error)) {
 	a.removeKey(id, func(err error) {
 		callback(err)
 	})
 }
 
-func (a *available) Loaded(callback func(keys []*LoadedKey, err error)) {
+func (a *manager) Loaded(callback func(keys []*LoadedKey, err error)) {
 	loaded, err := a.a.List()
 	if err != nil {
 		callback(nil, fmt.Errorf("failed to list loaded keys: %v", err))
@@ -229,7 +229,7 @@ func (a *available) Loaded(callback func(keys []*LoadedKey, err error)) {
 	callback(result, nil)
 }
 
-func (a *available) Load(id ID, passphrase string, callback func(err error)) {
+func (a *manager) Load(id ID, passphrase string, callback func(err error)) {
 	a.readKey(id, func(key *storedKey, err error) {
 		if err != nil {
 			callback(fmt.Errorf("failed to read key: %v", err))

@@ -71,35 +71,35 @@ func appendChild(parent, child *js.Object, populate func(child *js.Object)) {
 	parent.Call("appendChild", child)
 }
 
-func loadKey(avail keys.Available, id keys.ID) {
+func loadKey(mgr keys.Manager, id keys.ID) {
 	promptPassphrase(func(passphrase string, ok bool) {
 		if !ok {
 			return
 		}
-		avail.Load(id, passphrase, func(err error) {
+		mgr.Load(id, passphrase, func(err error) {
 			if err != nil {
 				setError(fmt.Errorf("failed to load key: %v", err))
 				return
 			}
 			setError(nil)
-			updateKeys(avail)
+			updateKeys(mgr)
 		})
 	})
 }
 
-func removeKey(avail keys.Available, id keys.ID) {
-	avail.Remove(id, func(err error) {
+func removeKey(mgr keys.Manager, id keys.ID) {
+	mgr.Remove(id, func(err error) {
 		if err != nil {
 			setError(fmt.Errorf("failed to remove key: %v", err))
 			return
 		}
 
 		setError(nil)
-		updateKeys(avail)
+		updateKeys(mgr)
 	})
 }
 
-func setDisplayedKeys(avail keys.Available, displayed []*displayedKey) {
+func setDisplayedKeys(mgr keys.Manager, displayed []*displayedKey) {
 	removeChildren(keysData)
 
 	for _, k := range displayed {
@@ -128,7 +128,7 @@ func setDisplayedKeys(avail keys.Available, displayed []*displayedKey) {
 							btn.Set("type", "button")
 							appendChild(btn, newText("Load"), nil)
 							btn.Call("addEventListener", "click", func() {
-								loadKey(avail, k.Id)
+								loadKey(mgr, k.Id)
 							})
 						})
 					}
@@ -138,7 +138,7 @@ func setDisplayedKeys(avail keys.Available, displayed []*displayedKey) {
 						btn.Set("type", "button")
 						appendChild(btn, newText("Remove"), nil)
 						btn.Call("addEventListener", "click", func() {
-							removeKey(avail, k.Id)
+							removeKey(mgr, k.Id)
 						})
 					})
 				})
@@ -163,11 +163,11 @@ func setDisplayedKeys(avail keys.Available, displayed []*displayedKey) {
 	}
 }
 
-func mergeKeys(available []*keys.Key, loaded []*keys.LoadedKey) []*displayedKey {
-	// Build map of available keys for faster lookup
-	availableMap := make(map[keys.ID]*keys.Key)
-	for _, k := range available {
-		availableMap[k.Id] = k
+func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*displayedKey {
+	// Build map of configured keys for faster lookup
+	configuredMap := make(map[keys.ID]*keys.ConfiguredKey)
+	for _, k := range configured {
+		configuredMap[k.Id] = k
 	}
 
 	var result []*displayedKey
@@ -186,8 +186,8 @@ func mergeKeys(available []*keys.Key, loaded []*keys.LoadedKey) []*displayedKey 
 		// in some additional information.  It is possible that a key with
 		// a non-existent ID is loaded (e.g., it was removed while loaded);
 		// in this case we claim we do not have an ID.
-		if id := keys.GetID(l); id != keys.InvalidID {
-			if ak := availableMap[id]; ak != nil {
+		if id := l.ID(); id != keys.InvalidID {
+			if ak := configuredMap[id]; ak != nil {
 				loadedIds[id] = true
 				dk.Id = id
 				dk.Name = ak.Name
@@ -196,8 +196,8 @@ func mergeKeys(available []*keys.Key, loaded []*keys.LoadedKey) []*displayedKey 
 		result = append(result, dk)
 	}
 
-	// Add all available keys that are not loaded.
-	for _, a := range available {
+	// Add all configured keys that are not loaded.
+	for _, a := range configured {
 		// Skip any that we already covered above.
 		if loadedIds[a.Id] {
 			continue
@@ -215,21 +215,21 @@ func mergeKeys(available []*keys.Key, loaded []*keys.LoadedKey) []*displayedKey 
 	return result
 }
 
-func updateKeys(avail keys.Available) {
-	avail.Available(func(available []*keys.Key, err error) {
+func updateKeys(mgr keys.Manager) {
+	mgr.Configured(func(configured []*keys.ConfiguredKey, err error) {
 		if err != nil {
-			setError(fmt.Errorf("failed to get available keys: %v", err))
+			setError(fmt.Errorf("failed to get configured keys: %v", err))
 			return
 		}
 
-		avail.Loaded(func(loaded []*keys.LoadedKey, err error) {
+		mgr.Loaded(func(loaded []*keys.LoadedKey, err error) {
 			if err != nil {
 				setError(fmt.Errorf("failed to get loaded keys: %v", err))
 				return
 			}
 
 			setError(nil)
-			setDisplayedKeys(avail, mergeKeys(available, loaded))
+			setDisplayedKeys(mgr, mergeKeys(configured, loaded))
 		})
 	})
 }
@@ -277,11 +277,11 @@ func setError(err error) {
 }
 
 func main() {
-	avail := keys.NewClient()
+	mgr := keys.NewClient()
 
 	// Load settings on initial display
 	doc.Call("addEventListener", "DOMContentLoaded", func() {
-		updateKeys(avail)
+		updateKeys(mgr)
 	})
 
 	// Add new key
@@ -290,14 +290,14 @@ func main() {
 			if !ok {
 				return
 			}
-			avail.Add(name, privateKey, func(err error) {
+			mgr.Add(name, privateKey, func(err error) {
 				if err != nil {
 					setError(fmt.Errorf("failed to add key: %v", err))
 					return
 				}
 
 				setError(nil)
-				updateKeys(avail)
+				updateKeys(mgr)
 			})
 		})
 	})

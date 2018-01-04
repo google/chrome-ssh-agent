@@ -23,20 +23,20 @@ import (
 )
 
 type Server struct {
-	a Available
+	mgr Manager
 }
 
-func NewServer(avail Available) *Server {
+func NewServer(mgr Manager) *Server {
 	result := &Server{
-		a: avail,
+		mgr: mgr,
 	}
 	chrome.Runtime.Get("onMessage").Call("addListener", result.onMessage)
 	return result
 }
 
 const (
-	msgTypeAvailable int = 1000 + iota
-	msgTypeAvailableRsp
+	msgTypeConfigured int = 1000 + iota
+	msgTypeConfiguredRsp
 	msgTypeLoaded
 	msgTypeLoadedRsp
 	msgTypeAdd
@@ -52,14 +52,14 @@ type msgHeader struct {
 	Type int `js:"type"`
 }
 
-type msgAvailable struct {
+type msgConfigured struct {
 	*msgHeader
 }
 
-type rspAvailable struct {
+type rspConfigured struct {
 	*msgHeader
-	Keys []*Key `js:"keys"`
-	Err  string `js:"err"`
+	Keys []*ConfiguredKey `js:"keys"`
+	Err  string           `js:"err"`
 }
 
 type msgLoaded struct {
@@ -120,16 +120,16 @@ func makeErrStr(err error) string {
 
 func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse func(interface{})) bool {
 	switch header.Type {
-	case msgTypeAvailable:
-		s.a.Available(func(keys []*Key, err error) {
-			rsp := &rspAvailable{msgHeader: header}
-			rsp.Type = msgTypeAvailableRsp
+	case msgTypeConfigured:
+		s.mgr.Configured(func(keys []*ConfiguredKey, err error) {
+			rsp := &rspConfigured{msgHeader: header}
+			rsp.Type = msgTypeConfiguredRsp
 			rsp.Keys = keys
 			rsp.Err = makeErrStr(err)
 			sendResponse(rsp)
 		})
 	case msgTypeLoaded:
-		s.a.Loaded(func(keys []*LoadedKey, err error) {
+		s.mgr.Loaded(func(keys []*LoadedKey, err error) {
 			rsp := &rspLoaded{msgHeader: header}
 			rsp.Type = msgTypeLoadedRsp
 			rsp.Keys = keys
@@ -138,7 +138,7 @@ func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse fu
 		})
 	case msgTypeAdd:
 		m := &msgAdd{msgHeader: header}
-		s.a.Add(m.Name, m.PEMPrivateKey, func(err error) {
+		s.mgr.Add(m.Name, m.PEMPrivateKey, func(err error) {
 			rsp := &rspAdd{msgHeader: header}
 			rsp.Type = msgTypeAddRsp
 			rsp.Err = makeErrStr(err)
@@ -146,7 +146,7 @@ func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse fu
 		})
 	case msgTypeRemove:
 		m := &msgRemove{msgHeader: header}
-		s.a.Remove(m.Id, func(err error) {
+		s.mgr.Remove(m.Id, func(err error) {
 			rsp := &rspRemove{msgHeader: header}
 			rsp.Type = msgTypeRemoveRsp
 			rsp.Err = makeErrStr(err)
@@ -154,7 +154,7 @@ func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse fu
 		})
 	case msgTypeLoad:
 		m := &msgLoad{msgHeader: header}
-		s.a.Load(m.Id, m.Passphrase, func(err error) {
+		s.mgr.Load(m.Id, m.Passphrase, func(err error) {
 			rsp := &rspLoad{msgHeader: header}
 			rsp.Type = msgTypeLoadRsp
 			rsp.Err = makeErrStr(err)
@@ -167,14 +167,14 @@ func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse fu
 type client struct {
 }
 
-func NewClient() Available {
+func NewClient() Manager {
 	return &client{}
 }
 
-func (c *client) Available(callback func(keys []*Key, err error)) {
-	msg := &msgAvailable{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
-	msg.Type = msgTypeAvailable
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspAvailable) {
+func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
+	msg := &msgConfigured{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+	msg.Type = msgTypeConfigured
+	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspConfigured) {
 		if err := chrome.LastError(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
 			return
