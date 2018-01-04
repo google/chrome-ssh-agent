@@ -15,10 +15,11 @@
 package keys
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
-	"math/rand"
-	"strconv"
+	"math"
+	"math/big"
 	"strings"
 
 	"github.com/gopherjs/gopherjs/js"
@@ -131,7 +132,12 @@ func (a *available) readKey(id ID, callback func(key *storedKey, err error)) {
 }
 
 func (a *available) writeKey(name string, pemPrivateKey string, callback func(err error)) {
-	id := ID(strconv.FormatUint(rand.Uint64(), 16))
+	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		callback(fmt.Errorf("failed to generate new ID: %v", err))
+		return
+	}
+	id := ID(i.String())
 	storageKey := fmt.Sprintf("%s%s", keyPrefix, id)
 	sk := &storedKey{Object: js.Global.Get("Object").New()}
 	sk.Id = id
