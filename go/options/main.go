@@ -218,31 +218,31 @@ func promptAdd(callback func(name, privateKey string, ok bool)) {
 		k := addKey.Get("value").String()
 		addName.Set("value", "")
 		addKey.Set("value", "")
-		addDialog.Call("close")
+		dom.Close(addDialog)
 		callback(n, k, true)
 	})
 	dom.OnClick(addCancel, func() {
 		addName.Set("value", "")
 		addKey.Set("value", "")
-		addDialog.Call("close")
+		dom.Close(addDialog)
 		callback("", "", false)
 	})
-	addDialog.Call("showModal")
+	dom.ShowModal(addDialog)
 }
 
 func promptPassphrase(callback func(passphrase string, ok bool)) {
 	dom.OnClick(passphraseOk, func() {
 		p := passphraseInput.Get("value").String()
 		passphraseInput.Set("value", "")
-		passphraseDialog.Call("close")
+		dom.Close(passphraseDialog)
 		callback(p, true)
 	})
 	dom.OnClick(passphraseCancel, func() {
 		passphraseInput.Set("value", "")
-		passphraseDialog.Call("close")
+		dom.Close(passphraseDialog)
 		callback("", false)
 	})
-	passphraseDialog.Call("showModal")
+	dom.ShowModal(passphraseDialog)
 }
 
 func setError(err error) {

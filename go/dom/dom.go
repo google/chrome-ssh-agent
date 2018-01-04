@@ -54,3 +54,11 @@ func AppendChild(parent, child *js.Object, populate func(child *js.Object)) {
 func GetElement(id string) *js.Object {
 	return Doc.Call("getElementById", id)
 }
+
+func ShowModal(o *js.Object) {
+	o.Call("showModal")
+}
+
+func Close(o *js.Object) {
+	o.Call("close")
+}
