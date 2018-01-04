@@ -62,16 +62,16 @@ type Manager interface {
 	Load(id ID, passphrase string, callback func(err error))
 }
 
-func NewManager(a agent.Agent) Manager {
+func NewManager(agt agent.Agent) Manager {
 	return &manager{
-		a: a,
-		s: NewStorage(),
+		agent:   agt,
+		storage: NewStorage(),
 	}
 }
 
 type manager struct {
-	a agent.Agent
-	s *Storage
+	agent   agent.Agent
+	storage *Storage
 }
 
 type storedKey struct {
@@ -94,8 +94,8 @@ func newStoredKey(m map[string]interface{}) *storedKey {
 	return &storedKey{Object: o}
 }
 
-func (a *manager) readKeys(callback func(keys []*storedKey, err error)) {
-	a.s.Get(func(data map[string]interface{}, err error) {
+func (m *manager) readKeys(callback func(keys []*storedKey, err error)) {
+	m.storage.Get(func(data map[string]interface{}, err error) {
 		if err != nil {
 			callback(nil, fmt.Errorf("failed to read from storage: %v", err))
 			return
@@ -113,8 +113,8 @@ func (a *manager) readKeys(callback func(keys []*storedKey, err error)) {
 	})
 }
 
-func (a *manager) readKey(id ID, callback func(key *storedKey, err error)) {
-	a.readKeys(func(keys []*storedKey, err error) {
+func (m *manager) readKey(id ID, callback func(key *storedKey, err error)) {
+	m.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
 			callback(nil, fmt.Errorf("failed to read keys: %v", err))
 			return
@@ -131,7 +131,7 @@ func (a *manager) readKey(id ID, callback func(key *storedKey, err error)) {
 	})
 }
 
-func (a *manager) writeKey(name string, pemPrivateKey string, callback func(err error)) {
+func (m *manager) writeKey(name string, pemPrivateKey string, callback func(err error)) {
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
 		callback(fmt.Errorf("failed to generate new ID: %v", err))
@@ -146,13 +146,13 @@ func (a *manager) writeKey(name string, pemPrivateKey string, callback func(err 
 	data := map[string]interface{}{
 		storageKey: sk,
 	}
-	a.s.Set(data, func(err error) {
+	m.storage.Set(data, func(err error) {
 		callback(err)
 	})
 }
 
-func (a *manager) removeKey(id ID, callback func(err error)) {
-	a.readKeys(func(keys []*storedKey, err error) {
+func (m *manager) removeKey(id ID, callback func(err error)) {
+	m.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
 			callback(fmt.Errorf("failed to enumerate keys: %v", err))
 			return
@@ -165,7 +165,7 @@ func (a *manager) removeKey(id ID, callback func(err error)) {
 			}
 		}
 
-		a.s.Delete(storageKeys, func(err error) {
+		m.storage.Delete(storageKeys, func(err error) {
 			if err != nil {
 				callback(fmt.Errorf("failed to delete keys: %v", err))
 				return
@@ -175,8 +175,8 @@ func (a *manager) removeKey(id ID, callback func(err error)) {
 	})
 }
 
-func (a *manager) Configured(callback func(keys []*ConfiguredKey, err error)) {
-	a.readKeys(func(keys []*storedKey, err error) {
+func (m *manager) Configured(callback func(keys []*ConfiguredKey, err error)) {
+	m.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
 			callback(nil, fmt.Errorf("failed to read keys: %v", err))
 			return
@@ -193,25 +193,25 @@ func (a *manager) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	})
 }
 
-func (a *manager) Add(name string, pemPrivateKey string, callback func(err error)) {
+func (m *manager) Add(name string, pemPrivateKey string, callback func(err error)) {
 	if name == "" {
 		callback(errors.New("name must not be empty"))
 		return
 	}
 
-	a.writeKey(name, pemPrivateKey, func(err error) {
+	m.writeKey(name, pemPrivateKey, func(err error) {
 		callback(err)
 	})
 }
 
-func (a *manager) Remove(id ID, callback func(err error)) {
-	a.removeKey(id, func(err error) {
+func (m *manager) Remove(id ID, callback func(err error)) {
+	m.removeKey(id, func(err error) {
 		callback(err)
 	})
 }
 
-func (a *manager) Loaded(callback func(keys []*LoadedKey, err error)) {
-	loaded, err := a.a.List()
+func (m *manager) Loaded(callback func(keys []*LoadedKey, err error)) {
+	loaded, err := m.agent.List()
 	if err != nil {
 		callback(nil, fmt.Errorf("failed to list loaded keys: %v", err))
 		return
@@ -229,8 +229,8 @@ func (a *manager) Loaded(callback func(keys []*LoadedKey, err error)) {
 	callback(result, nil)
 }
 
-func (a *manager) Load(id ID, passphrase string, callback func(err error)) {
-	a.readKey(id, func(key *storedKey, err error) {
+func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
+	m.readKey(id, func(key *storedKey, err error) {
 		if err != nil {
 			callback(fmt.Errorf("failed to read key: %v", err))
 			return
@@ -242,7 +242,7 @@ func (a *manager) Load(id ID, passphrase string, callback func(err error)) {
 			return
 		}
 
-		err = a.a.Add(agent.AddedKey{
+		err = m.agent.Add(agent.AddedKey{
 			PrivateKey: priv,
 			Comment:    fmt.Sprintf("%s%s", commentPrefix, id),
 		})
