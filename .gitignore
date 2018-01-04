@@ -14,5 +14,9 @@
 *.js
 *.js.map
 
+# vim swap files
+*.swp
+*.swo
+
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
