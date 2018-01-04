@@ -15,223 +15,241 @@
 package keys
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"math"
+	"math/big"
+	"strings"
 
-	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/gopherjs/gopherjs/js"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
-type Server struct {
-	mgr Manager
-}
-
-func NewServer(mgr Manager) *Server {
-	result := &Server{
-		mgr: mgr,
-	}
-	chrome.Runtime.Get("onMessage").Call("addListener", result.onMessage)
-	return result
-}
+type ID string
 
 const (
-	msgTypeConfigured int = 1000 + iota
-	msgTypeConfiguredRsp
-	msgTypeLoaded
-	msgTypeLoadedRsp
-	msgTypeAdd
-	msgTypeAddRsp
-	msgTypeRemove
-	msgTypeRemoveRsp
-	msgTypeLoad
-	msgTypeLoadRsp
+	InvalidID ID = ""
 )
 
-type msgHeader struct {
+type ConfiguredKey struct {
 	*js.Object
-	Type int `js:"type"`
+	Id   ID     `js:"id"`
+	Name string `js:"name"`
 }
 
-type msgConfigured struct {
-	*msgHeader
+type LoadedKey struct {
+	*js.Object
+	Type    string `js:"type"`
+	Blob    string `js:"blob"`
+	Comment string `js:"comment"`
 }
 
-type rspConfigured struct {
-	*msgHeader
-	Keys []*ConfiguredKey `js:"keys"`
-	Err  string           `js:"err"`
+func (k *LoadedKey) ID() ID {
+	if !strings.HasPrefix(k.Comment, commentPrefix) {
+		return InvalidID
+	}
+
+	return ID(strings.TrimPrefix(k.Comment, commentPrefix))
 }
 
-type msgLoaded struct {
-	*msgHeader
+type Manager interface {
+	Configured(callback func(keys []*ConfiguredKey, err error))
+	Add(name string, pemPrivateKey string, callback func(err error))
+	Remove(id ID, callback func(err error))
+	Loaded(callback func(keys []*LoadedKey, err error))
+	Load(id ID, passphrase string, callback func(err error))
 }
 
-type rspLoaded struct {
-	*msgHeader
-	Keys []*LoadedKey `js:"keys"`
-	Err  string       `js:"err"`
+func NewManager(a agent.Agent) Manager {
+	return &manager{
+		a: a,
+		s: NewStorage(),
+	}
 }
 
-type msgAdd struct {
-	*msgHeader
+type manager struct {
+	a agent.Agent
+	s *Storage
+}
+
+type storedKey struct {
+	*js.Object
+	Id            ID     `js:"id"`
 	Name          string `js:"name"`
 	PEMPrivateKey string `js:"pemPrivateKey"`
 }
 
-type rspAdd struct {
-	*msgHeader
-	Err string `js:"err"`
-}
+const (
+	keyPrefix     = "key."
+	commentPrefix = "chrome-ssh-agent:"
+)
 
-type msgRemove struct {
-	*msgHeader
-	Id ID `js:"id"`
-}
-
-type rspRemove struct {
-	*msgHeader
-	Err string `js:"err"`
-}
-
-type msgLoad struct {
-	*msgHeader
-	Id         ID     `js:"id"`
-	Passphrase string `js:"passphrase"`
-}
-
-type rspLoad struct {
-	*msgHeader
-	Err string `js:"err"`
-}
-
-func makeErr(s string) error {
-	if s == "" {
-		return nil
+func newStoredKey(m map[string]interface{}) *storedKey {
+	o := js.Global.Get("Object").New()
+	for k, v := range m {
+		o.Set(k, v)
 	}
-	return errors.New(s)
+	return &storedKey{Object: o}
 }
 
-func makeErrStr(err error) string {
-	if err == nil {
-		return ""
+func (a *manager) readKeys(callback func(keys []*storedKey, err error)) {
+	a.s.Get(func(data map[string]interface{}, err error) {
+		if err != nil {
+			callback(nil, fmt.Errorf("failed to read from storage: %v", err))
+			return
+		}
+
+		var keys []*storedKey
+		for k, v := range data {
+			if !strings.HasPrefix(k, keyPrefix) {
+				continue
+			}
+
+			keys = append(keys, newStoredKey(v.(map[string]interface{})))
+		}
+		callback(keys, nil)
+	})
+}
+
+func (a *manager) readKey(id ID, callback func(key *storedKey, err error)) {
+	a.readKeys(func(keys []*storedKey, err error) {
+		if err != nil {
+			callback(nil, fmt.Errorf("failed to read keys: %v", err))
+			return
+		}
+
+		for _, k := range keys {
+			if k.Id == id {
+				callback(k, nil)
+				return
+			}
+		}
+
+		callback(nil, nil)
+	})
+}
+
+func (a *manager) writeKey(name string, pemPrivateKey string, callback func(err error)) {
+	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		callback(fmt.Errorf("failed to generate new ID: %v", err))
+		return
 	}
-	return err.Error()
-}
-
-func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse func(interface{})) bool {
-	switch header.Type {
-	case msgTypeConfigured:
-		s.mgr.Configured(func(keys []*ConfiguredKey, err error) {
-			rsp := &rspConfigured{msgHeader: header}
-			rsp.Type = msgTypeConfiguredRsp
-			rsp.Keys = keys
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
-		})
-	case msgTypeLoaded:
-		s.mgr.Loaded(func(keys []*LoadedKey, err error) {
-			rsp := &rspLoaded{msgHeader: header}
-			rsp.Type = msgTypeLoadedRsp
-			rsp.Keys = keys
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
-		})
-	case msgTypeAdd:
-		m := &msgAdd{msgHeader: header}
-		s.mgr.Add(m.Name, m.PEMPrivateKey, func(err error) {
-			rsp := &rspAdd{msgHeader: header}
-			rsp.Type = msgTypeAddRsp
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
-		})
-	case msgTypeRemove:
-		m := &msgRemove{msgHeader: header}
-		s.mgr.Remove(m.Id, func(err error) {
-			rsp := &rspRemove{msgHeader: header}
-			rsp.Type = msgTypeRemoveRsp
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
-		})
-	case msgTypeLoad:
-		m := &msgLoad{msgHeader: header}
-		s.mgr.Load(m.Id, m.Passphrase, func(err error) {
-			rsp := &rspLoad{msgHeader: header}
-			rsp.Type = msgTypeLoadRsp
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
-		})
+	id := ID(i.String())
+	storageKey := fmt.Sprintf("%s%s", keyPrefix, id)
+	sk := &storedKey{Object: js.Global.Get("Object").New()}
+	sk.Id = id
+	sk.Name = name
+	sk.PEMPrivateKey = pemPrivateKey
+	data := map[string]interface{}{
+		storageKey: sk,
 	}
-	return true
-}
-
-type client struct {
-}
-
-func NewClient() Manager {
-	return &client{}
-}
-
-func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
-	msg := &msgConfigured{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
-	msg.Type = msgTypeConfigured
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspConfigured) {
-		if err := chrome.LastError(); err != nil {
-			callback(nil, fmt.Errorf("failed to send message: %v", err))
-			return
-		}
-		callback(rsp.Keys, makeErr(rsp.Err))
+	a.s.Set(data, func(err error) {
+		callback(err)
 	})
 }
 
-func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
-	msg := &msgLoaded{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
-	msg.Type = msgTypeLoaded
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspLoaded) {
-		if err := chrome.LastError(); err != nil {
-			callback(nil, fmt.Errorf("failed to send message: %v", err))
+func (a *manager) removeKey(id ID, callback func(err error)) {
+	a.readKeys(func(keys []*storedKey, err error) {
+		if err != nil {
+			callback(fmt.Errorf("failed to enumerate keys: %v", err))
 			return
 		}
-		callback(rsp.Keys, makeErr(rsp.Err))
+
+		var storageKeys []string
+		for _, k := range keys {
+			if k.Id == id {
+				storageKeys = append(storageKeys, fmt.Sprintf("%s%s", keyPrefix, k.Id))
+			}
+		}
+
+		a.s.Delete(storageKeys, func(err error) {
+			if err != nil {
+				callback(fmt.Errorf("failed to delete keys: %v", err))
+				return
+			}
+			callback(nil)
+		})
 	})
 }
 
-func (c *client) Add(name string, pemPrivateKey string, callback func(err error)) {
-	msg := &msgAdd{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
-	msg.Type = msgTypeAdd
-	msg.Name = name
-	msg.PEMPrivateKey = pemPrivateKey
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspAdd) {
-		if err := chrome.LastError(); err != nil {
-			callback(fmt.Errorf("failed to send message: %v", err))
+func (a *manager) Configured(callback func(keys []*ConfiguredKey, err error)) {
+	a.readKeys(func(keys []*storedKey, err error) {
+		if err != nil {
+			callback(nil, fmt.Errorf("failed to read keys: %v", err))
 			return
 		}
-		callback(makeErr(rsp.Err))
+
+		var result []*ConfiguredKey
+		for _, k := range keys {
+			c := &ConfiguredKey{Object: js.Global.Get("Object").New()}
+			c.Id = k.Id
+			c.Name = k.Name
+			result = append(result, c)
+		}
+		callback(result, nil)
 	})
 }
 
-func (c *client) Remove(id ID, callback func(err error)) {
-	msg := &msgRemove{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
-	msg.Type = msgTypeRemove
-	msg.Id = id
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspRemove) {
-		if err := chrome.LastError(); err != nil {
-			callback(fmt.Errorf("failed to send message: %v", err))
-			return
-		}
-		callback(makeErr(rsp.Err))
+func (a *manager) Add(name string, pemPrivateKey string, callback func(err error)) {
+	if name == "" {
+		callback(errors.New("name must not be empty"))
+		return
+	}
+
+	a.writeKey(name, pemPrivateKey, func(err error) {
+		callback(err)
 	})
 }
 
-func (c *client) Load(id ID, passphrase string, callback func(err error)) {
-	msg := &msgLoad{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
-	msg.Type = msgTypeLoad
-	msg.Id = id
-	msg.Passphrase = passphrase
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspLoad) {
-		if err := chrome.LastError(); err != nil {
-			callback(fmt.Errorf("failed to send message: %v", err))
+func (a *manager) Remove(id ID, callback func(err error)) {
+	a.removeKey(id, func(err error) {
+		callback(err)
+	})
+}
+
+func (a *manager) Loaded(callback func(keys []*LoadedKey, err error)) {
+	loaded, err := a.a.List()
+	if err != nil {
+		callback(nil, fmt.Errorf("failed to list loaded keys: %v", err))
+		return
+	}
+
+	var result []*LoadedKey
+	for _, l := range loaded {
+		k := &LoadedKey{Object: js.Global.Get("Object").New()}
+		k.Type = l.Type()
+		k.Blob = string(l.Marshal())
+		k.Comment = l.Comment
+		result = append(result, k)
+	}
+
+	callback(result, nil)
+}
+
+func (a *manager) Load(id ID, passphrase string, callback func(err error)) {
+	a.readKey(id, func(key *storedKey, err error) {
+		if err != nil {
+			callback(fmt.Errorf("failed to read key: %v", err))
 			return
 		}
-		callback(makeErr(rsp.Err))
+
+		priv, err := ssh.ParseRawPrivateKeyWithPassphrase([]byte(key.PEMPrivateKey), []byte(passphrase))
+		if err != nil {
+			callback(fmt.Errorf("failed to parse private key: %v", err))
+			return
+		}
+
+		err = a.a.Add(agent.AddedKey{
+			PrivateKey: priv,
+			Comment:    fmt.Sprintf("%s%s", commentPrefix, id),
+		})
+		if err != nil {
+			callback(fmt.Errorf("failed to add key to agent: %v", err))
+			return
+		}
+		callback(nil)
 	})
 }
