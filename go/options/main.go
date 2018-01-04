@@ -18,28 +18,27 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/gopherjs/gopherjs/js"
 )
 
 var (
-	doc = js.Global.Get("document")
+	passphraseDialog = dom.Doc.Call("getElementById", "passphraseDialog")
+	passphraseInput  = dom.Doc.Call("getElementById", "passphrase")
+	passphraseOk     = dom.Doc.Call("getElementById", "passphraseOk")
+	passphraseCancel = dom.Doc.Call("getElementById", "passphraseCancel")
 
-	passphraseDialog = doc.Call("getElementById", "passphraseDialog")
-	passphraseInput  = doc.Call("getElementById", "passphrase")
-	passphraseOk     = doc.Call("getElementById", "passphraseOk")
-	passphraseCancel = doc.Call("getElementById", "passphraseCancel")
+	addButton = dom.Doc.Call("getElementById", "add")
+	addDialog = dom.Doc.Call("getElementById", "addDialog")
+	addName   = dom.Doc.Call("getElementById", "addName")
+	addKey    = dom.Doc.Call("getElementById", "addKey")
+	addOk     = dom.Doc.Call("getElementById", "addOk")
+	addCancel = dom.Doc.Call("getElementById", "addCancel")
 
-	addButton = doc.Call("getElementById", "add")
-	addDialog = doc.Call("getElementById", "addDialog")
-	addName   = doc.Call("getElementById", "addName")
-	addKey    = doc.Call("getElementById", "addKey")
-	addOk     = doc.Call("getElementById", "addOk")
-	addCancel = doc.Call("getElementById", "addCancel")
+	errorText = dom.Doc.Call("getElementById", "errorMessage")
 
-	errorText = doc.Call("getElementById", "errorMessage")
-
-	keysData = doc.Call("getElementById", "keysData")
+	keysData = dom.Doc.Call("getElementById", "keysData")
 )
 
 type displayedKey struct {
@@ -48,35 +47,6 @@ type displayedKey struct {
 	Name   string
 	Type   string
 	Blob   string
-}
-
-func removeChildren(l *js.Object) {
-	for l.Call("hasChildNodes").Bool() {
-		l.Call("removeChild", l.Get("firstChild"))
-	}
-}
-
-func newElement(kind string) *js.Object {
-	return doc.Call("createElement", kind)
-}
-
-func newText(text string) *js.Object {
-	return doc.Call("createTextNode", text)
-}
-
-func onClick(o *js.Object, callback func()) {
-	o.Call("addEventListener", "click", callback)
-}
-
-func onDOMContentLoaded(o *js.Object, callback func()) {
-	o.Call("addEventListener", "DOMContentLoaded", callback)
-}
-
-func appendChild(parent, child *js.Object, populate func(child *js.Object)) {
-	if populate != nil {
-		populate(child)
-	}
-	parent.Call("appendChild", child)
 }
 
 func loadKey(mgr keys.Manager, id keys.ID) {
@@ -108,22 +78,22 @@ func removeKey(mgr keys.Manager, id keys.ID) {
 }
 
 func setDisplayedKeys(mgr keys.Manager, displayed []*displayedKey) {
-	removeChildren(keysData)
+	dom.RemoveChildren(keysData)
 
 	for _, k := range displayed {
 		k := k
-		appendChild(keysData, newElement("tr"), func(row *js.Object) {
+		dom.AppendChild(keysData, dom.NewElement("tr"), func(row *js.Object) {
 			// Key name
-			appendChild(row, newElement("td"), func(cell *js.Object) {
-				appendChild(cell, newElement("div"), func(div *js.Object) {
+			dom.AppendChild(row, dom.NewElement("td"), func(cell *js.Object) {
+				dom.AppendChild(cell, dom.NewElement("div"), func(div *js.Object) {
 					div.Set("className", "keyName")
-					appendChild(div, newText(k.Name), nil)
+					dom.AppendChild(div, dom.NewText(k.Name), nil)
 				})
 			})
 
 			// Controls
-			appendChild(row, newElement("td"), func(cell *js.Object) {
-				appendChild(cell, newElement("div"), func(div *js.Object) {
+			dom.AppendChild(row, dom.NewElement("td"), func(cell *js.Object) {
+				dom.AppendChild(cell, dom.NewElement("div"), func(div *js.Object) {
 					div.Set("className", "keyControls")
 					if k.Id == keys.InvalidID {
 						// We only control keys with a valid ID.
@@ -132,20 +102,20 @@ func setDisplayedKeys(mgr keys.Manager, displayed []*displayedKey) {
 
 					// Load button
 					if !k.Loaded {
-						appendChild(div, newElement("button"), func(btn *js.Object) {
+						dom.AppendChild(div, dom.NewElement("button"), func(btn *js.Object) {
 							btn.Set("type", "button")
-							appendChild(btn, newText("Load"), nil)
-							onClick(btn, func() {
+							dom.AppendChild(btn, dom.NewText("Load"), nil)
+							dom.OnClick(btn, func() {
 								loadKey(mgr, k.Id)
 							})
 						})
 					}
 
 					// Remove button
-					appendChild(div, newElement("button"), func(btn *js.Object) {
+					dom.AppendChild(div, dom.NewElement("button"), func(btn *js.Object) {
 						btn.Set("type", "button")
-						appendChild(btn, newText("Remove"), nil)
-						onClick(btn, func() {
+						dom.AppendChild(btn, dom.NewText("Remove"), nil)
+						dom.OnClick(btn, func() {
 							removeKey(mgr, k.Id)
 						})
 					})
@@ -153,18 +123,18 @@ func setDisplayedKeys(mgr keys.Manager, displayed []*displayedKey) {
 			})
 
 			// Type
-			appendChild(row, newElement("td"), func(cell *js.Object) {
-				appendChild(cell, newElement("div"), func(div *js.Object) {
+			dom.AppendChild(row, dom.NewElement("td"), func(cell *js.Object) {
+				dom.AppendChild(cell, dom.NewElement("div"), func(div *js.Object) {
 					div.Set("className", "keyType")
-					appendChild(div, newText(k.Type), nil)
+					dom.AppendChild(div, dom.NewText(k.Type), nil)
 				})
 			})
 
 			// Blob
-			appendChild(row, newElement("td"), func(cell *js.Object) {
-				appendChild(cell, newElement("div"), func(div *js.Object) {
+			dom.AppendChild(row, dom.NewElement("td"), func(cell *js.Object) {
+				dom.AppendChild(cell, dom.NewElement("div"), func(div *js.Object) {
 					div.Set("className", "keyBlob")
-					appendChild(div, newText(k.Blob), nil)
+					dom.AppendChild(div, dom.NewText(k.Blob), nil)
 				})
 			})
 		})
@@ -243,7 +213,7 @@ func updateKeys(mgr keys.Manager) {
 }
 
 func promptAdd(callback func(name, privateKey string, ok bool)) {
-	onClick(addOk, func() {
+	dom.OnClick(addOk, func() {
 		n := addName.Get("value").String()
 		k := addKey.Get("value").String()
 		addName.Set("value", "")
@@ -251,7 +221,7 @@ func promptAdd(callback func(name, privateKey string, ok bool)) {
 		addDialog.Call("close")
 		callback(n, k, true)
 	})
-	onClick(addCancel, func() {
+	dom.OnClick(addCancel, func() {
 		addName.Set("value", "")
 		addKey.Set("value", "")
 		addDialog.Call("close")
@@ -261,13 +231,13 @@ func promptAdd(callback func(name, privateKey string, ok bool)) {
 }
 
 func promptPassphrase(callback func(passphrase string, ok bool)) {
-	onClick(passphraseOk, func() {
+	dom.OnClick(passphraseOk, func() {
 		p := passphraseInput.Get("value").String()
 		passphraseInput.Set("value", "")
 		passphraseDialog.Call("close")
 		callback(p, true)
 	})
-	onClick(passphraseCancel, func() {
+	dom.OnClick(passphraseCancel, func() {
 		passphraseInput.Set("value", "")
 		passphraseDialog.Call("close")
 		callback("", false)
@@ -277,10 +247,10 @@ func promptPassphrase(callback func(passphrase string, ok bool)) {
 
 func setError(err error) {
 	// Clear any existing error
-	removeChildren(errorText)
+	dom.RemoveChildren(errorText)
 
 	if err != nil {
-		appendChild(errorText, newText(err.Error()), nil)
+		dom.AppendChild(errorText, dom.NewText(err.Error()), nil)
 	}
 }
 
@@ -288,12 +258,12 @@ func main() {
 	mgr := keys.NewClient()
 
 	// Load settings on initial display
-	onDOMContentLoaded(doc, func() {
+	dom.OnDOMContentLoaded(func() {
 		updateKeys(mgr)
 	})
 
 	// Add new key
-	onClick(addButton, func() {
+	dom.OnClick(addButton, func() {
 		promptAdd(func(name, privateKey string, ok bool) {
 			if !ok {
 				return
