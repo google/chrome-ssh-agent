@@ -64,6 +64,14 @@ func newText(text string) *js.Object {
 	return doc.Call("createTextNode", text)
 }
 
+func onClick(o *js.Object, callback func()) {
+	o.Call("addEventListener", "click", callback)
+}
+
+func onDOMContentLoaded(o *js.Object, callback func()) {
+	o.Call("addEventListener", "DOMContentLoaded", callback)
+}
+
 func appendChild(parent, child *js.Object, populate func(child *js.Object)) {
 	if populate != nil {
 		populate(child)
@@ -127,7 +135,7 @@ func setDisplayedKeys(mgr keys.Manager, displayed []*displayedKey) {
 						appendChild(div, newElement("button"), func(btn *js.Object) {
 							btn.Set("type", "button")
 							appendChild(btn, newText("Load"), nil)
-							btn.Call("addEventListener", "click", func() {
+							onClick(btn, func() {
 								loadKey(mgr, k.Id)
 							})
 						})
@@ -137,7 +145,7 @@ func setDisplayedKeys(mgr keys.Manager, displayed []*displayedKey) {
 					appendChild(div, newElement("button"), func(btn *js.Object) {
 						btn.Set("type", "button")
 						appendChild(btn, newText("Remove"), nil)
-						btn.Call("addEventListener", "click", func() {
+						onClick(btn, func() {
 							removeKey(mgr, k.Id)
 						})
 					})
@@ -235,7 +243,7 @@ func updateKeys(mgr keys.Manager) {
 }
 
 func promptAdd(callback func(name, privateKey string, ok bool)) {
-	addOk.Call("addEventListener", "click", func() {
+	onClick(addOk, func() {
 		n := addName.Get("value").String()
 		k := addKey.Get("value").String()
 		addName.Set("value", "")
@@ -243,7 +251,7 @@ func promptAdd(callback func(name, privateKey string, ok bool)) {
 		addDialog.Call("close")
 		callback(n, k, true)
 	})
-	addCancel.Call("addEventListener", "click", func() {
+	onClick(addCancel, func() {
 		addName.Set("value", "")
 		addKey.Set("value", "")
 		addDialog.Call("close")
@@ -253,13 +261,13 @@ func promptAdd(callback func(name, privateKey string, ok bool)) {
 }
 
 func promptPassphrase(callback func(passphrase string, ok bool)) {
-	passphraseOk.Call("addEventListener", "click", func() {
+	onClick(passphraseOk, func() {
 		p := passphraseInput.Get("value").String()
 		passphraseInput.Set("value", "")
 		passphraseDialog.Call("close")
 		callback(p, true)
 	})
-	passphraseCancel.Call("addEventListener", "click", func() {
+	onClick(passphraseCancel, func() {
 		passphraseInput.Set("value", "")
 		passphraseDialog.Call("close")
 		callback("", false)
@@ -272,7 +280,7 @@ func setError(err error) {
 	removeChildren(errorText)
 
 	if err != nil {
-		errorText.Call("appendChild", doc.Call("createTextNode", err.Error()))
+		appendChild(errorText, newText(err.Error()), nil)
 	}
 }
 
@@ -280,12 +288,12 @@ func main() {
 	mgr := keys.NewClient()
 
 	// Load settings on initial display
-	doc.Call("addEventListener", "DOMContentLoaded", func() {
+	onDOMContentLoaded(doc, func() {
 		updateKeys(mgr)
 	})
 
 	// Add new key
-	addButton.Call("addEventListener", "click", func() {
+	onClick(addButton, func() {
 		promptAdd(func(name, privateKey string, ok bool) {
 			if !ok {
 				return
