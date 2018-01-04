@@ -24,21 +24,22 @@ import (
 )
 
 var (
-	passphraseDialog = dom.GetElement("passphraseDialog")
-	passphraseInput  = dom.GetElement("passphrase")
-	passphraseOk     = dom.GetElement("passphraseOk")
-	passphraseCancel = dom.GetElement("passphraseCancel")
+	domObj           = dom.New(dom.Doc)
+	passphraseDialog = domObj.GetElement("passphraseDialog")
+	passphraseInput  = domObj.GetElement("passphrase")
+	passphraseOk     = domObj.GetElement("passphraseOk")
+	passphraseCancel = domObj.GetElement("passphraseCancel")
 
-	addButton = dom.GetElement("add")
-	addDialog = dom.GetElement("addDialog")
-	addName   = dom.GetElement("addName")
-	addKey    = dom.GetElement("addKey")
-	addOk     = dom.GetElement("addOk")
-	addCancel = dom.GetElement("addCancel")
+	addButton = domObj.GetElement("add")
+	addDialog = domObj.GetElement("addDialog")
+	addName   = domObj.GetElement("addName")
+	addKey    = domObj.GetElement("addKey")
+	addOk     = domObj.GetElement("addOk")
+	addCancel = domObj.GetElement("addCancel")
 
-	errorText = dom.GetElement("errorMessage")
+	errorText = domObj.GetElement("errorMessage")
 
-	keysData = dom.GetElement("keysData")
+	keysData = domObj.GetElement("keysData")
 )
 
 type displayedKey struct {
@@ -78,22 +79,22 @@ func removeKey(mgr keys.Manager, id keys.ID) {
 }
 
 func setDisplayedKeys(mgr keys.Manager, displayed []*displayedKey) {
-	dom.RemoveChildren(keysData)
+	domObj.RemoveChildren(keysData)
 
 	for _, k := range displayed {
 		k := k
-		dom.AppendChild(keysData, dom.NewElement("tr"), func(row *js.Object) {
+		domObj.AppendChild(keysData, domObj.NewElement("tr"), func(row *js.Object) {
 			// Key name
-			dom.AppendChild(row, dom.NewElement("td"), func(cell *js.Object) {
-				dom.AppendChild(cell, dom.NewElement("div"), func(div *js.Object) {
+			domObj.AppendChild(row, domObj.NewElement("td"), func(cell *js.Object) {
+				domObj.AppendChild(cell, domObj.NewElement("div"), func(div *js.Object) {
 					div.Set("className", "keyName")
-					dom.AppendChild(div, dom.NewText(k.Name), nil)
+					domObj.AppendChild(div, domObj.NewText(k.Name), nil)
 				})
 			})
 
 			// Controls
-			dom.AppendChild(row, dom.NewElement("td"), func(cell *js.Object) {
-				dom.AppendChild(cell, dom.NewElement("div"), func(div *js.Object) {
+			domObj.AppendChild(row, domObj.NewElement("td"), func(cell *js.Object) {
+				domObj.AppendChild(cell, domObj.NewElement("div"), func(div *js.Object) {
 					div.Set("className", "keyControls")
 					if k.Id == keys.InvalidID {
 						// We only control keys with a valid ID.
@@ -102,20 +103,20 @@ func setDisplayedKeys(mgr keys.Manager, displayed []*displayedKey) {
 
 					// Load button
 					if !k.Loaded {
-						dom.AppendChild(div, dom.NewElement("button"), func(btn *js.Object) {
+						domObj.AppendChild(div, domObj.NewElement("button"), func(btn *js.Object) {
 							btn.Set("type", "button")
-							dom.AppendChild(btn, dom.NewText("Load"), nil)
-							dom.OnClick(btn, func() {
+							domObj.AppendChild(btn, domObj.NewText("Load"), nil)
+							domObj.OnClick(btn, func() {
 								loadKey(mgr, k.Id)
 							})
 						})
 					}
 
 					// Remove button
-					dom.AppendChild(div, dom.NewElement("button"), func(btn *js.Object) {
+					domObj.AppendChild(div, domObj.NewElement("button"), func(btn *js.Object) {
 						btn.Set("type", "button")
-						dom.AppendChild(btn, dom.NewText("Remove"), nil)
-						dom.OnClick(btn, func() {
+						domObj.AppendChild(btn, domObj.NewText("Remove"), nil)
+						domObj.OnClick(btn, func() {
 							removeKey(mgr, k.Id)
 						})
 					})
@@ -123,18 +124,18 @@ func setDisplayedKeys(mgr keys.Manager, displayed []*displayedKey) {
 			})
 
 			// Type
-			dom.AppendChild(row, dom.NewElement("td"), func(cell *js.Object) {
-				dom.AppendChild(cell, dom.NewElement("div"), func(div *js.Object) {
+			domObj.AppendChild(row, domObj.NewElement("td"), func(cell *js.Object) {
+				domObj.AppendChild(cell, domObj.NewElement("div"), func(div *js.Object) {
 					div.Set("className", "keyType")
-					dom.AppendChild(div, dom.NewText(k.Type), nil)
+					domObj.AppendChild(div, domObj.NewText(k.Type), nil)
 				})
 			})
 
 			// Blob
-			dom.AppendChild(row, dom.NewElement("td"), func(cell *js.Object) {
-				dom.AppendChild(cell, dom.NewElement("div"), func(div *js.Object) {
+			domObj.AppendChild(row, domObj.NewElement("td"), func(cell *js.Object) {
+				domObj.AppendChild(cell, domObj.NewElement("div"), func(div *js.Object) {
 					div.Set("className", "keyBlob")
-					dom.AppendChild(div, dom.NewText(k.Blob), nil)
+					domObj.AppendChild(div, domObj.NewText(k.Blob), nil)
 				})
 			})
 		})
@@ -213,44 +214,44 @@ func updateKeys(mgr keys.Manager) {
 }
 
 func promptAdd(callback func(name, privateKey string, ok bool)) {
-	dom.OnClick(addOk, func() {
+	domObj.OnClick(addOk, func() {
 		n := addName.Get("value").String()
 		k := addKey.Get("value").String()
 		addName.Set("value", "")
 		addKey.Set("value", "")
-		dom.Close(addDialog)
+		domObj.Close(addDialog)
 		callback(n, k, true)
 	})
-	dom.OnClick(addCancel, func() {
+	domObj.OnClick(addCancel, func() {
 		addName.Set("value", "")
 		addKey.Set("value", "")
-		dom.Close(addDialog)
+		domObj.Close(addDialog)
 		callback("", "", false)
 	})
-	dom.ShowModal(addDialog)
+	domObj.ShowModal(addDialog)
 }
 
 func promptPassphrase(callback func(passphrase string, ok bool)) {
-	dom.OnClick(passphraseOk, func() {
+	domObj.OnClick(passphraseOk, func() {
 		p := passphraseInput.Get("value").String()
 		passphraseInput.Set("value", "")
-		dom.Close(passphraseDialog)
+		domObj.Close(passphraseDialog)
 		callback(p, true)
 	})
-	dom.OnClick(passphraseCancel, func() {
+	domObj.OnClick(passphraseCancel, func() {
 		passphraseInput.Set("value", "")
-		dom.Close(passphraseDialog)
+		domObj.Close(passphraseDialog)
 		callback("", false)
 	})
-	dom.ShowModal(passphraseDialog)
+	domObj.ShowModal(passphraseDialog)
 }
 
 func setError(err error) {
 	// Clear any existing error
-	dom.RemoveChildren(errorText)
+	domObj.RemoveChildren(errorText)
 
 	if err != nil {
-		dom.AppendChild(errorText, dom.NewText(err.Error()), nil)
+		domObj.AppendChild(errorText, domObj.NewText(err.Error()), nil)
 	}
 }
 
@@ -258,12 +259,12 @@ func main() {
 	mgr := keys.NewClient()
 
 	// Load settings on initial display
-	dom.OnDOMContentLoaded(func() {
+	domObj.OnDOMContentLoaded(func() {
 		updateKeys(mgr)
 	})
 
 	// Add new key
-	dom.OnClick(addButton, func() {
+	domObj.OnClick(addButton, func() {
 		promptAdd(func(name, privateKey string, ok bool) {
 			if !ok {
 				return

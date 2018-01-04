@@ -22,43 +22,51 @@ var (
 	Doc = js.Global.Get("document")
 )
 
-func RemoveChildren(p *js.Object) {
+type DOM struct {
+	doc *js.Object
+}
+
+func New(doc *js.Object) *DOM {
+	return &DOM{doc: doc}
+}
+
+func (d *DOM) RemoveChildren(p *js.Object) {
 	for p.Call("hasChildNodes").Bool() {
 		p.Call("removeChild", p.Get("firstChild"))
 	}
 }
 
-func NewElement(kind string) *js.Object {
-	return Doc.Call("createElement", kind)
+func (d *DOM) NewElement(kind string) *js.Object {
+	return d.doc.Call("createElement", kind)
 }
 
-func NewText(text string) *js.Object {
-	return Doc.Call("createTextNode", text)
+func (d *DOM) NewText(text string) *js.Object {
+	return d.doc.Call("createTextNode", text)
 }
 
-func OnClick(o *js.Object, callback func()) {
+func (d *DOM) OnClick(o *js.Object, callback func()) {
 	o.Call("addEventListener", "click", callback)
 }
 
-func OnDOMContentLoaded(callback func()) {
-	Doc.Call("addEventListener", "DOMContentLoaded", callback)
+func (d *DOM) OnDOMContentLoaded(callback func()) {
+	d.doc.Call("addEventListener", "DOMContentLoaded", callback)
 }
 
-func AppendChild(parent, child *js.Object, populate func(child *js.Object)) {
+func (d *DOM) AppendChild(parent, child *js.Object, populate func(child *js.Object)) {
 	if populate != nil {
 		populate(child)
 	}
 	parent.Call("appendChild", child)
 }
 
-func GetElement(id string) *js.Object {
-	return Doc.Call("getElementById", id)
+func (d *DOM) GetElement(id string) *js.Object {
+	return d.doc.Call("getElementById", id)
 }
 
-func ShowModal(o *js.Object) {
+func (d *DOM) ShowModal(o *js.Object) {
 	o.Call("showModal")
 }
 
-func Close(o *js.Object) {
+func (d *DOM) Close(o *js.Object) {
 	o.Call("close")
 }
