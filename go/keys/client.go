@@ -178,7 +178,7 @@ func NewClient(chrome *chrome.C) Manager {
 func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	msg := &msgConfigured{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeConfigured
-	c.chrome.SendMessage(c.chrome.ExtensionId(), msg, func(rspObj *js.Object) {
+	c.chrome.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspConfigured{msgHeader: &msgHeader{Object: rspObj}}
 		if err := c.chrome.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
@@ -191,7 +191,7 @@ func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
 	msg := &msgLoaded{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeLoaded
-	c.chrome.SendMessage(c.chrome.ExtensionId(), msg, func(rspObj *js.Object) {
+	c.chrome.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspLoaded{msgHeader: &msgHeader{Object: rspObj}}
 		if err := c.chrome.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
@@ -206,7 +206,7 @@ func (c *client) Add(name string, pemPrivateKey string, callback func(err error)
 	msg.Type = msgTypeAdd
 	msg.Name = name
 	msg.PEMPrivateKey = pemPrivateKey
-	c.chrome.SendMessage(c.chrome.ExtensionId(), msg, func(rspObj *js.Object) {
+	c.chrome.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspAdd{msgHeader: &msgHeader{Object: rspObj}}
 		if err := c.chrome.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
@@ -220,7 +220,7 @@ func (c *client) Remove(id ID, callback func(err error)) {
 	msg := &msgRemove{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeRemove
 	msg.Id = id
-	c.chrome.SendMessage(c.chrome.ExtensionId(), msg, func(rspObj *js.Object) {
+	c.chrome.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspRemove{msgHeader: &msgHeader{Object: rspObj}}
 		if err := c.chrome.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
@@ -235,7 +235,7 @@ func (c *client) Load(id ID, passphrase string, callback func(err error)) {
 	msg.Type = msgTypeLoad
 	msg.Id = id
 	msg.Passphrase = passphrase
-	c.chrome.SendMessage(c.chrome.ExtensionId(), msg, func(rspObj *js.Object) {
+	c.chrome.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspLoad{msgHeader: &msgHeader{Object: rspObj}}
 		if err := c.chrome.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))

@@ -28,6 +28,7 @@ type C struct {
 	chrome      *js.Object
 	runtime     *js.Object
 	syncStorage *js.Object
+	extensionId string
 }
 
 func New(chrome *js.Object) *C {
@@ -35,6 +36,7 @@ func New(chrome *js.Object) *C {
 		chrome:      chrome,
 		runtime:     chrome.Get("runtime"),
 		syncStorage: chrome.Get("storage").Get("sync"),
+		extensionId: chrome.Get("runtime").Get("id").String(),
 	}
 }
 
@@ -49,16 +51,12 @@ func (c *C) OnMessage(callback func(header *js.Object, sender *js.Object, sendRe
 	c.runtime.Get("onMessage").Call("addListener", callback)
 }
 
-func (c *C) SendMessage(extensionId string, msg interface{}, callback func(rsp *js.Object)) {
-	c.runtime.Call("sendMessage", extensionId, msg, nil, callback)
+func (c *C) SendMessage(msg interface{}, callback func(rsp *js.Object)) {
+	c.runtime.Call("sendMessage", c.extensionId, msg, nil, callback)
 }
 
 func (c *C) OnConnectExternal(callback func(port *js.Object)) {
 	c.runtime.Get("onConnectExternal").Call("addListener", callback)
-}
-
-func (c *C) ExtensionId() string {
-	return c.runtime.Get("id").String()
 }
 
 func (c *C) Error() error {
