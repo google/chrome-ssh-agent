@@ -23,14 +23,16 @@ import (
 )
 
 type Server struct {
-	mgr Manager
+	mgr    Manager
+	chrome *chrome.C
 }
 
-func NewServer(mgr Manager) *Server {
+func NewServer(mgr Manager, chrome *chrome.C) *Server {
 	result := &Server{
-		mgr: mgr,
+		mgr:    mgr,
+		chrome: chrome,
 	}
-	chrome.Runtime.Get("onMessage").Call("addListener", result.onMessage)
+	result.chrome.OnMessage(result.onMessage)
 	return result
 }
 
@@ -118,7 +120,8 @@ func makeErrStr(err error) string {
 	return err.Error()
 }
 
-func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse func(interface{})) bool {
+func (s *Server) onMessage(headerObj *js.Object, sender *js.Object, sendResponse func(interface{})) bool {
+	header := &msgHeader{Object: headerObj}
 	switch header.Type {
 	case msgTypeConfigured:
 		s.mgr.Configured(func(keys []*ConfiguredKey, err error) {
@@ -165,17 +168,19 @@ func (s *Server) onMessage(header *msgHeader, sender *js.Object, sendResponse fu
 }
 
 type client struct {
+	chrome *chrome.C
 }
 
-func NewClient() Manager {
-	return &client{}
+func NewClient(chrome *chrome.C) Manager {
+	return &client{chrome: chrome}
 }
 
 func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	msg := &msgConfigured{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeConfigured
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspConfigured) {
-		if err := chrome.LastError(); err != nil {
+	c.chrome.SendMessage(c.chrome.ExtensionId(), msg, func(rspObj *js.Object) {
+		rsp := &rspConfigured{msgHeader: &msgHeader{Object: rspObj}}
+		if err := c.chrome.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
 			return
 		}
@@ -186,8 +191,9 @@ func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
 	msg := &msgLoaded{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeLoaded
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspLoaded) {
-		if err := chrome.LastError(); err != nil {
+	c.chrome.SendMessage(c.chrome.ExtensionId(), msg, func(rspObj *js.Object) {
+		rsp := &rspLoaded{msgHeader: &msgHeader{Object: rspObj}}
+		if err := c.chrome.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
 			return
 		}
@@ -200,8 +206,9 @@ func (c *client) Add(name string, pemPrivateKey string, callback func(err error)
 	msg.Type = msgTypeAdd
 	msg.Name = name
 	msg.PEMPrivateKey = pemPrivateKey
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspAdd) {
-		if err := chrome.LastError(); err != nil {
+	c.chrome.SendMessage(c.chrome.ExtensionId(), msg, func(rspObj *js.Object) {
+		rsp := &rspAdd{msgHeader: &msgHeader{Object: rspObj}}
+		if err := c.chrome.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return
 		}
@@ -213,8 +220,9 @@ func (c *client) Remove(id ID, callback func(err error)) {
 	msg := &msgRemove{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeRemove
 	msg.Id = id
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspRemove) {
-		if err := chrome.LastError(); err != nil {
+	c.chrome.SendMessage(c.chrome.ExtensionId(), msg, func(rspObj *js.Object) {
+		rsp := &rspRemove{msgHeader: &msgHeader{Object: rspObj}}
+		if err := c.chrome.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return
 		}
@@ -227,8 +235,9 @@ func (c *client) Load(id ID, passphrase string, callback func(err error)) {
 	msg.Type = msgTypeLoad
 	msg.Id = id
 	msg.Passphrase = passphrase
-	chrome.Runtime.Call("sendMessage", chrome.ExtensionId, msg, nil, func(rsp *rspLoad) {
-		if err := chrome.LastError(); err != nil {
+	c.chrome.SendMessage(c.chrome.ExtensionId(), msg, func(rspObj *js.Object) {
+		rsp := &rspLoad{msgHeader: &msgHeader{Object: rspObj}}
+		if err := c.chrome.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return
 		}

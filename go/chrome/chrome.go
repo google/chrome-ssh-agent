@@ -21,15 +21,50 @@ import (
 )
 
 var (
-	C           = js.Global.Get("chrome")
-	Runtime     = C.Get("runtime")
-	Storage     = C.Get("storage")
-	SyncStorage = Storage.Get("sync")
-	ExtensionId = Runtime.Get("id").String()
+	Chrome = js.Global.Get("chrome")
 )
 
-func LastError() error {
-	if err := Runtime.Get("lastError"); err != nil && err != js.Undefined {
+type C struct {
+	chrome *js.Object
+}
+
+func New(chrome *js.Object) *C {
+	return &C{chrome: chrome}
+}
+
+func (c *C) Runtime() *js.Object {
+	return c.chrome.Get("runtime")
+}
+
+func (c *C) Storage() *js.Object {
+	return c.chrome.Get("storage")
+}
+
+func (c *C) SyncStorage() *Storage {
+	return &Storage{
+		chrome: c,
+		o:      c.Storage().Get("sync"),
+	}
+}
+
+func (c *C) OnMessage(callback func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool) {
+	c.Runtime().Get("onMessage").Call("addListener", callback)
+}
+
+func (c *C) SendMessage(extensionId string, msg interface{}, callback func(rsp *js.Object)) {
+	c.Runtime().Call("sendMessage", extensionId, msg, nil, callback)
+}
+
+func (c *C) OnConnectExternal(callback func(port *js.Object)) {
+	c.Runtime().Get("onConnectExternal").Call("addListener", callback)
+}
+
+func (c *C) ExtensionId() string {
+	return c.Runtime().Get("id").String()
+}
+
+func (c *C) Error() error {
+	if err := c.Runtime().Get("lastError"); err != nil && err != js.Undefined {
 		return errors.New(err.Get("message").String())
 	}
 	return nil

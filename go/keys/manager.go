@@ -22,6 +22,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/gopherjs/gopherjs/js"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -62,16 +63,16 @@ type Manager interface {
 	Load(id ID, passphrase string, callback func(err error))
 }
 
-func NewManager(agt agent.Agent) Manager {
+func NewManager(agt agent.Agent, storage *chrome.Storage) Manager {
 	return &manager{
 		agent:   agt,
-		storage: NewStorage(),
+		storage: storage,
 	}
 }
 
 type manager struct {
 	agent   agent.Agent
-	storage *Storage
+	storage *chrome.Storage
 }
 
 type storedKey struct {

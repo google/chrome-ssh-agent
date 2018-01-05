@@ -12,22 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package keys
+package chrome
 
 import (
 	"fmt"
 
-	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/gopherjs/gopherjs/js"
 )
 
 type Storage struct {
-	o *js.Object
+	chrome *C
+	o      *js.Object
 }
 
 func (s *Storage) Set(data map[string]interface{}, callback func(err error)) {
 	s.o.Call("set", data, func() {
-		if err := chrome.LastError(); err != nil {
+		if err := s.chrome.Error(); err != nil {
 			callback(fmt.Errorf("failed to set data: %v", err))
 			return
 		}
@@ -37,7 +37,7 @@ func (s *Storage) Set(data map[string]interface{}, callback func(err error)) {
 
 func (s *Storage) Get(callback func(data map[string]interface{}, err error)) {
 	s.o.Call("get", nil, func(vals interface{}) {
-		if err := chrome.LastError(); err != nil {
+		if err := s.chrome.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to get data: %v", err))
 			return
 		}
@@ -48,17 +48,11 @@ func (s *Storage) Get(callback func(data map[string]interface{}, err error)) {
 
 func (s *Storage) Delete(keys []string, callback func(err error)) {
 	s.o.Call("remove", keys, func() {
-		if err := chrome.LastError(); err != nil {
+		if err := s.chrome.Error(); err != nil {
 			callback(fmt.Errorf("failed to delete data: %v", err))
 			return
 		}
 
 		callback(nil)
 	})
-}
-
-func NewStorage() *Storage {
-	return &Storage{
-		o: chrome.SyncStorage,
-	}
 }

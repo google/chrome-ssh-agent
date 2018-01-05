@@ -15,12 +15,14 @@
 package main
 
 import (
+	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/optionsui"
 )
 
 func main() {
-	mgr := keys.NewClient()
+	c := chrome.New(chrome.Chrome)
+	mgr := keys.NewClient(c)
 	optionsui.New(mgr, dom.New(dom.Doc))
 }

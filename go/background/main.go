@@ -32,10 +32,11 @@ func main() {
 
 	// Create a wrapper that can update the loaded keys. Exposed the
 	// wrapper so it can be used by other pages in the extension.
-	mgr := keys.NewManager(a)
-	keys.NewServer(mgr)
+	c := chrome.New(chrome.Chrome)
+	mgr := keys.NewManager(a, c.SyncStorage())
+	keys.NewServer(mgr, c)
 
-	chrome.Runtime.Get("onConnectExternal").Call("addListener", func(port *js.Object) {
+	c.OnConnectExternal(func(port *js.Object) {
 		log.Printf("Starting agent for new port")
 		go agent.ServeAgent(a, agentport.New(port))
 	})
