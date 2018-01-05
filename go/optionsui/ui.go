@@ -38,6 +38,8 @@ type UI struct {
 	addCancel        *js.Object
 	errorText        *js.Object
 	keysData         *js.Object
+	keys             []*displayedKey
+	err              error
 }
 
 func New(mgr keys.Manager, domObj *dom.DOM) *UI {
@@ -63,7 +65,7 @@ func New(mgr keys.Manager, domObj *dom.DOM) *UI {
 
 func (u *UI) load() {
 	// Populate keys on initial display
-	u.dom.OnDOMContentLoaded(u.UpdateKeys)
+	u.dom.OnDOMContentLoaded(u.updateKeys)
 	// Configure new key on click
 	u.dom.OnClick(u.addButton, u.Add)
 }
@@ -75,11 +77,12 @@ func (u *UI) setError(err error) {
 	if err != nil {
 		u.dom.AppendChild(u.errorText, u.dom.NewText(err.Error()), nil)
 	}
+
+	u.err = err
 }
 
 func (u *UI) Error() error {
-	// TODO(ralimi) Implement me
-	return nil
+	return u.err
 }
 
 func (u *UI) Add() {
@@ -94,7 +97,7 @@ func (u *UI) Add() {
 			}
 
 			u.setError(nil)
-			u.UpdateKeys()
+			u.updateKeys()
 		})
 	})
 }
@@ -128,7 +131,7 @@ func (u *UI) Load(id keys.ID) {
 				return
 			}
 			u.setError(nil)
-			u.UpdateKeys()
+			u.updateKeys()
 		})
 	})
 
@@ -157,7 +160,7 @@ func (u *UI) Remove(id keys.ID) {
 		}
 
 		u.setError(nil)
-		u.UpdateKeys()
+		u.updateKeys()
 	})
 }
 
@@ -169,10 +172,14 @@ type displayedKey struct {
 	Blob   string
 }
 
-func (u *UI) setDisplayedKeys(displayed []*displayedKey) {
+func (u *UI) DisplayedKeys() []*displayedKey {
+	return u.keys
+}
+
+func (u *UI) updateDisplayedKeys() {
 	u.dom.RemoveChildren(u.keysData)
 
-	for _, k := range displayed {
+	for _, k := range u.keys {
 		k := k
 		u.dom.AppendChild(u.keysData, u.dom.NewElement("tr"), func(row *js.Object) {
 			// Key name
@@ -233,7 +240,7 @@ func (u *UI) setDisplayedKeys(displayed []*displayedKey) {
 	}
 }
 
-func (u *UI) mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*displayedKey {
+func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*displayedKey {
 	// Build map of configured keys for faster lookup
 	configuredMap := make(map[keys.ID]*keys.ConfiguredKey)
 	for _, k := range configured {
@@ -285,7 +292,7 @@ func (u *UI) mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKe
 	return result
 }
 
-func (u *UI) UpdateKeys() {
+func (u *UI) updateKeys() {
 	u.mgr.Configured(func(configured []*keys.ConfiguredKey, err error) {
 		if err != nil {
 			u.setError(fmt.Errorf("failed to get configured keys: %v", err))
@@ -299,8 +306,8 @@ func (u *UI) UpdateKeys() {
 			}
 
 			u.setError(nil)
-			displayed := u.mergeKeys(configured, loaded)
-			u.setDisplayedKeys(displayed)
+			u.keys = mergeKeys(configured, loaded)
+			u.updateDisplayedKeys()
 		})
 	})
 }
