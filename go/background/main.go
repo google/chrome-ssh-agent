@@ -32,7 +32,7 @@ func main() {
 
 	// Create a wrapper that can update the loaded keys. Exposed the
 	// wrapper so it can be used by other pages in the extension.
-	c := chrome.New(chrome.Chrome)
+	c := chrome.New(nil)
 	mgr := keys.NewManager(a, c.SyncStorage())
 	keys.NewServer(mgr, c)
 

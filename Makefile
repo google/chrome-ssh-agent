@@ -25,9 +25,9 @@ vet:
 	@echo ">> vetting code"
 	@$(GO) vet $(pkgs)
 
-test:
+test: $(GOPHERJS)
 	@echo ">> running tests"
-	@$(GO) test $(pkgs)
+	@$(GOPHERJS) test $(pkgs)
 
 go-options: $(GOPHERJS)
 	@echo ">> building options"

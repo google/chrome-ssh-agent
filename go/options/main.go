@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	c := chrome.New(chrome.Chrome)
+	c := chrome.New(nil)
 	mgr := keys.NewClient(c)
 	optionsui.New(mgr, dom.New(dom.Doc))
 }

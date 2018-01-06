@@ -20,10 +20,6 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
-var (
-	Chrome = js.Global.Get("chrome")
-)
-
 type C struct {
 	chrome      *js.Object
 	runtime     *js.Object
@@ -32,6 +28,10 @@ type C struct {
 }
 
 func New(chrome *js.Object) *C {
+	if chrome == nil {
+		chrome = js.Global.Get("chrome")
+	}
+
 	return &C{
 		chrome:      chrome,
 		runtime:     chrome.Get("runtime"),
