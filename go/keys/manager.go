@@ -242,6 +242,11 @@ func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
 			return
 		}
 
+		if key == nil {
+			callback(fmt.Errorf("failed to find key with ID %s", id))
+			return
+		}
+
 		priv, err := ssh.ParseRawPrivateKeyWithPassphrase([]byte(key.PEMPrivateKey), []byte(passphrase))
 		if err != nil {
 			callback(fmt.Errorf("failed to parse private key: %v", err))
