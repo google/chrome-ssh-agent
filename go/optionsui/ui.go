@@ -59,15 +59,12 @@ func New(mgr keys.Manager, domObj *dom.DOM) *UI {
 		errorText:        domObj.GetElement("errorMessage"),
 		keysData:         domObj.GetElement("keysData"),
 	}
-	result.load()
-	return result
-}
 
-func (u *UI) load() {
 	// Populate keys on initial display
-	u.dom.OnDOMContentLoaded(u.updateKeys)
+	result.dom.OnDOMContentLoaded(result.updateKeys)
 	// Configure new key on click
-	u.dom.OnClick(u.addButton, u.Add)
+	result.dom.OnClick(result.addButton, result.add)
+	return result
 }
 
 func (u *UI) setError(err error) {
@@ -79,7 +76,7 @@ func (u *UI) setError(err error) {
 	}
 }
 
-func (u *UI) Add() {
+func (u *UI) add() {
 	u.promptAdd(func(name, privateKey string, ok bool) {
 		if !ok {
 			return
@@ -114,7 +111,7 @@ func (u *UI) promptAdd(callback func(name, privateKey string, ok bool)) {
 	u.dom.ShowModal(u.addDialog)
 }
 
-func (u *UI) Load(id keys.ID) {
+func (u *UI) load(id keys.ID) {
 	u.promptPassphrase(func(passphrase string, ok bool) {
 		if !ok {
 			return
@@ -146,7 +143,7 @@ func (u *UI) promptPassphrase(callback func(passphrase string, ok bool)) {
 	u.dom.ShowModal(u.passphraseDialog)
 }
 
-func (u *UI) Remove(id keys.ID) {
+func (u *UI) remove(id keys.ID) {
 	u.mgr.Remove(id, func(err error) {
 		if err != nil {
 			u.setError(fmt.Errorf("failed to remove key: %v", err))
@@ -218,7 +215,7 @@ func (u *UI) updateDisplayedKeys() {
 							btn.Set("id", buttonId(LoadButton, k.Id))
 							u.dom.AppendChild(btn, u.dom.NewText("Load"), nil)
 							u.dom.OnClick(btn, func() {
-								u.Load(k.Id)
+								u.load(k.Id)
 							})
 						})
 					}
@@ -230,7 +227,7 @@ func (u *UI) updateDisplayedKeys() {
 						log.Printf("created button with id: %s", buttonId(RemoveButton, k.Id))
 						u.dom.AppendChild(btn, u.dom.NewText("Remove"), nil)
 						u.dom.OnClick(btn, func() {
-							u.Remove(k.Id)
+							u.remove(k.Id)
 						})
 					})
 				})
