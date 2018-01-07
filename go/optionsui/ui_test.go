@@ -15,6 +15,8 @@
 package optionsui
 
 import (
+	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"golang.org/x/crypto/ssh/agent"
@@ -22,6 +24,7 @@ import (
 	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
+	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/kr/pretty"
 )
@@ -40,81 +43,17 @@ var (
 
 	validId = keys.ID("1")
 
-	// TODO(ralimi) Fill this in dynamically from options.html
-	// instead of copying and pasting.
-	html = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Chrome SSH Agent</title>
-    <link rel="stylesheet" href="style.css"/>
-  </head>
-
-  <body class="body">
-    <dialog id="passphraseDialog" class="dialog">
-      <div class="modal-content">
-        <div>
-          <label for="passphrase">Passphrase</label>
-        </div>
-        <div>
-          <input id="passphrase" name="passphrase" type="password"/>
-        </div>
-        <div>
-          <button id="passphraseOk">OK</button>
-          <button id="passphraseCancel">Cancel</button>
-        </div>
-      </div>
-    </dialog>
-
-    <dialog id="addDialog" class="dialog">
-      <div class="dialog-content">
-        <div>
-          <label for="addName">Name</label>
-        </div>
-        <div>
-          <input id="addName" name="name" type="text"/>
-        </div>
-        <div>
-          <label for="addKey">Private Key (PEM format)</label>
-        </div>
-        <div>
-          <textarea id="addKey" name="privateKey"></textarea>
-        </div>
-        <div>
-          <button id="addOk">Add</button>
-          <button id="addCancel">Cancel</button>
-        </div>
-      </div>
-    </dialog>
-
-    <div id="options">
-      <div id="errorMessage"></div>
-
-      <div id="controlPane">
-        <button id="add">Add Key</button>
-      </div>
-
-      <div id="keysPane">
-        <table id="keysTable">
-          <thead id="keysHeader">
-            <tr>
-              <td>Name</td>
-              <td>Controls</td>
-              <td>Type</td>
-              <td>Blob</td>
-            </tr>
-          </thead>
-          <tbody id="keysData">
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <script src="../go/options/options.js"></script>
-  </body>
-</html>
-	`
+	optionsHtml = ""
 )
+
+func init() {
+	b, err := ioutil.ReadFile("../../html/options.html")
+	if err != nil {
+		panic(fmt.Sprintf("failed to read options html: %v", err))
+	}
+
+	optionsHtml = string(b)
+}
 
 type testHarness struct {
 	storage   *fakes.MemStorage
@@ -135,7 +74,7 @@ func newHarness() *testHarness {
 	mgr := keys.NewManager(agt, storage)
 	srv := keys.NewServer(mgr, msg)
 	cli := keys.NewClient(msg)
-	dom := dom.New(dummys.Call("newDoc", html))
+	dom := dom.New(dummys.Call("newDoc", optionsHtml))
 	ui := New(cli, dom)
 
 	// In our test, DOMContentLoaded is not called automatically. Do it here.
@@ -152,6 +91,15 @@ func newHarness() *testHarness {
 	}
 }
 
+func findKey(disp []*displayedKey, name string) keys.ID {
+	for _, k := range disp {
+		if k.Name == name {
+			return k.Id
+		}
+	}
+	return keys.InvalidID
+}
+
 func equalizeIds(disp []*displayedKey) []*displayedKey {
 	var result []*displayedKey
 	for _, k := range disp {
@@ -164,7 +112,7 @@ func equalizeIds(disp []*displayedKey) []*displayedKey {
 	return result
 }
 
-func TestAddKey(t *testing.T) {
+func TestUserActions(t *testing.T) {
 	testcases := []struct {
 		description   string
 		sequence      func(h *testHarness)
@@ -204,6 +152,144 @@ func TestAddKey(t *testing.T) {
 				h.dom.DoClick(h.UI.addOk)
 			},
 			wantErr: "failed to add key: name must not be empty",
+		},
+		{
+			description: "remove key",
+			sequence: func(h *testHarness) {
+				h.UI.Add()
+				h.dom.SetValue(h.UI.addName, "new-key-1")
+				h.dom.SetValue(h.UI.addKey, "private-key-1")
+				h.dom.DoClick(h.UI.addOk)
+
+				h.UI.Add()
+				h.dom.SetValue(h.UI.addName, "new-key-2")
+				h.dom.SetValue(h.UI.addKey, "private-key-2")
+				h.dom.DoClick(h.UI.addOk)
+
+				id := findKey(h.UI.DisplayedKeys(), "new-key-1")
+				h.UI.Remove(id)
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					Id:   validId,
+					Name: "new-key-2",
+				},
+			},
+		},
+		{
+			description: "remove key fails",
+			sequence: func(h *testHarness) {
+				h.UI.Add()
+				h.dom.SetValue(h.UI.addName, "new-key-1")
+				h.dom.SetValue(h.UI.addKey, "private-key-1")
+				h.dom.DoClick(h.UI.addOk)
+
+				h.UI.Add()
+				h.dom.SetValue(h.UI.addName, "new-key-2")
+				h.dom.SetValue(h.UI.addKey, "private-key-2")
+				h.dom.DoClick(h.UI.addOk)
+
+				h.UI.Remove(keys.ID("bogus-id"))
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					Id:   validId,
+					Name: "new-key-1",
+				},
+				&displayedKey{
+					Id:   validId,
+					Name: "new-key-2",
+				},
+			},
+			// It would be nice to return an error here, but
+			// keys.Manager.Remove does not.  See keys.Manager.Remove
+			// for details.
+		},
+		{
+			description: "load key",
+			sequence: func(h *testHarness) {
+				h.UI.Add()
+				h.dom.SetValue(h.UI.addName, "new-key")
+				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.DoClick(h.UI.addOk)
+
+				id := findKey(h.UI.DisplayedKeys(), "new-key")
+				h.UI.Load(id)
+				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.DoClick(h.UI.passphraseOk)
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					Id:     validId,
+					Name:   "new-key",
+					Loaded: true,
+					Type:   testdata.ValidPrivateKeyType,
+					Blob:   testdata.ValidPrivateKeyBlob,
+				},
+			},
+		},
+		{
+			description: "load key",
+			sequence: func(h *testHarness) {
+				h.UI.Add()
+				h.dom.SetValue(h.UI.addName, "new-key")
+				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.DoClick(h.UI.addOk)
+
+				id := findKey(h.UI.DisplayedKeys(), "new-key")
+				h.UI.Load(id)
+				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.DoClick(h.UI.passphraseOk)
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					Id:     validId,
+					Name:   "new-key",
+					Loaded: true,
+					Type:   testdata.ValidPrivateKeyType,
+					Blob:   testdata.ValidPrivateKeyBlob,
+				},
+			},
+		},
+		{
+			description: "load key cancelled by user",
+			sequence: func(h *testHarness) {
+				h.UI.Add()
+				h.dom.SetValue(h.UI.addName, "new-key")
+				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.DoClick(h.UI.addOk)
+
+				id := findKey(h.UI.DisplayedKeys(), "new-key")
+				h.UI.Load(id)
+				h.dom.DoClick(h.UI.passphraseCancel)
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					Id:   validId,
+					Name: "new-key",
+				},
+			},
+		},
+		{
+			description: "load key fails",
+			sequence: func(h *testHarness) {
+				h.UI.Add()
+				h.dom.SetValue(h.UI.addName, "new-key")
+				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.DoClick(h.UI.addOk)
+
+				id := findKey(h.UI.DisplayedKeys(), "new-key")
+				h.UI.Load(id)
+				h.dom.SetValue(h.UI.passphraseInput, "incorrect-passphrase")
+				h.dom.DoClick(h.UI.passphraseOk)
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					Id:   validId,
+					Name: "new-key",
+				},
+			},
+			wantErr: "failed to load key: failed to parse private key: x509: decryption password incorrect",
 		},
 	}
 

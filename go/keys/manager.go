@@ -57,6 +57,12 @@ func (k *LoadedKey) ID() ID {
 type Manager interface {
 	Configured(callback func(keys []*ConfiguredKey, err error))
 	Add(name string, pemPrivateKey string, callback func(err error))
+	// Note that it might be nice to return an error here, but
+	// the underlying Chrome APIs don't make it trivial to determine
+	// if the requested key was removed, or ignored because it didn't
+	// exist.  However, it's probably not worth the effort to try
+	// and work around this. Therefore, we don't expect an error
+	// in this case.
 	Remove(id ID, callback func(err error))
 	Loaded(callback func(keys []*LoadedKey, err error))
 	Load(id ID, passphrase string, callback func(err error))
