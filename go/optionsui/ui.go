@@ -17,6 +17,7 @@ package optionsui
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
@@ -169,6 +170,24 @@ func (u *UI) DisplayedKeys() []*displayedKey {
 	return u.keys
 }
 
+type buttonKind int
+
+const (
+	LoadButton buttonKind = iota
+	RemoveButton
+)
+
+func buttonId(kind buttonKind, id keys.ID) string {
+	s := "unknown"
+	switch kind {
+	case LoadButton:
+		s = "load"
+	case RemoveButton:
+		s = "remove"
+	}
+	return fmt.Sprintf("%s-%s", s, id)
+}
+
 func (u *UI) updateDisplayedKeys() {
 	u.dom.RemoveChildren(u.keysData)
 
@@ -196,6 +215,7 @@ func (u *UI) updateDisplayedKeys() {
 					if !k.Loaded {
 						u.dom.AppendChild(div, u.dom.NewElement("button"), func(btn *js.Object) {
 							btn.Set("type", "button")
+							btn.Set("id", buttonId(LoadButton, k.Id))
 							u.dom.AppendChild(btn, u.dom.NewText("Load"), nil)
 							u.dom.OnClick(btn, func() {
 								u.Load(k.Id)
@@ -206,6 +226,8 @@ func (u *UI) updateDisplayedKeys() {
 					// Remove button
 					u.dom.AppendChild(div, u.dom.NewElement("button"), func(btn *js.Object) {
 						btn.Set("type", "button")
+						btn.Set("id", buttonId(RemoveButton, k.Id))
+						log.Printf("created button with id: %s", buttonId(RemoveButton, k.Id))
 						u.dom.AppendChild(btn, u.dom.NewText("Remove"), nil)
 						u.dom.OnClick(btn, func() {
 							u.Remove(k.Id)

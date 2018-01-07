@@ -88,6 +88,7 @@ func newHarness() *testHarness {
 		manager:   mgr,
 		server:    srv,
 		Client:    cli,
+		dom:       dom,
 		UI:        ui,
 	}
 }
@@ -179,7 +180,7 @@ func TestUserActions(t *testing.T) {
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.DisplayedKeys(), "new-key-1")
-				h.UI.Remove(id)
+				h.dom.DoClick(h.dom.GetElement(buttonId(RemoveButton, id)))
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -226,7 +227,7 @@ func TestUserActions(t *testing.T) {
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.DisplayedKeys(), "new-key")
-				h.UI.Load(id)
+				h.dom.DoClick(h.dom.GetElement(buttonId(LoadButton, id)))
 				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
 				h.dom.DoClick(h.UI.passphraseOk)
 			},
@@ -249,7 +250,7 @@ func TestUserActions(t *testing.T) {
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.DisplayedKeys(), "new-key")
-				h.UI.Load(id)
+				h.dom.DoClick(h.dom.GetElement(buttonId(LoadButton, id)))
 				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
 				h.dom.DoClick(h.UI.passphraseOk)
 			},
@@ -272,7 +273,7 @@ func TestUserActions(t *testing.T) {
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.DisplayedKeys(), "new-key")
-				h.UI.Load(id)
+				h.dom.DoClick(h.dom.GetElement(buttonId(LoadButton, id)))
 				h.dom.DoClick(h.UI.passphraseCancel)
 			},
 			wantDisplayed: []*displayedKey{
@@ -291,7 +292,7 @@ func TestUserActions(t *testing.T) {
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.DisplayedKeys(), "new-key")
-				h.UI.Load(id)
+				h.dom.DoClick(h.dom.GetElement(buttonId(LoadButton, id)))
 				h.dom.SetValue(h.UI.passphraseInput, "incorrect-passphrase")
 				h.dom.DoClick(h.UI.passphraseOk)
 			},
@@ -317,7 +318,7 @@ func TestUserActions(t *testing.T) {
 
 				// Load the key we configured.
 				id := findKey(h.UI.DisplayedKeys(), "new-key")
-				h.UI.Load(id)
+				h.dom.DoClick(h.dom.GetElement(buttonId(LoadButton, id)))
 				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
 				h.dom.DoClick(h.UI.passphraseOk)
 			},
@@ -346,11 +347,11 @@ func TestUserActions(t *testing.T) {
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.DisplayedKeys(), "new-key")
-				h.UI.Load(id)
+				h.dom.DoClick(h.dom.GetElement(buttonId(LoadButton, id)))
 				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
 				h.dom.DoClick(h.UI.passphraseOk)
 
-				h.UI.Remove(id)
+				h.dom.DoClick(h.dom.GetElement(buttonId(RemoveButton, id)))
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
