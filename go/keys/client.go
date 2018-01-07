@@ -18,21 +18,24 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/gopherjs/gopherjs/js"
 )
 
-type Server struct {
-	mgr    Manager
-	chrome *chrome.C
+type MessageReceiver interface {
+	OnMessage(callback func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool)
 }
 
-func NewServer(mgr Manager, chrome *chrome.C) *Server {
+type Server struct {
+	mgr Manager
+	msg MessageReceiver
+}
+
+func NewServer(mgr Manager, msg MessageReceiver) *Server {
 	result := &Server{
-		mgr:    mgr,
-		chrome: chrome,
+		mgr: mgr,
+		msg: msg,
 	}
-	result.chrome.OnMessage(result.onMessage)
+	result.msg.OnMessage(result.onMessage)
 	return result
 }
 
@@ -167,20 +170,25 @@ func (s *Server) onMessage(headerObj *js.Object, sender *js.Object, sendResponse
 	return true
 }
 
-type client struct {
-	chrome *chrome.C
+type MessageSender interface {
+	SendMessage(msg interface{}, callback func(rsp *js.Object))
+	Error() error
 }
 
-func NewClient(chrome *chrome.C) Manager {
-	return &client{chrome: chrome}
+type client struct {
+	msg MessageSender
+}
+
+func NewClient(msg MessageSender) Manager {
+	return &client{msg: msg}
 }
 
 func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	msg := &msgConfigured{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeConfigured
-	c.chrome.SendMessage(msg, func(rspObj *js.Object) {
+	c.msg.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspConfigured{msgHeader: &msgHeader{Object: rspObj}}
-		if err := c.chrome.Error(); err != nil {
+		if err := c.msg.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
 			return
 		}
@@ -191,9 +199,9 @@ func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
 	msg := &msgLoaded{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeLoaded
-	c.chrome.SendMessage(msg, func(rspObj *js.Object) {
+	c.msg.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspLoaded{msgHeader: &msgHeader{Object: rspObj}}
-		if err := c.chrome.Error(); err != nil {
+		if err := c.msg.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
 			return
 		}
@@ -206,9 +214,9 @@ func (c *client) Add(name string, pemPrivateKey string, callback func(err error)
 	msg.Type = msgTypeAdd
 	msg.Name = name
 	msg.PEMPrivateKey = pemPrivateKey
-	c.chrome.SendMessage(msg, func(rspObj *js.Object) {
+	c.msg.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspAdd{msgHeader: &msgHeader{Object: rspObj}}
-		if err := c.chrome.Error(); err != nil {
+		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return
 		}
@@ -220,9 +228,9 @@ func (c *client) Remove(id ID, callback func(err error)) {
 	msg := &msgRemove{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeRemove
 	msg.Id = id
-	c.chrome.SendMessage(msg, func(rspObj *js.Object) {
+	c.msg.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspRemove{msgHeader: &msgHeader{Object: rspObj}}
-		if err := c.chrome.Error(); err != nil {
+		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return
 		}
@@ -235,9 +243,9 @@ func (c *client) Load(id ID, passphrase string, callback func(err error)) {
 	msg.Type = msgTypeLoad
 	msg.Id = id
 	msg.Passphrase = passphrase
-	c.chrome.SendMessage(msg, func(rspObj *js.Object) {
+	c.msg.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspLoad{msgHeader: &msgHeader{Object: rspObj}}
-		if err := c.chrome.Error(); err != nil {
+		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return
 		}

@@ -15,10 +15,7 @@
 package keys
 
 import (
-	"encoding/base64"
 	"errors"
-	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/kr/pretty"
@@ -107,20 +104,6 @@ func newStorage() *memStorage {
 	}
 }
 
-func toGopherJSType(v interface{}) interface{} {
-	method := reflect.ValueOf(v).MethodByName("Interface")
-	if !method.IsValid() {
-		return v
-	}
-
-	ret := method.Call(nil)
-	if len(ret) != 1 {
-		return v
-	}
-
-	return ret[0].Interface()
-}
-
 func (m *memStorage) SetError(err storageErrs) {
 	m.err = err
 }
@@ -132,7 +115,7 @@ func (m *memStorage) Set(data map[string]interface{}, callback func(err error)) 
 	}
 
 	for k, v := range data {
-		m.data[k] = toGopherJSType(v)
+		m.data[k] = toJSObject(v).Interface()
 	}
 	callback(nil)
 }
@@ -157,107 +140,6 @@ func (m *memStorage) Delete(keys []string, callback func(err error)) {
 		delete(m.data, k)
 	}
 	callback(nil)
-}
-
-func readErr(errc chan error) error {
-	for err := range errc {
-		return err
-	}
-	panic("no elements read from channel")
-}
-
-func syncAdd(mgr Manager, name string, pemPrivateKey string) error {
-	errc := make(chan error, 1)
-	mgr.Add(name, pemPrivateKey, func(err error) {
-		errc <- err
-		close(errc)
-	})
-	return readErr(errc)
-}
-
-func syncRemove(mgr Manager, id ID) error {
-	errc := make(chan error, 1)
-	mgr.Remove(id, func(err error) {
-		errc <- err
-		close(errc)
-	})
-	return readErr(errc)
-}
-
-func syncConfigured(mgr Manager) ([]*ConfiguredKey, error) {
-	errc := make(chan error, 1)
-	var result []*ConfiguredKey
-	mgr.Configured(func(keys []*ConfiguredKey, err error) {
-		result = keys
-		errc <- err
-		close(errc)
-	})
-	err := readErr(errc)
-	return result, err
-}
-
-func syncLoad(mgr Manager, id ID, passphrase string) error {
-	errc := make(chan error, 1)
-	mgr.Load(id, passphrase, func(err error) {
-		errc <- err
-		close(errc)
-	})
-	return readErr(errc)
-}
-
-func syncLoaded(mgr Manager) ([]*LoadedKey, error) {
-	errc := make(chan error, 1)
-	var result []*LoadedKey
-	mgr.Loaded(func(keys []*LoadedKey, err error) {
-		result = keys
-		errc <- err
-		close(errc)
-	})
-	err := readErr(errc)
-	return result, err
-}
-
-func configuredKeyNames(keys []*ConfiguredKey) []string {
-	var result []string
-	for _, k := range keys {
-		result = append(result, k.Name)
-	}
-	return result
-}
-
-func loadedKeyIds(keys []*LoadedKey) []ID {
-	var result []ID
-	for _, k := range keys {
-		result = append(result, k.ID())
-	}
-	return result
-}
-
-func loadedKeyBlobs(keys []*LoadedKey) []string {
-	var result []string
-	for _, k := range keys {
-		result = append(result, base64.StdEncoding.EncodeToString([]byte(k.Blob)))
-	}
-	return result
-}
-
-func findKey(mgr Manager, byId ID, byName string) (ID, error) {
-	if byId != InvalidID {
-		return byId, nil
-	}
-
-	configured, err := syncConfigured(mgr)
-	if err != nil {
-		return InvalidID, err
-	}
-
-	for _, k := range configured {
-		if k.Name == byName {
-			return k.Id, nil
-		}
-	}
-
-	return InvalidID, fmt.Errorf("failed to find key with name %s", byName)
 }
 
 type initialKey struct {
