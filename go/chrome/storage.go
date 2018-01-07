@@ -20,11 +20,17 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
+// Storage supports storing and retrieving data using Chrome's Storage API.
 type Storage struct {
 	chrome *C
 	o      *js.Object
 }
 
+// Set stores new data in storage. data is a map of key-value pairs to be
+// stored. If a key already exists, it will be overwritten.  Callback will
+// be invoked when complete.
+//
+// See set() in https://developer.chrome.com/apps/storage#type-StorageArea.
 func (s *Storage) Set(data map[string]interface{}, callback func(err error)) {
 	s.o.Call("set", data, func() {
 		if err := s.chrome.Error(); err != nil {
@@ -35,6 +41,12 @@ func (s *Storage) Set(data map[string]interface{}, callback func(err error)) {
 	})
 }
 
+// Get reads all the data items currently stored.  The callback will be
+// invoked when complete, suppliing the items read and indicating any errors.
+// The data suppiled with the callback is a map of key-value pairs, with
+// each representing a distinct item from storage.
+//
+// See get() in https://developer.chrome.com/apps/storage#type-StorageArea.
 func (s *Storage) Get(callback func(data map[string]interface{}, err error)) {
 	s.o.Call("get", nil, func(vals interface{}) {
 		if err := s.chrome.Error(); err != nil {
@@ -46,6 +58,11 @@ func (s *Storage) Get(callback func(data map[string]interface{}, err error)) {
 	})
 }
 
+// Delete removes the items from storage with the specified keys. If a key is
+// not found in storage, it will be silently ignored (i.e., no error will be
+// returned). Callback is invoked when complete.
+//
+// See remove() in https://developer.chrome.com/apps/storage#type-StorageArea.
 func (s *Storage) Delete(keys []string, callback func(err error)) {
 	s.o.Call("remove", keys, func() {
 		if err := s.chrome.Error(); err != nil {

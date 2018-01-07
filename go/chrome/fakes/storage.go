@@ -12,29 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package fakes implements fake implementations of Chrome's extension APIs to
+// ease unit testing.
 package fakes
 
+// Errs contains errors that should be returned by the fake implementation.
 type Errs struct {
-	Get    error
-	Set    error
+	// Get is the error that should be returned by Storage.Get().
+	Get error
+	// Set is the error that should be returned by Storage.Set().
+	Set error
+	// Delete is the error that should be returned by Storage.Delete().
 	Delete error
 }
 
+// MemStorage is a fake implementation of Chrome's storage API.
 type MemStorage struct {
 	data map[string]interface{}
 	err  Errs
 }
 
+// NewMemStorage returns a fake implementation of Chrome's storage API.
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
 		data: make(map[string]interface{}),
 	}
 }
 
+// SetError specifies the errors that should be returned from various
+// operations.  Forcing the fake implementation to return errors is
+// useful to test error conditions in unit tests.
 func (m *MemStorage) SetError(err Errs) {
 	m.err = err
 }
 
+// Set is a fake implmentation of chrome.Storage.Set().
 func (m *MemStorage) Set(data map[string]interface{}, callback func(err error)) {
 	if m.err.Set != nil {
 		callback(m.err.Set)
@@ -47,6 +59,7 @@ func (m *MemStorage) Set(data map[string]interface{}, callback func(err error)) 
 	callback(nil)
 }
 
+// Get is a fake implmentation of chrome.Storage.Get().
 func (m *MemStorage) Get(callback func(data map[string]interface{}, err error)) {
 	if m.err.Get != nil {
 		callback(nil, m.err.Get)
@@ -57,6 +70,7 @@ func (m *MemStorage) Get(callback func(data map[string]interface{}, err error)) 
 	callback(m.data, nil)
 }
 
+// Delete is a fake implmentation of chrome.Storage.Delete().
 func (m *MemStorage) Delete(keys []string, callback func(err error)) {
 	if m.err.Delete != nil {
 		callback(m.err.Delete)

@@ -20,18 +20,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Package agentport supports serving the SSH Agent protocol to Chrome's
+// Secure Shell Extension.
 package agentport
 
 import (
 	"encoding/binary"
-	"errors"
 	"io"
 	"log"
 
 	"github.com/gopherjs/gopherjs/js"
 )
-
-var ErrInvalidMsg = errors.New("invalid message frame")
 
 type agentPort struct {
 	p         *js.Object
@@ -41,6 +40,11 @@ type agentPort struct {
 	outWriter *io.PipeWriter
 }
 
+// New returns a io.ReaderWriter that converts from the Chrome Secure Shell
+// Extension's SSH Agent protocol to the standard SSH Agent protocol.
+//
+// p is a Chrome Port object to which the Chrome Secure Shell Extension
+// has connected.
 func New(p *js.Object) io.ReadWriter {
 	ir, iw := io.Pipe()
 	or, ow := io.Pipe()

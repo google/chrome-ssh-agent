@@ -18,18 +18,22 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
+// MessageHub is a fake implementation of Chrome's messaging APIs.
 type MessageHub struct {
 	handlers []func(*js.Object, *js.Object, func(interface{})) bool
 }
 
+// NewMessageHub returns a fake implementation of Chrome's messaging APIs.
 func NewMessageHub() *MessageHub {
 	return &MessageHub{}
 }
 
+// OnMessage is a fake implementation of chrome.C.OnMessage.
 func (m *MessageHub) OnMessage(callback func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool) {
 	m.handlers = append(m.handlers, callback)
 }
 
+// SendMessage is a fake implementation of chrome.C.SendMessage.
 func (m *MessageHub) SendMessage(msg interface{}, callback func(rsp *js.Object)) {
 	for _, h := range m.handlers {
 		h(toJSObject(msg), nil, func(rsp interface{}) {
@@ -38,6 +42,8 @@ func (m *MessageHub) SendMessage(msg interface{}, callback func(rsp *js.Object))
 	}
 }
 
+// Error is a fake implementation of chrome.C.Error. This fake implementation
+// does not simulate errors, so Error() always returns nil.
 func (m *MessageHub) Error() error {
 	return nil
 }

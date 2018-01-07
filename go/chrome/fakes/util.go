@@ -26,6 +26,11 @@ var (
 	})`)
 )
 
+// toJSObject returns the js.Object corresponding to the supplied value.
+//
+// This is useful when implementing fake implementations that need to simulate
+// how an object will be transformed by GopherJS to be consumed by external
+// Javascript code (e.g., Chrome's extension APIs).
 func toJSObject(v interface{}) *js.Object {
 	return dummys.Call("return", v)
 }
