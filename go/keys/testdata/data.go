@@ -46,9 +46,10 @@ o038XwjZI5MEPLZlhh69e6jbL3kSsVARD5ahkarLuvUyKpqiInrnUWLHZETwiSH2
 wy+03hJeDFxANxHpz25t87FwzHR4FceteqJXHWoR6XiH805u+2KHCHhv+6nvQCe2
 SQv684pfXIhZ8Lfr13deSx5G8h+ULUDyfHzgheSXWOPyve+wdehAOyh71npHjyXe
 -----END RSA PRIVATE KEY-----`
-	ValidPrivateKeyPassphrase        = "secret"
-	ValidPrivateKeyBlob              = "AAAAB3NzaC1yc2EAAAADAQABAAABAQDvv71z77+977+9G++/ve+/ve+/vSFl77+9Tu+/vSrvv73vv71jFiU+77+9ae+/ve+/ve+/vXfvv71X77+977+9ee+/vciuKzbvv73vv710Eu+/vUpr2aXvv71e77+977+9NMqN77+9SE0V77+977+977+9dUvvv70+77+977+9Se+/vWJ90Ls0VO+/vceOybrvv73vv73vv71v77+9O++/ve+/ve+/vS3Zg++/vTtxa2g0GmEh77+9S++/vVfvv71n77+977+977+9Gdip77+977+977+9Qe+/ve+/vXXvv71lSH7qtq0GTxIM77+977+977+977+9bO+/vcqmaAfvv71HfHLvv71o77+9ZFzvv70wcdmaTu+/ve+/vVDvv71I77+9Hljvv71g77+9R3/vv73vv701fhDvv73vv73vv73vv73vv71A77+977+9Ce+/vX/vv73vv71FEu+/ve+/vV4277+9Ynx077+977+9ICPdsiNN77+977+9QGZnfHzvv73vv73vv702Fu+/vWwEVO+/vWzvv70EUlDvv73vv73vv71CcW7vv71oPERgCxco77+977+9W++/vU0O77+977+9C++/vQhbL++/vWcu77+9"
-	ValidPrivateKeyType              = "ssh-rsa"
+	ValidPrivateKeyPassphrase = "secret"
+	ValidPrivateKeyBlob       = "AAAAB3NzaC1yc2EAAAADAQABAAABAQDvv71z77+977+9G++/ve+/ve+/vSFl77+9Tu+/vSrvv73vv71jFiU+77+9ae+/ve+/ve+/vXfvv71X77+977+9ee+/vciuKzbvv73vv710Eu+/vUpr2aXvv71e77+977+9NMqN77+9SE0V77+977+977+9dUvvv70+77+977+9Se+/vWJ90Ls0VO+/vceOybrvv73vv73vv71v77+9O++/ve+/ve+/vS3Zg++/vTtxa2g0GmEh77+9S++/vVfvv71n77+977+977+9Gdip77+977+977+9Qe+/ve+/vXXvv71lSH7qtq0GTxIM77+977+977+977+9bO+/vcqmaAfvv71HfHLvv71o77+9ZFzvv70wcdmaTu+/ve+/vVDvv71I77+9Hljvv71g77+9R3/vv73vv701fhDvv73vv73vv73vv73vv71A77+977+9Ce+/vX/vv73vv71FEu+/ve+/vV4277+9Ynx077+977+9ICPdsiNN77+977+9QGZnfHzvv73vv73vv702Fu+/vWwEVO+/vWzvv70EUlDvv73vv73vv71CcW7vv71oPERgCxco77+977+9W++/vU0O77+977+9C++/vQhbL++/vWcu77+9"
+	ValidPrivateKeyType       = "ssh-rsa"
+
 	ValidPrivateKeyWithoutPassphrase = `
 -----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAqvs4Aur/N3tFjDvuAqcLQ4BJVHpoqzO/RbwbXSBA5bCmd7rO
@@ -77,4 +78,6 @@ WhZ+0QKBgFaSJH2os/hjuyjtHAXOU8ktvudy7IegEUlNUzX0Xzk4eToDvDQNevad
 SkxRM2/9n4E6QAADUWlLjVgl92W+lLHylDV5baWe+QKMut3vyXjUJYe1ZKYe6zZV
 3wx1s/evfKXpd2Vs4ulNEaVs4nDmZ5zyS7TUp/ByabdkAJ5JnUpR
 -----END RSA PRIVATE KEY-----`
+	ValidPrivateKeyWithoutPassphraseBlob = "AAAAB3NzaC1yc2EAAAADAQABAAABAQDvv73vv704Au+/ve+/vTd7Re+/vTvvv70C77+9C0Pvv71JVHpo77+9M++/vUXvv70bXSBA5bCmd++/ve+/ve+/vcy277+9ckrSge+/ve+/ve+/ve+/ve+/ve+/vXHvv70STO+/vWwl67iZ77+9FgxOAe+/vd+e77+977+9M++/ve+/ve+/vVc3Uu+/vSHvv71R77+977+9Du+/vRoa77+977+977+977+977+9Ee+/ve+/vTIGzp0RChUkCwtobu+/vU3Vhl7vv73vv70ZWQYN2K3vv73vv70aGBrvv73vv716Ve+/vWQ277+977+9R07vv71W77+9I8+hPO+/ve+/vSvvv702WXvvv70Fae+/vWwv77+977+977+9dlHvv71LZO+/ve+/ve+/vQfvv73vv73vv73vv70H77+9Ke+/vVjvv73vv71E77+9KDha77+9Dy4P77+977+977+977+977+9BQ1kQe+/ve+/vQLvv73vv70bO++/ve+/ve+/vRkt24lF2IZi77+9G8aRHxjvv73Flyrvv71e77+9UnFC77+977+90Lbvv70vZu+/vVPvv73vv70DZQsZOe+/ve+/ve+/vVTvv73EkDwJ"
+	ValidPrivateKeyWithoutPassphraseType = "ssh-rsa"
 )

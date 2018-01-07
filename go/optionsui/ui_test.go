@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
@@ -88,6 +89,17 @@ func newHarness() *testHarness {
 		server:    srv,
 		Client:    cli,
 		UI:        ui,
+	}
+}
+
+func directLoadKey(agt agent.Agent, privateKey string) {
+	priv, err := ssh.ParseRawPrivateKey([]byte(privateKey))
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse private key: %v", err))
+	}
+
+	if err := agt.Add(agent.AddedKey{PrivateKey: priv}); err != nil {
+		panic(fmt.Sprintf("failed to load private key: %v", err))
 	}
 }
 
@@ -290,6 +302,64 @@ func TestUserActions(t *testing.T) {
 				},
 			},
 			wantErr: "failed to load key: failed to parse private key: x509: decryption password incorrect",
+		},
+		{
+			description: "display non-configured keys",
+			sequence: func(h *testHarness) {
+				// Load an additional key directly into the agent.
+				directLoadKey(h.agent, testdata.ValidPrivateKeyWithoutPassphrase)
+
+				// Configure a key of our own.
+				h.UI.Add()
+				h.dom.SetValue(h.UI.addName, "new-key")
+				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.DoClick(h.UI.addOk)
+
+				// Load the key we configured.
+				id := findKey(h.UI.DisplayedKeys(), "new-key")
+				h.UI.Load(id)
+				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.DoClick(h.UI.passphraseOk)
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					Id:     keys.InvalidID,
+					Loaded: true,
+					Type:   testdata.ValidPrivateKeyWithoutPassphraseType,
+					Blob:   testdata.ValidPrivateKeyWithoutPassphraseBlob,
+				},
+				&displayedKey{
+					Id:     validId,
+					Name:   "new-key",
+					Loaded: true,
+					Type:   testdata.ValidPrivateKeyType,
+					Blob:   testdata.ValidPrivateKeyBlob,
+				},
+			},
+		},
+		{
+			description: "display loaded key that was previously-configured, then removed",
+			sequence: func(h *testHarness) {
+				h.UI.Add()
+				h.dom.SetValue(h.UI.addName, "new-key")
+				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.DoClick(h.UI.addOk)
+
+				id := findKey(h.UI.DisplayedKeys(), "new-key")
+				h.UI.Load(id)
+				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.DoClick(h.UI.passphraseOk)
+
+				h.UI.Remove(id)
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					Id:     keys.InvalidID,
+					Loaded: true,
+					Type:   testdata.ValidPrivateKeyType,
+					Blob:   testdata.ValidPrivateKeyBlob,
+				},
+			},
 		},
 	}
 
