@@ -1,7 +1,7 @@
 GO	?= GO15VENDOREXPERIMENT=1 go
 GOPATH	:= $(firstword $(subst :, ,$(shell $(GO) env GOPATH)))
 
-CHROME		?= /usr/bin/google-chrome
+GOLINT		?= $(GOPATH)/bin/golint
 GOPHERJS	?= $(GOPATH)/bin/gopherjs
 pkgs		= $(shell $(GO) list ./... | grep -v /vendor/)
 
@@ -11,7 +11,7 @@ PREFIX	?= $(shell pwd)
 BIN_DIR	?= $(shell pwd)
 MAKECRX	?= $(PREFIX)/release/makecrx.sh
 
-all: format style vet test build crx
+all: format style vet lint test build crx
 
 format:
 	@echo ">> formatting code"
@@ -24,6 +24,10 @@ style:
 vet:
 	@echo ">> vetting code"
 	@$(GO) vet $(pkgs)
+
+lint: $(GOLINT)
+	@echo ">> linting code"
+	@$(GOLINT) $(pkgs)
 
 test: $(GOPHERJS)
 	@echo ">> running tests"
@@ -45,5 +49,8 @@ crx: $(MAKECRX) build
 
 $(GOPHERJS):
 	@GOOS= GOARCH= $(GO) get -u github.com/gopherjs/gopherjs
+
+$(GOLINT):
+	@GOOS= GOARCH= $(GO) get -u github.com/golang/lint/golint
 
 .PHONY: all
