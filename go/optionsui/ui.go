@@ -39,7 +39,6 @@ type UI struct {
 	errorText        *js.Object
 	keysData         *js.Object
 	keys             []*displayedKey
-	err              error
 }
 
 func New(mgr keys.Manager, domObj *dom.DOM) *UI {
@@ -77,12 +76,6 @@ func (u *UI) setError(err error) {
 	if err != nil {
 		u.dom.AppendChild(u.errorText, u.dom.NewText(err.Error()), nil)
 	}
-
-	u.err = err
-}
-
-func (u *UI) Error() error {
-	return u.err
 }
 
 func (u *UI) Add() {
@@ -104,16 +97,16 @@ func (u *UI) Add() {
 
 func (u *UI) promptAdd(callback func(name, privateKey string, ok bool)) {
 	u.dom.OnClick(u.addOk, func() {
-		n := u.addName.Get("value").String()
-		k := u.addKey.Get("value").String()
-		u.addName.Set("value", "")
-		u.addKey.Set("value", "")
+		n := u.dom.Value(u.addName)
+		k := u.dom.Value(u.addKey)
+		u.dom.SetValue(u.addName, "")
+		u.dom.SetValue(u.addKey, "")
 		u.dom.Close(u.addDialog)
 		callback(n, k, true)
 	})
 	u.dom.OnClick(u.addCancel, func() {
-		u.addName.Set("value", "")
-		u.addKey.Set("value", "")
+		u.dom.SetValue(u.addName, "")
+		u.dom.SetValue(u.addKey, "")
 		u.dom.Close(u.addDialog)
 		callback("", "", false)
 	})
@@ -139,13 +132,13 @@ func (u *UI) Load(id keys.ID) {
 
 func (u *UI) promptPassphrase(callback func(passphrase string, ok bool)) {
 	u.dom.OnClick(u.passphraseOk, func() {
-		p := u.passphraseInput.Get("value").String()
-		u.passphraseInput.Set("value", "")
+		p := u.dom.Value(u.passphraseInput)
+		u.dom.SetValue(u.passphraseInput, "")
 		u.dom.Close(u.passphraseDialog)
 		callback(p, true)
 	})
 	u.dom.OnClick(u.passphraseCancel, func() {
-		u.passphraseInput.Set("value", "")
+		u.dom.SetValue(u.passphraseInput, "")
 		u.dom.Close(u.passphraseDialog)
 		callback("", false)
 	})

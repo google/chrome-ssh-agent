@@ -15,6 +15,8 @@
 package dom
 
 import (
+	"log"
+
 	"github.com/gopherjs/gopherjs/js"
 )
 
@@ -44,8 +46,30 @@ func (d *DOM) NewText(text string) *js.Object {
 	return d.doc.Call("createTextNode", text)
 }
 
+func (d *DOM) DoClick(o *js.Object) {
+	o.Call("click")
+}
+
 func (d *DOM) OnClick(o *js.Object, callback func()) {
 	o.Call("addEventListener", "click", callback)
+}
+
+func (d *DOM) DoDOMContentLoaded() {
+	event := d.doc.Call("createEvent", "Event")
+	event.Call("initEvent", "DOMContentLoaded", true, true)
+	d.doc.Call("dispatchEvent", event)
+}
+
+func (d *DOM) Value(o *js.Object) string {
+	return o.Get("value").String()
+}
+
+func (d *DOM) SetValue(o *js.Object, value string) {
+	o.Set("value", value)
+}
+
+func (d *DOM) TextContent(o *js.Object) string {
+	return o.Get("textContent").String()
 }
 
 func (d *DOM) OnDOMContentLoaded(callback func()) {
@@ -64,9 +88,20 @@ func (d *DOM) GetElement(id string) *js.Object {
 }
 
 func (d *DOM) ShowModal(o *js.Object) {
+	if o.Get("showModal") == js.Undefined {
+		// jsdom (which is used in tests) does not support showModal.
+		log.Printf("showModal() not found")
+		return
+	}
 	o.Call("showModal")
 }
 
 func (d *DOM) Close(o *js.Object) {
+	if o.Get("close") == js.Undefined {
+		// jsdom (which is used in tests) does not support showModal.
+		log.Printf("close() not found")
+		return
+	}
+
 	o.Call("close")
 }
