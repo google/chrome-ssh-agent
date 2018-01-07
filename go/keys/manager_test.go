@@ -18,6 +18,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/kr/pretty"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -87,61 +88,6 @@ SkxRM2/9n4E6QAADUWlLjVgl92W+lLHylDV5baWe+QKMut3vyXjUJYe1ZKYe6zZV
 -----END RSA PRIVATE KEY-----`
 )
 
-type storageErrs struct {
-	get error
-	set error
-	del error
-}
-
-type memStorage struct {
-	data map[string]interface{}
-	err  storageErrs
-}
-
-func newStorage() *memStorage {
-	return &memStorage{
-		data: make(map[string]interface{}),
-	}
-}
-
-func (m *memStorage) SetError(err storageErrs) {
-	m.err = err
-}
-
-func (m *memStorage) Set(data map[string]interface{}, callback func(err error)) {
-	if m.err.set != nil {
-		callback(m.err.set)
-		return
-	}
-
-	for k, v := range data {
-		m.data[k] = toJSObject(v).Interface()
-	}
-	callback(nil)
-}
-
-func (m *memStorage) Get(callback func(data map[string]interface{}, err error)) {
-	if m.err.get != nil {
-		callback(nil, m.err.get)
-		return
-	}
-
-	// TODO(ralimi) Make a copy.
-	callback(m.data, nil)
-}
-
-func (m *memStorage) Delete(keys []string, callback func(err error)) {
-	if m.err.del != nil {
-		callback(m.err.del)
-		return
-	}
-
-	for _, k := range keys {
-		delete(m.data, k)
-	}
-	callback(nil)
-}
-
 type initialKey struct {
 	Name          string
 	PEMPrivateKey string
@@ -164,7 +110,7 @@ func TestAdd(t *testing.T) {
 		initial        []*initialKey
 		name           string
 		pemPrivateKey  string
-		storageErr     storageErrs
+		storageErr     fakes.Errs
 		wantConfigured []string
 		wantErr        error
 	}{
@@ -208,15 +154,15 @@ func TestAdd(t *testing.T) {
 			description:   "fail to write to storage",
 			name:          "new-key",
 			pemPrivateKey: validPrivateKey,
-			storageErr: storageErrs{
-				set: errors.New("storage.Set failed"),
+			storageErr: fakes.Errs{
+				Set: errors.New("storage.Set failed"),
 			},
 			wantErr: errors.New("storage.Set failed"),
 		},
 	}
 
 	for _, tc := range testcases {
-		storage := newStorage()
+		storage := fakes.NewMemStorage()
 		mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
 		if err != nil {
 			t.Fatalf("%s: failed to initialize manager: %v", tc.description, err)
@@ -225,7 +171,7 @@ func TestAdd(t *testing.T) {
 		// Add the key.
 		func() {
 			storage.SetError(tc.storageErr)
-			defer storage.SetError(storageErrs{})
+			defer storage.SetError(fakes.Errs{})
 
 			err := syncAdd(mgr, tc.name, tc.pemPrivateKey)
 			if diff := pretty.Diff(err, tc.wantErr); diff != nil {
@@ -251,7 +197,7 @@ func TestRemove(t *testing.T) {
 		initial        []*initialKey
 		byName         string
 		byId           ID
-		storageErr     storageErrs
+		storageErr     fakes.Errs
 		wantConfigured []string
 		wantErr        error
 	}{
@@ -292,8 +238,8 @@ func TestRemove(t *testing.T) {
 				},
 			},
 			byName: "new-key",
-			storageErr: storageErrs{
-				get: errors.New("storage.Get failed"),
+			storageErr: fakes.Errs{
+				Get: errors.New("storage.Get failed"),
 			},
 			wantConfigured: []string{"new-key"},
 			wantErr:        errors.New("failed to enumerate keys: failed to read from storage: storage.Get failed"),
@@ -307,8 +253,8 @@ func TestRemove(t *testing.T) {
 				},
 			},
 			byName: "new-key",
-			storageErr: storageErrs{
-				del: errors.New("storage.Delete failed"),
+			storageErr: fakes.Errs{
+				Delete: errors.New("storage.Delete failed"),
 			},
 			wantConfigured: []string{"new-key"},
 			wantErr:        errors.New("failed to delete keys: storage.Delete failed"),
@@ -316,7 +262,7 @@ func TestRemove(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		storage := newStorage()
+		storage := fakes.NewMemStorage()
 		mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
 		if err != nil {
 			t.Fatalf("%s: failed to initialize manager: %v", tc.description, err)
@@ -331,7 +277,7 @@ func TestRemove(t *testing.T) {
 		// Remove the key
 		func() {
 			storage.SetError(tc.storageErr)
-			defer storage.SetError(storageErrs{})
+			defer storage.SetError(fakes.Errs{})
 
 			err := syncRemove(mgr, id)
 			if diff := pretty.Diff(err, tc.wantErr); diff != nil {
@@ -355,7 +301,7 @@ func TestConfigured(t *testing.T) {
 	testcases := []struct {
 		description    string
 		initial        []*initialKey
-		storageErr     storageErrs
+		storageErr     fakes.Errs
 		wantConfigured []string
 		wantErr        error
 	}{
@@ -384,15 +330,15 @@ func TestConfigured(t *testing.T) {
 					PEMPrivateKey: validPrivateKey,
 				},
 			},
-			storageErr: storageErrs{
-				get: errors.New("storage.Get failed"),
+			storageErr: fakes.Errs{
+				Get: errors.New("storage.Get failed"),
 			},
 			wantErr: errors.New("failed to read keys: failed to read from storage: storage.Get failed"),
 		},
 	}
 
 	for _, tc := range testcases {
-		storage := newStorage()
+		storage := fakes.NewMemStorage()
 		mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
 		if err != nil {
 			t.Fatalf("%s: failed to initialize manager: %v", tc.description, err)
@@ -401,7 +347,7 @@ func TestConfigured(t *testing.T) {
 		// Enumerate the keys.
 		func() {
 			storage.SetError(tc.storageErr)
-			defer storage.SetError(storageErrs{})
+			defer storage.SetError(fakes.Errs{})
 
 			configured, err := syncConfigured(mgr)
 			if diff := pretty.Diff(err, tc.wantErr); diff != nil {
@@ -422,7 +368,7 @@ func TestLoadAndLoaded(t *testing.T) {
 		byName      string
 		byId        ID
 		passphrase  string
-		storageErr  storageErrs
+		storageErr  fakes.Errs
 		wantLoaded  []string
 		wantErr     error
 	}{
@@ -504,15 +450,15 @@ func TestLoadAndLoaded(t *testing.T) {
 			},
 			byName:     "good-key",
 			passphrase: validPrivateKeyPassphrase,
-			storageErr: storageErrs{
-				get: errors.New("storage.Get failed"),
+			storageErr: fakes.Errs{
+				Get: errors.New("storage.Get failed"),
 			},
 			wantErr: errors.New("failed to read key: failed to read keys: failed to read from storage: storage.Get failed"),
 		},
 	}
 
 	for _, tc := range testcases {
-		storage := newStorage()
+		storage := fakes.NewMemStorage()
 		mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
 		if err != nil {
 			t.Fatalf("%s: failed to initialize manager: %v", tc.description, err)
@@ -527,7 +473,7 @@ func TestLoadAndLoaded(t *testing.T) {
 		// Load the key
 		func() {
 			storage.SetError(tc.storageErr)
-			defer storage.SetError(storageErrs{})
+			defer storage.SetError(fakes.Errs{})
 
 			err := syncLoad(mgr, id, tc.passphrase)
 			if diff := pretty.Diff(err, tc.wantErr); diff != nil {
@@ -550,7 +496,7 @@ func TestLoadAndLoaded(t *testing.T) {
 func TestGetID(t *testing.T) {
 	// Create a manager with one configured key.  We load the key and
 	// ensure we can correctly extract the ID.
-	storage := newStorage()
+	storage := fakes.NewMemStorage()
 	agt := agent.NewKeyring()
 	mgr, err := newTestManager(agt, storage, []*initialKey{
 		{

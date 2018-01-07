@@ -1,3 +1,17 @@
+// Copyright 2018 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package keys
 
 import (
@@ -5,29 +19,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/kr/pretty"
 )
-
-type messageHub struct {
-	handlers []func(*js.Object, *js.Object, func(interface{})) bool
-}
-
-func (m *messageHub) OnMessage(callback func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool) {
-	m.handlers = append(m.handlers, callback)
-}
-
-func (m *messageHub) SendMessage(msg interface{}, callback func(rsp *js.Object)) {
-	for _, h := range m.handlers {
-		h(toJSObject(msg), nil, func(rsp interface{}) {
-			callback(toJSObject(rsp))
-		})
-	}
-}
-
-func (m *messageHub) Error() error {
-	return nil
-}
 
 type dummyManager struct {
 	Id             ID
@@ -65,7 +60,7 @@ func (m *dummyManager) Load(id ID, passphrase string, callback func(err error)) 
 }
 
 func TestClientServerConfigured(t *testing.T) {
-	hub := &messageHub{}
+	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	NewServer(mgr, hub)
@@ -95,7 +90,7 @@ func TestClientServerConfigured(t *testing.T) {
 }
 
 func TestClientServerAdd(t *testing.T) {
-	hub := &messageHub{}
+	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	NewServer(mgr, hub)
@@ -119,7 +114,7 @@ func TestClientServerAdd(t *testing.T) {
 }
 
 func TestClientServerRemove(t *testing.T) {
-	hub := &messageHub{}
+	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	NewServer(mgr, hub)
@@ -139,7 +134,7 @@ func TestClientServerRemove(t *testing.T) {
 }
 
 func TestClientServerLoaded(t *testing.T) {
-	hub := &messageHub{}
+	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	NewServer(mgr, hub)
@@ -171,7 +166,7 @@ func TestClientServerLoaded(t *testing.T) {
 }
 
 func TestClientServerLoad(t *testing.T) {
-	hub := &messageHub{}
+	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	NewServer(mgr, hub)
