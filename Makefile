@@ -11,7 +11,7 @@ PREFIX	?= $(shell pwd)
 BIN_DIR	?= $(shell pwd)
 MAKECRX	?= $(PREFIX)/release/makecrx.sh
 
-NODE_PATH = $(shell $(PREFIX)/node/install.sh)
+NODE_PATH = $(shell $(PREFIX)/install-node.sh)
 NPM = $(NODE_PATH)/npm
 
 NODE_MODULES = $(PREFIX)/node_modules
