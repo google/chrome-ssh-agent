@@ -17,17 +17,22 @@
 
 # Based on approach at https://github.com/hugojosefson/find-node-or-install.
 
+function die() {
+  (>&2 echo $1)
+  exit 1
+}
+
 cd $(dirname $0)
 
-readonly VERSION='lts/*'
+readonly NODE_VERSION='lts/*'
 export NVM_DIR=${PWD}/nvm
 
 if [[ ! -d "${NVM_DIR}" ]]; then
-  git clone git://github.com/creationix/nvm.git ${NVM_DIR} &> /dev/null
+  git clone git://github.com/creationix/nvm.git ${NVM_DIR} &> /dev/null || die "failed to install nvm"
 fi
 
-. ${NVM_DIR}/nvm.sh &> /dev/null
-nvm install ${VERSION} &> /dev/null
-nvm use ${VERSION} &> /dev/null
+. ${NVM_DIR}/nvm.sh &> /dev/null || die "failed to source nvm.sh"
+nvm install ${NODE_VERSION} &> /dev/null || die "failed to install node"
+nvm use ${NODE_VERSION} &> /dev/null || die "failed to activate node"
 
-dirname $(nvm which ${VERSION})
+dirname $(nvm which ${NODE_VERSION})
