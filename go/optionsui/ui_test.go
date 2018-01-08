@@ -26,22 +26,10 @@ import (
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
-	"github.com/gopherjs/gopherjs/js"
 	"github.com/kr/pretty"
 )
 
 var (
-	dummys = js.Global.Call("eval", `({
-		newDoc: function(html) {
-			const jsdom = require("jsdom");
-			const virtualConsole = new jsdom.VirtualConsole();
-			virtualConsole.sendTo(console);
-			const { JSDOM } = jsdom;
-			const dom = new JSDOM(html);
-			return dom.window.document;
-		},
-	})`)
-
 	validID = keys.ID("1")
 
 	optionsHTML = ""
@@ -75,7 +63,7 @@ func newHarness() *testHarness {
 	mgr := keys.NewManager(agt, storage)
 	srv := keys.NewServer(mgr, msg)
 	cli := keys.NewClient(msg)
-	dom := dom.New(dummys.Call("newDoc", optionsHTML))
+	dom := dom.New(dom.NewDocForTesting(optionsHTML))
 	ui := New(cli, dom)
 
 	// In our test, DOMContentLoaded is not called automatically. Do it here.

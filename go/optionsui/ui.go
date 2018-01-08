@@ -19,7 +19,6 @@ package optionsui
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
@@ -258,7 +257,6 @@ func (u *UI) updateDisplayedKeys() {
 					u.dom.AppendChild(div, u.dom.NewElement("button"), func(btn *js.Object) {
 						btn.Set("type", "button")
 						btn.Set("id", buttonID(RemoveButton, k.ID))
-						log.Printf("created button with id: %s", buttonID(RemoveButton, k.ID))
 						u.dom.AppendChild(btn, u.dom.NewText("Remove"), nil)
 						u.dom.OnClick(btn, func() {
 							u.remove(k.ID)
