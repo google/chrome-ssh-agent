@@ -21,15 +21,21 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
+// MessageReceiver defines methods sufficient to receive messages and send
+// responses.
 type MessageReceiver interface {
 	OnMessage(callback func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool)
 }
 
+// Server exposes a Manager instance via a messaging API so that a shared
+// instance can be invoked from a different page.
 type Server struct {
 	mgr Manager
 	msg MessageReceiver
 }
 
+// NewServer returns a new Server that manages keys using the
+// supplied Manager.
 func NewServer(mgr Manager, msg MessageReceiver) *Server {
 	result := &Server{
 		mgr: mgr,
@@ -39,6 +45,8 @@ func NewServer(mgr Manager, msg MessageReceiver) *Server {
 	return result
 }
 
+// Define a distinct type for each message.  These are embedded in each
+// message.
 const (
 	msgTypeConfigured int = 1000 + iota
 	msgTypeConfiguredRsp
@@ -52,6 +60,8 @@ const (
 	msgTypeLoadRsp
 )
 
+// msgHeader are the common fields included in every message (as an embedded
+// type).
 type msgHeader struct {
 	*js.Object
 	Type int `js:"type"`
@@ -90,7 +100,7 @@ type rspAdd struct {
 
 type msgRemove struct {
 	*msgHeader
-	Id ID `js:"id"`
+	ID ID `js:"id"`
 }
 
 type rspRemove struct {
@@ -100,7 +110,7 @@ type rspRemove struct {
 
 type msgLoad struct {
 	*msgHeader
-	Id         ID     `js:"id"`
+	ID         ID     `js:"id"`
 	Passphrase string `js:"passphrase"`
 }
 
@@ -109,6 +119,8 @@ type rspLoad struct {
 	Err string `js:"err"`
 }
 
+// makeErr converts a string to an error. Empty string returns nil (i.e., no
+// error).
 func makeErr(s string) error {
 	if s == "" {
 		return nil
@@ -116,6 +128,8 @@ func makeErr(s string) error {
 	return errors.New(s)
 }
 
+// makeErrStr converts an error to a string. A nil error is converted to the
+// empty string.
 func makeErrStr(err error) string {
 	if err == nil {
 		return ""
@@ -123,6 +137,9 @@ func makeErrStr(err error) string {
 	return err.Error()
 }
 
+// onMessage is the callback invoked when a message is received. It determines
+// the type of request received, invokes the appropriate method on the
+// underlying manager instance, and then sends a response with the result.
 func (s *Server) onMessage(headerObj *js.Object, sender *js.Object, sendResponse func(interface{})) bool {
 	header := &msgHeader{Object: headerObj}
 	switch header.Type {
@@ -152,7 +169,7 @@ func (s *Server) onMessage(headerObj *js.Object, sender *js.Object, sendResponse
 		})
 	case msgTypeRemove:
 		m := &msgRemove{msgHeader: header}
-		s.mgr.Remove(m.Id, func(err error) {
+		s.mgr.Remove(m.ID, func(err error) {
 			rsp := &rspRemove{msgHeader: header}
 			rsp.Type = msgTypeRemoveRsp
 			rsp.Err = makeErrStr(err)
@@ -160,7 +177,7 @@ func (s *Server) onMessage(headerObj *js.Object, sender *js.Object, sendResponse
 		})
 	case msgTypeLoad:
 		m := &msgLoad{msgHeader: header}
-		s.mgr.Load(m.Id, m.Passphrase, func(err error) {
+		s.mgr.Load(m.ID, m.Passphrase, func(err error) {
 			rsp := &rspLoad{msgHeader: header}
 			rsp.Type = msgTypeLoadRsp
 			rsp.Err = makeErrStr(err)
@@ -170,19 +187,23 @@ func (s *Server) onMessage(headerObj *js.Object, sender *js.Object, sendResponse
 	return true
 }
 
+// MessageSender defines methods sufficient to send messages.
 type MessageSender interface {
 	SendMessage(msg interface{}, callback func(rsp *js.Object))
 	Error() error
 }
 
+// client implements the Manager interface and forwards calls to a Server.
 type client struct {
 	msg MessageSender
 }
 
+// NewClient returns a Manager implementation that forwards calls to a Server.
 func NewClient(msg MessageSender) Manager {
 	return &client{msg: msg}
 }
 
+// Configured implements Manager.Configured.
 func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	msg := &msgConfigured{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeConfigured
@@ -196,6 +217,7 @@ func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	})
 }
 
+// Loaded implements Manager.Loaded.
 func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
 	msg := &msgLoaded{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeLoaded
@@ -209,6 +231,7 @@ func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
 	})
 }
 
+// Add implements Manager.Add.
 func (c *client) Add(name string, pemPrivateKey string, callback func(err error)) {
 	msg := &msgAdd{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeAdd
@@ -224,10 +247,11 @@ func (c *client) Add(name string, pemPrivateKey string, callback func(err error)
 	})
 }
 
+// Remove implements Manager.Remove.
 func (c *client) Remove(id ID, callback func(err error)) {
 	msg := &msgRemove{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeRemove
-	msg.Id = id
+	msg.ID = id
 	c.msg.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspRemove{msgHeader: &msgHeader{Object: rspObj}}
 		if err := c.msg.Error(); err != nil {
@@ -238,10 +262,11 @@ func (c *client) Remove(id ID, callback func(err error)) {
 	})
 }
 
+// Load implements Manager.Load.
 func (c *client) Load(id ID, passphrase string, callback func(err error)) {
 	msg := &msgLoad{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
 	msg.Type = msgTypeLoad
-	msg.Id = id
+	msg.ID = id
 	msg.Passphrase = passphrase
 	c.msg.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspLoad{msgHeader: &msgHeader{Object: rspObj}}

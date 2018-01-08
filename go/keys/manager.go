@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package keys provides APIs to manage configured keys and load them into an
+// SSH agent.
 package keys
 
 import (
@@ -27,25 +29,39 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
+// ID is a unique identifier for a configured key.
 type ID string
 
 const (
+	// InvalidID is a special ID that will not be assigned to any key.
 	InvalidID ID = ""
 )
 
+// ConfiguredKey is a key configured for use.
 type ConfiguredKey struct {
 	*js.Object
-	Id   ID     `js:"id"`
+	// Id is the unique ID for this key.
+	ID ID `js:"id"`
+	// Name is a name allocated to key.
 	Name string `js:"name"`
 }
 
+// LoadedKey is a key loaded into the agent.
 type LoadedKey struct {
 	*js.Object
-	Type    string `js:"type"`
-	Blob    string `js:"blob"`
+	// Type is the type of key loaded in the agent (e.g., 'ssh-rsa').
+	Type string `js:"type"`
+	// Blob is the public key material for the loaded key.
+	Blob string `js:"blob"`
+	// Comment is a comment for the loaded key.
 	Comment string `js:"comment"`
 }
 
+// ID returns the unique ID corresponding to the key.  If the ID cannot be
+// determined, then InvalidID is returned.
+//
+// The ID for a key loaded into the agent is stored in the Comment field as
+// a string in a particular format.
 func (k *LoadedKey) ID() ID {
 	if !strings.HasPrefix(k.Comment, commentPrefix) {
 		return InvalidID
@@ -54,26 +70,56 @@ func (k *LoadedKey) ID() ID {
 	return ID(strings.TrimPrefix(k.Comment, commentPrefix))
 }
 
+// Manager provides an API for managing configured keys and loading them into
+// an SSH agent.
 type Manager interface {
+	// Configured returns the full set of keys that are configured. The
+	// callback is invoked with the result.
 	Configured(callback func(keys []*ConfiguredKey, err error))
+
+	// Add configures a new key.  name is a human-readable name describing
+	// the key, and pemPrivateKey is the PEM-encoded private key.  callback
+	// is invoked when complete.
 	Add(name string, pemPrivateKey string, callback func(err error))
+
+	// Remove removes the key with the specified ID.  callback is invoked
+	// when complete.
+	//
 	// Note that it might be nice to return an error here, but
 	// the underlying Chrome APIs don't make it trivial to determine
 	// if the requested key was removed, or ignored because it didn't
-	// exist.  However, it's probably not worth the effort to try
-	// and work around this. Therefore, we don't expect an error
-	// in this case.
+	// exist.  This could be improved, but it doesn't seem worth it at
+	// the moment.
 	Remove(id ID, callback func(err error))
+
+	// Loaded returns the full set of keys loaded into the agent. The
+	// callback is invoked with the result.
 	Loaded(callback func(keys []*LoadedKey, err error))
+
+	// Load loads a new key into to the agent, using the passphrase to
+	// decrypt the private key.  callback is invoked when complete.
+	//
+	// NOTE: Unencrypted private keys are not currently supported.
 	Load(id ID, passphrase string, callback func(err error))
 }
 
+// PersistentStore provides access to underlying storage.  See chrome.Storage
+// for details on the methods; using this interface allows for alternate
+// implementations during testing.
 type PersistentStore interface {
+	// Set stores new data. See chrome.Storage.Set() for details.
 	Set(data map[string]interface{}, callback func(err error))
+
+	// Get gets data from storage. See chrome.Storage.Get() for details.
 	Get(callback func(data map[string]interface{}, err error))
+
+	// Delete deletes data from storage. See chrome.Storage.Delete() for
+	// details.
 	Delete(keys []string, callback func(err error))
 }
 
+// NewManager returns a Manager implementation that can manage keys in the
+// supplied agent, and store configured keys in the supplied storage.
 func NewManager(agt agent.Agent, storage PersistentStore) Manager {
 	return &manager{
 		agent:   agt,
@@ -81,23 +127,33 @@ func NewManager(agt agent.Agent, storage PersistentStore) Manager {
 	}
 }
 
+// manager is an implementation of Manager.
 type manager struct {
 	agent   agent.Agent
 	storage PersistentStore
 }
 
+// storedKey is the raw object stored in persistent storage for a configured
+// key.
 type storedKey struct {
 	*js.Object
-	Id            ID     `js:"id"`
+	ID            ID     `js:"id"`
 	Name          string `js:"name"`
 	PEMPrivateKey string `js:"pemPrivateKey"`
 }
 
 const (
-	keyPrefix     = "key."
+	// keyPrefix is the prefix for keys stored in persistent storage.
+	// The full key is of the form 'key.<id>'.
+	keyPrefix = "key."
+	// commentPrefix is the prefix for the comment included when a
+	// configured key is loaded into the agent. The full comment is of the
+	// form 'chrome-ssh-agent:<id>'.
 	commentPrefix = "chrome-ssh-agent:"
 )
 
+// newStoredKey converts a key-value map (e.g., which is supplied when reading
+// from persistent storage) into a storedKey.
 func newStoredKey(m map[string]interface{}) *storedKey {
 	o := js.Global.Get("Object").New()
 	for k, v := range m {
@@ -106,6 +162,8 @@ func newStoredKey(m map[string]interface{}) *storedKey {
 	return &storedKey{Object: o}
 }
 
+// readKeys returns all the stored keys from persistent storage. callback is
+// invoked with the returned keys.
 func (m *manager) readKeys(callback func(keys []*storedKey, err error)) {
 	m.storage.Get(func(data map[string]interface{}, err error) {
 		if err != nil {
@@ -125,6 +183,8 @@ func (m *manager) readKeys(callback func(keys []*storedKey, err error)) {
 	})
 }
 
+// readKey returns the key of the specified ID from persistent storage. callback
+// is invoked with the returned key.
 func (m *manager) readKey(id ID, callback func(key *storedKey, err error)) {
 	m.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
@@ -133,7 +193,7 @@ func (m *manager) readKey(id ID, callback func(key *storedKey, err error)) {
 		}
 
 		for _, k := range keys {
-			if k.Id == id {
+			if k.ID == id {
 				callback(k, nil)
 				return
 			}
@@ -143,6 +203,8 @@ func (m *manager) readKey(id ID, callback func(key *storedKey, err error)) {
 	})
 }
 
+// writeKey writes a new key to persistent storage.  callback is invoked when
+// complete.
 func (m *manager) writeKey(name string, pemPrivateKey string, callback func(err error)) {
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
@@ -152,7 +214,7 @@ func (m *manager) writeKey(name string, pemPrivateKey string, callback func(err 
 	id := ID(i.String())
 	storageKey := fmt.Sprintf("%s%s", keyPrefix, id)
 	sk := &storedKey{Object: js.Global.Get("Object").New()}
-	sk.Id = id
+	sk.ID = id
 	sk.Name = name
 	sk.PEMPrivateKey = pemPrivateKey
 	data := map[string]interface{}{
@@ -163,6 +225,8 @@ func (m *manager) writeKey(name string, pemPrivateKey string, callback func(err 
 	})
 }
 
+// removeKey removes the key with the specified ID from persistent storage.
+// callback is invoked on completion.
 func (m *manager) removeKey(id ID, callback func(err error)) {
 	m.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
@@ -172,8 +236,8 @@ func (m *manager) removeKey(id ID, callback func(err error)) {
 
 		var storageKeys []string
 		for _, k := range keys {
-			if k.Id == id {
-				storageKeys = append(storageKeys, fmt.Sprintf("%s%s", keyPrefix, k.Id))
+			if k.ID == id {
+				storageKeys = append(storageKeys, fmt.Sprintf("%s%s", keyPrefix, k.ID))
 			}
 		}
 
@@ -187,6 +251,7 @@ func (m *manager) removeKey(id ID, callback func(err error)) {
 	})
 }
 
+// Configured implements Manager.Configured.
 func (m *manager) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	m.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
@@ -197,7 +262,7 @@ func (m *manager) Configured(callback func(keys []*ConfiguredKey, err error)) {
 		var result []*ConfiguredKey
 		for _, k := range keys {
 			c := &ConfiguredKey{Object: js.Global.Get("Object").New()}
-			c.Id = k.Id
+			c.ID = k.ID
 			c.Name = k.Name
 			result = append(result, c)
 		}
@@ -205,6 +270,7 @@ func (m *manager) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	})
 }
 
+// Add implements Manager.Add.
 func (m *manager) Add(name string, pemPrivateKey string, callback func(err error)) {
 	if name == "" {
 		callback(errors.New("name must not be empty"))
@@ -216,12 +282,14 @@ func (m *manager) Add(name string, pemPrivateKey string, callback func(err error
 	})
 }
 
+// Remove implements Manager.Remove.
 func (m *manager) Remove(id ID, callback func(err error)) {
 	m.removeKey(id, func(err error) {
 		callback(err)
 	})
 }
 
+// Loaded implements Manager.Loaded.
 func (m *manager) Loaded(callback func(keys []*LoadedKey, err error)) {
 	loaded, err := m.agent.List()
 	if err != nil {
@@ -241,6 +309,7 @@ func (m *manager) Loaded(callback func(keys []*LoadedKey, err error)) {
 	callback(result, nil)
 }
 
+// Load implements Manager.Load.
 func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
 	m.readKey(id, func(key *storedKey, err error) {
 		if err != nil {

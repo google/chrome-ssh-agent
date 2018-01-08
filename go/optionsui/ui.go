@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package optionsui defines the behavior underlying the user interface
+// for the extension's options.
 package optionsui
 
 import (
@@ -24,6 +26,8 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
+// UI implements the behavior underlying the user interface for the extension's
+// options.
 type UI struct {
 	mgr              keys.Manager
 	dom              *dom.DOM
@@ -42,6 +46,9 @@ type UI struct {
 	keys             []*displayedKey
 }
 
+// New returns a new UI instance that manages keys using the supplied manager.
+// domObj is the DOM instance corresponding to the document in which the Options
+// UI is displayed.
 func New(mgr keys.Manager, domObj *dom.DOM) *UI {
 	result := &UI{
 		mgr:              mgr,
@@ -67,6 +74,8 @@ func New(mgr keys.Manager, domObj *dom.DOM) *UI {
 	return result
 }
 
+// setError updates the UI to display the supplied error. If the supplied error
+// is nil, then any displayed error is cleared.
 func (u *UI) setError(err error) {
 	// Clear any existing error
 	u.dom.RemoveChildren(u.errorText)
@@ -76,6 +85,9 @@ func (u *UI) setError(err error) {
 	}
 }
 
+// add configures a new key.  It displays a dialog prompting the user for a name
+// and the corresponding private key.  If the user continues, the key is
+// added to the manager.
 func (u *UI) add() {
 	u.promptAdd(func(name, privateKey string, ok bool) {
 		if !ok {
@@ -93,6 +105,9 @@ func (u *UI) add() {
 	})
 }
 
+// promptAdd displays a dialog prompting the user for a name and private key.
+// callback is invoked when the dialog is closed; the ok parameter indicates
+// if the user clicked OK.
 func (u *UI) promptAdd(callback func(name, privateKey string, ok bool)) {
 	u.dom.OnClick(u.addOk, func() {
 		n := u.dom.Value(u.addName)
@@ -111,6 +126,8 @@ func (u *UI) promptAdd(callback func(name, privateKey string, ok bool)) {
 	u.dom.ShowModal(u.addDialog)
 }
 
+// load loads the key with the specified ID.  A dialog prompts the user for a
+// passphrase.
 func (u *UI) load(id keys.ID) {
 	u.promptPassphrase(func(passphrase string, ok bool) {
 		if !ok {
@@ -125,9 +142,11 @@ func (u *UI) load(id keys.ID) {
 			u.updateKeys()
 		})
 	})
-
 }
 
+// promptPassphrase displays a dialog prompting the user for a passphrase.
+// callback is invoked when the dialog is closed; the ok parameter indicates
+// if the user clicked OK.
 func (u *UI) promptPassphrase(callback func(passphrase string, ok bool)) {
 	u.dom.OnClick(u.passphraseOk, func() {
 		p := u.dom.Value(u.passphraseInput)
@@ -143,6 +162,7 @@ func (u *UI) promptPassphrase(callback func(passphrase string, ok bool)) {
 	u.dom.ShowModal(u.passphraseDialog)
 }
 
+// remove removes the key with the specified ID.
 func (u *UI) remove(id keys.ID) {
 	u.mgr.Remove(id, func(err error) {
 		if err != nil {
@@ -155,26 +175,38 @@ func (u *UI) remove(id keys.ID) {
 	})
 }
 
+// displayedKey represents a key displayed in the UI.
 type displayedKey struct {
-	Id     keys.ID
+	// ID is the unique ID corresponding to the key.
+	ID keys.ID
+	// Loaded indicates if the key is currently loaded.
 	Loaded bool
-	Name   string
-	Type   string
-	Blob   string
+	// Name is the human-readable name assigned to the key.
+	Name string
+	// Type is the type of key (e.g., 'ssh-rsa').
+	Type string
+	// Blob is the public key material for the key.
+	Blob string
 }
 
-func (u *UI) DisplayedKeys() []*displayedKey {
+// DisplayedKeys returns the keys currently displayed in the UI.
+func (u *UI) displayedKeys() []*displayedKey {
 	return u.keys
 }
 
+// buttonKind is the type of button displayed for a key.
 type buttonKind int
 
 const (
+	// LoadButton indicates that the button loads the key into the agent.
 	LoadButton buttonKind = iota
+	// RemoveButton indicates that the button removes the key.
 	RemoveButton
 )
 
-func buttonId(kind buttonKind, id keys.ID) string {
+// buttonID returns the value of the 'id' attribute to be assigned to the HTML
+// button.
+func buttonID(kind buttonKind, id keys.ID) string {
 	s := "unknown"
 	switch kind {
 	case LoadButton:
@@ -185,6 +217,8 @@ func buttonId(kind buttonKind, id keys.ID) string {
 	return fmt.Sprintf("%s-%s", s, id)
 }
 
+// updateDisplayedKeys refreshes the UI to reflect the keys that should be
+// displayed.
 func (u *UI) updateDisplayedKeys() {
 	u.dom.RemoveChildren(u.keysData)
 
@@ -203,7 +237,7 @@ func (u *UI) updateDisplayedKeys() {
 			u.dom.AppendChild(row, u.dom.NewElement("td"), func(cell *js.Object) {
 				u.dom.AppendChild(cell, u.dom.NewElement("div"), func(div *js.Object) {
 					div.Set("className", "keyControls")
-					if k.Id == keys.InvalidID {
+					if k.ID == keys.InvalidID {
 						// We only control keys with a valid ID.
 						return
 					}
@@ -212,10 +246,10 @@ func (u *UI) updateDisplayedKeys() {
 					if !k.Loaded {
 						u.dom.AppendChild(div, u.dom.NewElement("button"), func(btn *js.Object) {
 							btn.Set("type", "button")
-							btn.Set("id", buttonId(LoadButton, k.Id))
+							btn.Set("id", buttonID(LoadButton, k.ID))
 							u.dom.AppendChild(btn, u.dom.NewText("Load"), nil)
 							u.dom.OnClick(btn, func() {
-								u.load(k.Id)
+								u.load(k.ID)
 							})
 						})
 					}
@@ -223,11 +257,11 @@ func (u *UI) updateDisplayedKeys() {
 					// Remove button
 					u.dom.AppendChild(div, u.dom.NewElement("button"), func(btn *js.Object) {
 						btn.Set("type", "button")
-						btn.Set("id", buttonId(RemoveButton, k.Id))
-						log.Printf("created button with id: %s", buttonId(RemoveButton, k.Id))
+						btn.Set("id", buttonID(RemoveButton, k.ID))
+						log.Printf("created button with id: %s", buttonID(RemoveButton, k.ID))
 						u.dom.AppendChild(btn, u.dom.NewText("Remove"), nil)
 						u.dom.OnClick(btn, func() {
-							u.remove(k.Id)
+							u.remove(k.ID)
 						})
 					})
 				})
@@ -252,11 +286,13 @@ func (u *UI) updateDisplayedKeys() {
 	}
 }
 
+// mergeKeys merges configured and loaded keys to create a consolidated list
+// of keys that should be displayed in the UI.
 func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*displayedKey {
 	// Build map of configured keys for faster lookup
 	configuredMap := make(map[keys.ID]*keys.ConfiguredKey)
 	for _, k := range configured {
-		configuredMap[k.Id] = k
+		configuredMap[k.ID] = k
 	}
 
 	var result []*displayedKey
@@ -278,7 +314,7 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 		if id := l.ID(); id != keys.InvalidID {
 			if ak := configuredMap[id]; ak != nil {
 				loadedIds[id] = true
-				dk.Id = id
+				dk.ID = id
 				dk.Name = ak.Name
 			}
 		}
@@ -288,12 +324,12 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 	// Add all configured keys that are not loaded.
 	for _, a := range configured {
 		// Skip any that we already covered above.
-		if loadedIds[a.Id] {
+		if loadedIds[a.ID] {
 			continue
 		}
 
 		result = append(result, &displayedKey{
-			Id:     a.Id,
+			ID:     a.ID,
 			Loaded: false,
 			Name:   a.Name,
 		})
@@ -304,6 +340,8 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 	return result
 }
 
+// updateKeys queries the manager for configured and loaded keys, then triggers
+// UI updates to reflect the current state.
 func (u *UI) updateKeys() {
 	u.mgr.Configured(func(configured []*keys.ConfiguredKey, err error) {
 		if err != nil {

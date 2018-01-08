@@ -77,9 +77,9 @@ func readErr(errc chan error) error {
 	panic("no elements read from channel")
 }
 
-func findKey(mgr Manager, byId ID, byName string) (ID, error) {
-	if byId != InvalidID {
-		return byId, nil
+func findKey(mgr Manager, byID ID, byName string) (ID, error) {
+	if byID != InvalidID {
+		return byID, nil
 	}
 
 	configured, err := syncConfigured(mgr)
@@ -89,7 +89,7 @@ func findKey(mgr Manager, byId ID, byName string) (ID, error) {
 
 	for _, k := range configured {
 		if k.Name == byName {
-			return k.Id, nil
+			return k.ID, nil
 		}
 	}
 

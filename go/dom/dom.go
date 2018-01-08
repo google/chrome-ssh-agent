@@ -46,7 +46,7 @@ func (d *DOM) RemoveChildren(p *js.Object) {
 
 // NewElement returns a new element with the specified tag (e.g., 'tr', 'td').
 func (d *DOM) NewElement(tag string) *js.Object {
-	return d.doc.Call("createElement", kind)
+	return d.doc.Call("createElement", tag)
 }
 
 // NewText returns a new text element with the specified text.

@@ -25,7 +25,7 @@ import (
 )
 
 type dummyManager struct {
-	Id             ID
+	ID             ID
 	Name           string
 	PEMPrivateKey  string
 	Passphrase     string
@@ -45,7 +45,7 @@ func (m *dummyManager) Add(name string, pemPrivateKey string, callback func(err 
 }
 
 func (m *dummyManager) Remove(id ID, callback func(err error)) {
-	m.Id = id
+	m.ID = id
 	callback(m.Err)
 }
 
@@ -54,7 +54,7 @@ func (m *dummyManager) Loaded(callback func(keys []*LoadedKey, err error)) {
 }
 
 func (m *dummyManager) Load(id ID, passphrase string, callback func(err error)) {
-	m.Id = id
+	m.ID = id
 	m.Passphrase = passphrase
 	callback(m.Err)
 }
@@ -66,10 +66,10 @@ func TestClientServerConfigured(t *testing.T) {
 	NewServer(mgr, hub)
 
 	k0 := &ConfiguredKey{Object: js.Global.Get("Object").New()}
-	k0.Id = ID("id-0")
+	k0.ID = ID("id-0")
 	k0.Name = "key-0"
 	k1 := &ConfiguredKey{Object: js.Global.Get("Object").New()}
-	k1.Id = ID("id-1")
+	k1.ID = ID("id-1")
 	k1.Name = "key-1"
 
 	wantConfiguredKeys := []*ConfiguredKey{k0, k1}
@@ -119,13 +119,13 @@ func TestClientServerRemove(t *testing.T) {
 	cli := NewClient(hub)
 	NewServer(mgr, hub)
 
-	wantId := ID("id-0")
+	wantID := ID("id-0")
 	wantErr := errors.New("failed")
 
 	mgr.Err = wantErr
 
-	err := syncRemove(cli, wantId)
-	if diff := pretty.Diff(mgr.Id, wantId); diff != nil {
+	err := syncRemove(cli, wantID)
+	if diff := pretty.Diff(mgr.ID, wantID); diff != nil {
 		t.Errorf("incorrect ID; -got +want: %s", diff)
 	}
 	if diff := pretty.Diff(err, wantErr); diff != nil {
@@ -171,14 +171,14 @@ func TestClientServerLoad(t *testing.T) {
 	cli := NewClient(hub)
 	NewServer(mgr, hub)
 
-	wantId := ID("id-0")
+	wantID := ID("id-0")
 	wantPassphrase := "secret"
 	wantErr := errors.New("failed")
 
 	mgr.Err = wantErr
 
-	err := syncLoad(cli, wantId, wantPassphrase)
-	if diff := pretty.Diff(mgr.Id, wantId); diff != nil {
+	err := syncLoad(cli, wantID, wantPassphrase)
+	if diff := pretty.Diff(mgr.ID, wantID); diff != nil {
 		t.Errorf("incorrect ID; -got +want: %s", diff)
 	}
 	if diff := pretty.Diff(mgr.Passphrase, wantPassphrase); diff != nil {

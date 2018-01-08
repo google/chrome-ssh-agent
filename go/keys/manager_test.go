@@ -133,7 +133,7 @@ func TestRemove(t *testing.T) {
 		description    string
 		initial        []*initialKey
 		byName         string
-		byId           ID
+		byID           ID
 		storageErr     fakes.Errs
 		wantConfigured []string
 		wantErr        error
@@ -157,7 +157,7 @@ func TestRemove(t *testing.T) {
 					PEMPrivateKey: testdata.ValidPrivateKey,
 				},
 			},
-			byId:           ID("bogus-id"),
+			byID:           ID("bogus-id"),
 			wantConfigured: []string{"new-key"},
 		},
 		{
@@ -200,7 +200,7 @@ func TestRemove(t *testing.T) {
 		}
 
 		// Figure out the ID of the key we will try to remove.
-		id, err := findKey(mgr, tc.byId, tc.byName)
+		id, err := findKey(mgr, tc.byID, tc.byName)
 		if err != nil {
 			t.Fatalf("%s: failed to find key: %v", tc.description, err)
 		}
@@ -297,7 +297,7 @@ func TestLoadAndLoaded(t *testing.T) {
 		description string
 		initial     []*initialKey
 		byName      string
-		byId        ID
+		byID        ID
 		passphrase  string
 		storageErr  fakes.Errs
 		wantLoaded  []string
@@ -367,7 +367,7 @@ func TestLoadAndLoaded(t *testing.T) {
 					PEMPrivateKey: testdata.ValidPrivateKey,
 				},
 			},
-			byId:       ID("bogus-id"),
+			byID:       ID("bogus-id"),
 			passphrase: "some passphrase",
 			wantErr:    errors.New("failed to find key with ID bogus-id"),
 		},
@@ -396,7 +396,7 @@ func TestLoadAndLoaded(t *testing.T) {
 		}
 
 		// Figure out the ID of the key we will try to load.
-		id, err := findKey(mgr, tc.byId, tc.byName)
+		id, err := findKey(mgr, tc.byID, tc.byName)
 		if err != nil {
 			t.Fatalf("%s: failed to find key: %v", tc.description, err)
 		}
@@ -440,13 +440,13 @@ func TestGetID(t *testing.T) {
 	}
 
 	// Locate the ID corresponding to the key we configured.
-	wantId, err := findKey(mgr, InvalidID, "good-key")
+	wantID, err := findKey(mgr, InvalidID, "good-key")
 	if err != nil {
 		t.Errorf("failed to find ID for good-key: %v", err)
 	}
 
 	// Load the key.
-	if err := syncLoad(mgr, wantId, testdata.ValidPrivateKeyPassphrase); err != nil {
+	if err := syncLoad(mgr, wantID, testdata.ValidPrivateKeyPassphrase); err != nil {
 		t.Errorf("failed to load key: %v", err)
 	}
 
@@ -455,7 +455,7 @@ func TestGetID(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to enumerate loaded keys: %v", err)
 	}
-	if diff := pretty.Diff(loadedKeyIds(loaded), []ID{wantId}); diff != nil {
+	if diff := pretty.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != nil {
 		t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
 	}
 
@@ -477,7 +477,7 @@ func TestGetID(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to enumerate loaded keys: %v", err)
 	}
-	if diff := pretty.Diff(loadedKeyIds(loaded), []ID{wantId, InvalidID}); diff != nil {
+	if diff := pretty.Diff(loadedKeyIds(loaded), []ID{wantID, InvalidID}); diff != nil {
 		t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
 	}
 }
