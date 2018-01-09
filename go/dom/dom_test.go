@@ -1,14 +1,29 @@
+// Copyright 2018 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package dom
 
 import (
 	"testing"
 
+	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/kr/pretty"
 )
 
 func TestTextContent(t *testing.T) {
-	d := New(NewDocForTesting(`
+	d := New(dt.NewDocForTesting(`
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
 	if diff := pretty.Diff(d.TextContent(d.GetElement("list")), "firstsecond"); diff != nil {
@@ -17,7 +32,7 @@ func TestTextContent(t *testing.T) {
 }
 
 func TestRemoveChildren(t *testing.T) {
-	d := New(NewDocForTesting(`
+	d := New(dt.NewDocForTesting(`
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
 	d.RemoveChildren(d.GetElement("list"))
@@ -27,7 +42,7 @@ func TestRemoveChildren(t *testing.T) {
 }
 
 func TestNewElement(t *testing.T) {
-	d := New(NewDocForTesting(`
+	d := New(dt.NewDocForTesting(`
 		<div id="list"></div>
 	`))
 	d.AppendChild(d.GetElement("list"), d.NewElement("div"), func(child *js.Object) {
@@ -50,7 +65,7 @@ func TestNewElement(t *testing.T) {
 }
 
 func TestNewText(t *testing.T) {
-	d := New(NewDocForTesting(`
+	d := New(dt.NewDocForTesting(`
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
 	d.AppendChild(d.GetElement("list"), d.NewText("third"), nil)
@@ -60,7 +75,7 @@ func TestNewText(t *testing.T) {
 }
 
 func TestClick(t *testing.T) {
-	d := New(NewDocForTesting(`
+	d := New(dt.NewDocForTesting(`
 		<button id="btn"/>
 	`))
 	var clicked bool
@@ -72,7 +87,7 @@ func TestClick(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
-	d := New(NewDocForTesting(`
+	d := New(dt.NewDocForTesting(`
 		<input id="ipt" type="text" value="Hello">
 	`))
 

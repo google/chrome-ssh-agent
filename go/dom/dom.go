@@ -26,33 +26,11 @@ var (
 	// code. See NewDocForTesting() for a Document object that can be used in
 	// unit tests.
 	Doc = js.Global.Get("document")
-
-	// funcs contains Javascript functions that can be invoked by Go library
-	// functions in this package. The following are defined:
-	// - newDoc: Uses jsdom to create a new Document object. For use in
-	//     testing only. This requires node.js (which is used by
-	//     'gopherjs test') with the jsdom package installed.
-	funcs = js.Global.Call("eval", `({
-		newDoc: function(html) {
-			const jsdom = require("jsdom");
-			const virtualConsole = new jsdom.VirtualConsole();
-			virtualConsole.sendTo(console);
-			const { JSDOM } = jsdom;
-			const dom = new JSDOM(html);
-			return dom.window.document;
-		},
-	})`)
 )
 
 // DOM provides an API for interacting with the DOM for a Document.
 type DOM struct {
 	doc *js.Object
-}
-
-// NewDocForTesting returns a Document object that can be used for testing.
-// The DOM in the Document object is instantiated using the supplied HTML.
-func NewDocForTesting(html string) *js.Object {
-	return funcs.Call("newDoc", html)
 }
 
 // New returns a DOM instance for interacting with the specified

@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/google/chrome-ssh-agent/go/dom"
+	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/kr/pretty"
@@ -63,7 +64,7 @@ func newHarness() *testHarness {
 	mgr := keys.NewManager(agt, storage)
 	srv := keys.NewServer(mgr, msg)
 	cli := keys.NewClient(msg)
-	dom := dom.New(dom.NewDocForTesting(optionsHTML))
+	dom := dom.New(dt.NewDocForTesting(optionsHTML))
 	ui := New(cli, dom)
 
 	// In our test, DOMContentLoaded is not called automatically. Do it here.
