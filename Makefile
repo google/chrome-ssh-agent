@@ -21,7 +21,7 @@ NODE_SYSCALL=$(NODE_MODULES)/syscall.node
 
 PATH := $(NODE_PATH):$(shell echo $$PATH)
 
-all: format style vet lint test build crx
+all: format style vet lint test build zip
 
 $(NODE_SOURCE_MAP_SUPPORT):
 	@$(NPM) install source-map-support
