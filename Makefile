@@ -64,8 +64,12 @@ go-background: $(GOPHERJS)
 
 build: go-options go-background
 
+zip: $(MAKECRX) build
+	@echo ">> building Chrome extension (zip)"
+	@$(MAKECRX)
+
 crx: $(MAKECRX) build
-	@echo ">> building Chrome extension"
+	@echo ">> building Chrome extension (crx)"
 	@$(MAKECRX) $(CHROME_EXTENSION_KEY)
 
 $(GOPHERJS):

@@ -4,6 +4,7 @@
 *.so
 *.dylib
 *.crx
+*.zip
 
 # Test binary, build with `go test -c`
 *.test

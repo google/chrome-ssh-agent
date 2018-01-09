@@ -1,4 +1,4 @@
-#!/bin/bash -eu
+#!/bin/bash
 #
 # Copyright 2017 Google LLC
 #
@@ -20,6 +20,8 @@
 
 readonly KEY=$1; shift
 
+set -eu
+
 # Start in top-level source directory
 cd "$(dirname $0)/.."
 
@@ -27,6 +29,7 @@ readonly BUILD_TMP=$(mktemp -d)
 trap "rm -rf '${BUILD_TMP}'" EXIT
 
 readonly OUTPUT_DIR="${PWD}/bin"
+mkdir -p "${OUTPUT_DIR}"
 
 readonly NAME=$(basename "${PWD}")
 readonly CRX="${OUTPUT_DIR}/${NAME}.crx"
@@ -43,6 +46,12 @@ zip -qr -9 -X "${ZIP}" . --include \
 	\*CONTRIBUTING* \
 	\*README* \
 	\*LICENCE*
+
+# If no key is provided, then just produce the zip file.
+if [ -z "${KEY}" ]; then
+  mv "${ZIP}" "${OUTPUT_DIR}"
+  exit 0
+fi
 
 # Sign the contents of the zip file.
 openssl sha1 -sha1 -binary -sign "${KEY}" < "${ZIP}" > "${SIG}"
