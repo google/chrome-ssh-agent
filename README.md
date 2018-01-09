@@ -6,7 +6,7 @@ SSH agent implementation that can be used with the
 
 # Getting Started
 
-## Installation from Chrome Webstore
+## Installation from Chrome Web Store
 
 Visit the extension in the
 [Chrome Web Store](https://chrome.google.com/webstore/detail/chrome-ssh-agent/eechpbnaifiimgajnomdipfaamobdfha)
