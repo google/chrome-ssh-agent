@@ -50,7 +50,7 @@ lint: $(GOLINT)
 	@echo ">> linting code"
 	@$(GOLINT) $(pkgs)
 
-test: $(GOPHERJS) $(NODE_SOURCE_MAP_SUPPORT) $(NODE_JSDOM) $(NODE_SYSCALL)
+test: krpretty $(GOPHERJS) $(NODE_SOURCE_MAP_SUPPORT) $(NODE_JSDOM) $(NODE_SYSCALL)
 	@echo ">> running tests"
 	@$(GOPHERJS) test $(pkgs)
 
@@ -73,5 +73,8 @@ $(GOPHERJS):
 
 $(GOLINT):
 	@GOOS= GOARCH= $(GO) get -u github.com/golang/lint/golint
+
+krpretty:
+	@GOOS= GOARCH= $(GO) get -u github.com/kr/pretty
 
 .PHONY: all
