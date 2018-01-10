@@ -1,4 +1,4 @@
-![Build status](https://api.travis-ci.org/google/chrome-ssh-agent.svg?branch=master)
+[![Build status](https://api.travis-ci.org/google/chrome-ssh-agent.svg?branch=master)](https://travis-ci.org/google/chrome-ssh-agent)
 
 # chrome-ssh-agent
 
