@@ -1,3 +1,5 @@
+![Build status](https://api.travis-ci.org/google/chrome-ssh-agent.svg?branch=master)
+
 # chrome-ssh-agent
 
 This is a bare-bones SSH agent extension for Google Chrome.  It provides an
