@@ -6,6 +6,10 @@ env:
     - EXTENSION_ID=eechpbnaifiimgajnomdipfaamobdfha
     - EXTENSION_ZIP_PATH=bin/chrome-ssh-agent.zip
     - PUBLISH_TARGET=trustedTesters
+init:
+  pip install pipenv
+  pipenv install --dev
+  pipenv install requests
 deploy:
   - provider: releases
     api_key:
