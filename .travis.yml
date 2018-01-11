@@ -2,9 +2,10 @@ language: go
 go:
 - 1.x
 env:
-  - EXTENSION_ID=eechpbnaifiimgajnomdipfaamobdfha
-  - EXTENSION_ZIP_PATH=bin/chrome-ssh-agent.zip
-  - PUBLISH_TARGET=trustedTesters
+  global:
+    - EXTENSION_ID=eechpbnaifiimgajnomdipfaamobdfha
+    - EXTENSION_ZIP_PATH=bin/chrome-ssh-agent.zip
+    - PUBLISH_TARGET=trustedTesters
 deploy:
   - provider: releases
     api_key:
