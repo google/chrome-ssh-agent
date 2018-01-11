@@ -3,14 +3,17 @@ go:
 - 1.x
 env:
   global:
+    # Configuration for script to deploy to Chrome Web Store
     - EXTENSION_ID=eechpbnaifiimgajnomdipfaamobdfha
     - EXTENSION_ZIP_PATH=bin/chrome-ssh-agent.zip
     - PUBLISH_TARGET=trustedTesters
 addons:
   apt:
     packages:
+    # Required for script that deploys to Chrome Web Store
     - python3-requests
 deploy:
+  # Upload zip file to GitHub as a release
   - provider: releases
     api_key:
       secure: u+ZCN5GoEmN/JcG4rC5ioxoTGZ3wWHF4atS6scevqhv0EbHzfsnmxvX+mx0pGDPIVxfifeGafTkVckT3lbDYMeIAM+qyT4DJuF8R3gHpU9G+3rGCtfuBmKoCGjy+mpAPVLhxDXSvbZV4VSxhs45rS3UgBKo+icM6jSYiJht/8GLQrBLlq7592tSew6jEbaQLGi0UY/JoQX83Th4RzQa9RExTE54AVA6W6pHQP+hY8xi5zKn/PU1gSMqISUTeq1DDebnJX/qMqSZdPx9yT9ddI69SFtdTghDAscXWKIpu31NNZk/1b25sA5ZE5ytvrrlizcZAgCBxZJfMHlfxyl8lO68B5Zd0jH8meD1u561KrrtiuyDHrfBWt6qvUUmo1ztpZky5AoDozbPnS/8BBYELE8q5xyVoBgevYXGlGffRF4HsEsKKTbjuatbMO4Gkhy/apGlgxnZ+qlx2TFdEfOT97OMT12VSeZWqpvYisdFbsKHRdZOax8+UapE8jV7jlKgMZS5Io98jNsmxjHRrqDTgr7VEDfQMhOBIq+pnjj5UqR6BCFFagD5a7hBAZP+PmcbTWpRbTFeO/H8E9hAXy9JPybwRvcZ579s1dJ0DWUzeYHluccwu51tQ+H0lxq/QC7G88v7BLVUFf3HLJz7nlPEjtVT0wkmq33R2oDuE1opul2k=
@@ -19,6 +22,7 @@ deploy:
     on:
       tags: true
   - provider: script
+    # Deploy to Chrome Web Store
     script: ./deploy.py
     on:
       tags: true
