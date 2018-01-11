@@ -24,5 +24,6 @@ deploy:
   - provider: script
     # Deploy to Chrome Web Store
     script: ./deploy.py
+    skip_cleanup: true
     on:
       tags: true
