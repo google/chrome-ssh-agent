@@ -1,6 +1,10 @@
 language: go
 go:
 - 1.x
+env:
+  - EXTENSION_ID=eechpbnaifiimgajnomdipfaamobdfha
+  - EXTENSION_ZIP_PATH=bin/chrome-ssh-agent.zip
+  - PUBLISH_TARGET=trustedTesters
 deploy:
   - provider: releases
     api_key:
@@ -10,6 +14,6 @@ deploy:
     on:
       tags: true
   - provider: script
-    script: ./deploy.sh
+    script: ./deploy.py
     on:
       tags: true
