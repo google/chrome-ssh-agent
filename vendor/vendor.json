@@ -17,32 +17,32 @@
 		{
 			"checksumSHA1": "IQkUIOnvlf0tYloFx9mLaXSvXWQ=",
 			"path": "golang.org/x/crypto/curve25519",
-			"revision": "0fcca4842a8d74bfddc2c96a073bd2a4d2a7a2e8",
-			"revisionTime": "2017-11-25T19:00:56Z"
+			"revision": "b3c9a1d25cfbbbab0ff4780b71c4f54e6e92a0de",
+			"revisionTime": "2018-01-09T18:05:24Z"
 		},
 		{
 			"checksumSHA1": "1hwn8cgg4EVXhCpJIqmMbzqnUo0=",
 			"path": "golang.org/x/crypto/ed25519",
-			"revision": "0fcca4842a8d74bfddc2c96a073bd2a4d2a7a2e8",
-			"revisionTime": "2017-11-25T19:00:56Z"
+			"revision": "b3c9a1d25cfbbbab0ff4780b71c4f54e6e92a0de",
+			"revisionTime": "2018-01-09T18:05:24Z"
 		},
 		{
 			"checksumSHA1": "LXFcVx8I587SnWmKycSDEq9yvK8=",
 			"path": "golang.org/x/crypto/ed25519/internal/edwards25519",
-			"revision": "0fcca4842a8d74bfddc2c96a073bd2a4d2a7a2e8",
-			"revisionTime": "2017-11-25T19:00:56Z"
+			"revision": "b3c9a1d25cfbbbab0ff4780b71c4f54e6e92a0de",
+			"revisionTime": "2018-01-09T18:05:24Z"
 		},
 		{
 			"checksumSHA1": "NHjGg73p5iGZ+7tflJ4cVABNmKE=",
 			"path": "golang.org/x/crypto/ssh",
-			"revision": "0fcca4842a8d74bfddc2c96a073bd2a4d2a7a2e8",
-			"revisionTime": "2017-11-25T19:00:56Z"
+			"revision": "b3c9a1d25cfbbbab0ff4780b71c4f54e6e92a0de",
+			"revisionTime": "2018-01-09T18:05:24Z"
 		},
 		{
 			"checksumSHA1": "NMRX0onGReaL9IfLr0XQ3kl5Id0=",
 			"path": "golang.org/x/crypto/ssh/agent",
-			"revision": "0fcca4842a8d74bfddc2c96a073bd2a4d2a7a2e8",
-			"revisionTime": "2017-11-25T19:00:56Z"
+			"revision": "b3c9a1d25cfbbbab0ff4780b71c4f54e6e92a0de",
+			"revisionTime": "2018-01-09T18:05:24Z"
 		}
 	],
 	"rootPath": "github.com/google/chrome-ssh-agent"
