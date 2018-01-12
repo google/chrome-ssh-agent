@@ -40,6 +40,10 @@ type UI struct {
 	addKey           *js.Object
 	addOk            *js.Object
 	addCancel        *js.Object
+	removeDialog     *js.Object
+	removeName       *js.Object
+	removeYes        *js.Object
+	removeNo         *js.Object
 	errorText        *js.Object
 	keysData         *js.Object
 	keys             []*displayedKey
@@ -62,6 +66,10 @@ func New(mgr keys.Manager, domObj *dom.DOM) *UI {
 		addKey:           domObj.GetElement("addKey"),
 		addOk:            domObj.GetElement("addOk"),
 		addCancel:        domObj.GetElement("addCancel"),
+		removeDialog:     domObj.GetElement("removeDialog"),
+		removeName:       domObj.GetElement("removeName"),
+		removeYes:        domObj.GetElement("removeYes"),
+		removeNo:         domObj.GetElement("removeNo"),
 		errorText:        domObj.GetElement("errorMessage"),
 		keysData:         domObj.GetElement("keysData"),
 	}
@@ -161,16 +169,42 @@ func (u *UI) promptPassphrase(callback func(passphrase string, ok bool)) {
 	u.dom.ShowModal(u.passphraseDialog)
 }
 
-// remove removes the key with the specified ID.
-func (u *UI) remove(id keys.ID) {
-	u.mgr.Remove(id, func(err error) {
-		if err != nil {
-			u.setError(fmt.Errorf("failed to remove key: %v", err))
+// promptRemove displays a dialog prompting the user to confirm that a key
+// should be removed. callback is invoked when the dialog is closed; the yes
+// parameter indicates if the user clicked Yes.
+func (u *UI) promptRemove(name string, callback func(yes bool)) {
+	u.dom.RemoveChildren(u.removeName)
+	u.dom.AppendChild(u.removeName, u.dom.NewText(name), nil)
+	u.dom.OnClick(u.removeYes, func() {
+		u.dom.RemoveChildren(u.removeName)
+		u.dom.Close(u.removeDialog)
+		callback(true)
+	})
+	u.dom.OnClick(u.removeNo, func() {
+		u.dom.RemoveChildren(u.removeName)
+		u.dom.Close(u.removeDialog)
+		callback(false)
+	})
+	u.dom.ShowModal(u.removeDialog)
+}
+
+// remove removes the key with the specified ID.  A dialog prompts the user to
+// confirm that the key should be removed.
+func (u *UI) remove(id keys.ID, name string) {
+	u.promptRemove(name, func(yes bool) {
+		if !yes {
 			return
 		}
 
-		u.setError(nil)
-		u.updateKeys()
+		u.mgr.Remove(id, func(err error) {
+			if err != nil {
+				u.setError(fmt.Errorf("failed to remove key: %v", err))
+				return
+			}
+
+			u.setError(nil)
+			u.updateKeys()
+		})
 	})
 }
 
@@ -259,7 +293,7 @@ func (u *UI) updateDisplayedKeys() {
 						btn.Set("id", buttonID(RemoveButton, k.ID))
 						u.dom.AppendChild(btn, u.dom.NewText("Remove"), nil)
 						u.dom.OnClick(btn, func() {
-							u.remove(k.ID)
+							u.remove(k.ID, k.Name)
 						})
 					})
 				})

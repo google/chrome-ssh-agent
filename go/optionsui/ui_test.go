@@ -170,8 +170,37 @@ func TestUserActions(t *testing.T) {
 
 				id := findKey(h.UI.displayedKeys(), "new-key-1")
 				h.dom.DoClick(h.dom.GetElement(buttonID(RemoveButton, id)))
+				h.dom.DoClick(h.UI.removeYes)
 			},
 			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					ID:   validID,
+					Name: "new-key-2",
+				},
+			},
+		},
+		{
+			description: "remove key cancelled by user",
+			sequence: func(h *testHarness) {
+				h.dom.DoClick(h.UI.addButton)
+				h.dom.SetValue(h.UI.addName, "new-key-1")
+				h.dom.SetValue(h.UI.addKey, "private-key-1")
+				h.dom.DoClick(h.UI.addOk)
+
+				h.dom.DoClick(h.UI.addButton)
+				h.dom.SetValue(h.UI.addName, "new-key-2")
+				h.dom.SetValue(h.UI.addKey, "private-key-2")
+				h.dom.DoClick(h.UI.addOk)
+
+				id := findKey(h.UI.displayedKeys(), "new-key-1")
+				h.dom.DoClick(h.dom.GetElement(buttonID(RemoveButton, id)))
+				h.dom.DoClick(h.UI.removeNo)
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					ID:   validID,
+					Name: "new-key-1",
+				},
 				&displayedKey{
 					ID:   validID,
 					Name: "new-key-2",
@@ -191,7 +220,8 @@ func TestUserActions(t *testing.T) {
 				h.dom.SetValue(h.UI.addKey, "private-key-2")
 				h.dom.DoClick(h.UI.addOk)
 
-				h.UI.remove(keys.ID("bogus-id"))
+				h.UI.remove(keys.ID("bogus-id"), "bogus-name")
+				h.dom.DoClick(h.UI.removeYes)
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -341,6 +371,7 @@ func TestUserActions(t *testing.T) {
 				h.dom.DoClick(h.UI.passphraseOk)
 
 				h.dom.DoClick(h.dom.GetElement(buttonID(RemoveButton, id)))
+				h.dom.DoClick(h.UI.removeYes)
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
