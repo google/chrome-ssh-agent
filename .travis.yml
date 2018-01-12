@@ -1,12 +1,6 @@
 language: go
 go:
 - 1.x
-env:
-  global:
-    # Configuration for script to deploy to Chrome Web Store
-    - EXTENSION_ID=eechpbnaifiimgajnomdipfaamobdfha
-    - EXTENSION_ZIP_PATH=bin/chrome-ssh-agent.zip
-    - PUBLISH_TARGET=trustedTesters
 addons:
   apt:
     packages:
@@ -23,7 +17,7 @@ deploy:
       tags: true
   - provider: script
     # Deploy to Chrome Web Store
-    script: ./deploy.py
+    script: make deploy-webstore
     skip_cleanup: true
     on:
       tags: true
