@@ -6,6 +6,16 @@ addons:
     packages:
     # Required for script that deploys to Chrome Web Store
     - python3-requests
+before_install:
+# gopherjs runs tests under Node.js. Install it.  We don't install from APT
+# since that version is too old.
+- . $HOME/.nvm/nvm.sh
+- nvm install 'lts/*'
+- nvm use 'lts/*'
+- npm install
+- npm install jsdom               # Provides DOM implementation used in unit tests
+- npm install source-map-support  # Better stack traces
+- npm install node-gyp            # https://github.com/gopherjs/gopherjs/blob/master/doc/syscalls.md
 deploy:
   # Upload zip file to GitHub as a release
   - provider: releases
