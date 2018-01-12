@@ -63,6 +63,7 @@ build: $(GOPHERJS)
 
 $(EXTENSION_ZIP): build
 	@echo ">> building Chrome extension"
+	@mkdir -p $(shell dirname $(EXTENSION_ZIP))
 	@zip -qr -9 -X "${EXTENSION_ZIP}" . --include \
 		manifest.json \
 		\*.css \
