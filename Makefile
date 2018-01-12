@@ -12,9 +12,10 @@ EXTENSION_ID	= eechpbnaifiimgajnomdipfaamobdfha
 EXTENSION_ZIP	= $(BIN_DIR)/chrome-ssh-agent.zip
 PUBLISH_TARGET	= trustedTesters
 
-NODE_GYP	= $(shell echo $$HOME)/node_modules/node-gyp/bin/node-gyp.js
-NODE_MODULES	= $(PREFIX)/node_modules
-NODE_SYSCALL	= $(NODE_MODULES)/syscall.node
+# Finding node-gyp requires going up one level and then querying. We do not want
+# to find our own node_modules directory.
+NODE_GYP	= $(shell cd .. && npm bin)/node-gyp
+NODE_SYSCALL	= node_modules/syscall.node
 
 
 all: format style vet lint test build zip
@@ -22,7 +23,7 @@ all: format style vet lint test build zip
 $(NODE_SYSCALL):
 	# See https://github.com/gopherjs/gopherjs/blob/master/doc/syscalls.md
 	@cd $(GOPATH)/src/github.com/gopherjs/gopherjs/node-syscall && $(NODE_GYP) rebuild
-	@mkdir -p $(NODE_MODULES)
+	@mkdir -p $(shell dirname $(NODE_SYSCALL))
 	@ln $(GOPATH)/src/github.com/gopherjs/gopherjs/node-syscall/build/Release/syscall.node $(NODE_SYSCALL)
 
 format:
