@@ -14,7 +14,7 @@ PUBLISH_TARGET	= trustedTesters
 
 # Finding node-gyp requires going up one level and then querying. We do not want
 # to find our own node_modules directory.
-NODE_GYP	= $(shell cd .. && npm bin)/node-gyp
+NODE_GYP	= $(shell npm bin)/node-gyp
 NODE_SYSCALL	= node_modules/syscall.node
 
 

@@ -16,8 +16,6 @@ before_install:
 - npm install jsdom               # Provides DOM implementation used in unit tests
 - npm install source-map-support  # Better stack traces
 - npm install node-gyp            # https://github.com/gopherjs/gopherjs/blob/master/doc/syscalls.md
-- npm bin
-- npm prefix
 deploy:
   # Upload zip file to GitHub as a release
   - provider: releases
