@@ -286,29 +286,6 @@ func TestUserActions(t *testing.T) {
 			},
 		},
 		{
-			description: "load key",
-			sequence: func(h *testHarness) {
-				h.dom.DoClick(h.UI.addButton)
-				h.dom.SetValue(h.UI.addName, "new-key")
-				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
-				h.dom.DoClick(h.UI.addOk)
-
-				id := findKey(h.UI.displayedKeys(), "new-key")
-				h.dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
-				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
-				h.dom.DoClick(h.UI.passphraseOk)
-			},
-			wantDisplayed: []*displayedKey{
-				&displayedKey{
-					ID:     validID,
-					Name:   "new-key",
-					Loaded: true,
-					Type:   testdata.ValidPrivateKeyType,
-					Blob:   testdata.ValidPrivateKeyBlob,
-				},
-			},
-		},
-		{
 			description: "load key cancelled by user",
 			sequence: func(h *testHarness) {
 				h.dom.DoClick(h.UI.addButton)
