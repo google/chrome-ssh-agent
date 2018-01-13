@@ -70,7 +70,7 @@ def publish(token, extension_id, publish_target):
 
 def main():
   extension_id = os.environ['EXTENSION_ID']
-  file_path = os.environ['EXTENSION_ZIP_PATH']
+  file_path = os.environ['EXTENSION_ZIP']
   publish_target = os.environ['PUBLISH_TARGET']
 
   token = getToken()

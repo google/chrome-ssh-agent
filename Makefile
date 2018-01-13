@@ -8,9 +8,10 @@ pkgs		= $(shell $(GO) list ./... | grep -v /vendor/)
 PREFIX		?= $(shell pwd)
 BIN_DIR		?= $(PREFIX)/bin
 
-EXTENSION_ID	= eechpbnaifiimgajnomdipfaamobdfha
-EXTENSION_ZIP	= $(BIN_DIR)/chrome-ssh-agent.zip
-PUBLISH_TARGET	= trustedTesters
+# These are read by deploy-webstore.py, so must be exported.
+export EXTENSION_ID	= eechpbnaifiimgajnomdipfaamobdfha
+export EXTENSION_ZIP	= $(BIN_DIR)/chrome-ssh-agent.zip
+export PUBLISH_TARGET	= trustedTesters
 
 # Finding node-gyp requires going up one level and then querying. We do not want
 # to find our own node_modules directory.
