@@ -185,11 +185,15 @@ func (u *UI) promptRemove(name string, callback func(yes bool)) {
 	u.dom.AppendChild(u.removeName, u.dom.NewText(name), nil)
 	u.dom.OnClick(u.removeYes, func() {
 		u.dom.RemoveChildren(u.removeName)
+		u.removeYes = u.dom.RemoveEventListeners(u.removeYes)
+		u.removeNo = u.dom.RemoveEventListeners(u.removeNo)
 		u.dom.Close(u.removeDialog)
 		callback(true)
 	})
 	u.dom.OnClick(u.removeNo, func() {
 		u.dom.RemoveChildren(u.removeName)
+		u.removeYes = u.dom.RemoveEventListeners(u.removeYes)
+		u.removeNo = u.dom.RemoveEventListeners(u.removeNo)
 		u.dom.Close(u.removeDialog)
 		callback(false)
 	})
