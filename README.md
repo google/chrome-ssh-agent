@@ -1,8 +1,8 @@
 [![Build status](https://api.travis-ci.org/google/chrome-ssh-agent.svg?branch=master)](https://travis-ci.org/google/chrome-ssh-agent)
 
-# chrome-ssh-agent
+# SSH Agent for Google Chrome™
 
-This is a bare-bones SSH agent extension for Google Chrome.  It provides an
+This is a bare-bones SSH agent extension for Google Chrome™.  It provides an
 SSH agent implementation that can be used with the
 [Secure Shell Chrome extension](http://chrome.google.com/webstore/detail/secure-shell/pnhechapfaindjhompbnflcldabbghjo).
 
@@ -42,8 +42,9 @@ particular, the following:
 
 * Usage of GopherJS, which makes it easy to use Go's existing
   [SSH Agent implementation](http://godoc.org/golang.org/x/crypto/ssh/agent).
-* Code translating between the Chrome SSH Agent protocol and the actual SSH
-  agent protocol ([details](http://github.com/stripe/macgyver#chrome-ssh-agent-protocol)).
+* Code translating between the SSH Agent protocol used by the secure Shell
+  extension and the actual SSH agent protocol
+  ([details](http://github.com/stripe/macgyver#chrome-ssh-agent-protocol)).
 
 # Disclaimer
 

@@ -60,6 +60,7 @@ $(EXTENSION_ZIP): build
 		\*.css \
 		\*.html \
 		\*.js \
+		\*.png \
 		\*CONTRIBUTING* \
 		\*README* \
 		\*LICENCE*
