@@ -31,6 +31,7 @@ type dummyManager struct {
 	Passphrase     string
 	ConfiguredKeys []*ConfiguredKey
 	LoadedKeys     []*LoadedKey
+	Key            *LoadedKey
 	Err            error
 }
 
@@ -56,6 +57,11 @@ func (m *dummyManager) Loaded(callback func(keys []*LoadedKey, err error)) {
 func (m *dummyManager) Load(id ID, passphrase string, callback func(err error)) {
 	m.ID = id
 	m.Passphrase = passphrase
+	callback(m.Err)
+}
+
+func (m *dummyManager) Unload(key *LoadedKey, callback func(err error)) {
+	m.Key = key
 	callback(m.Err)
 }
 
@@ -141,11 +147,11 @@ func TestClientServerLoaded(t *testing.T) {
 
 	k0 := &LoadedKey{Object: js.Global.Get("Object").New()}
 	k0.Type = "type-0"
-	k0.Blob = "blob-0"
+	k0.SetBlob([]byte("blob-0"))
 	k0.Comment = "comment-0"
 	k1 := &LoadedKey{Object: js.Global.Get("Object").New()}
 	k1.Type = "type-1"
-	k1.Blob = "blob-1"
+	k1.SetBlob([]byte("blob-1"))
 	k1.Comment = "comment-1"
 
 	wantLoadedKeys := []*LoadedKey{k0, k1}
@@ -183,6 +189,31 @@ func TestClientServerLoad(t *testing.T) {
 	}
 	if diff := pretty.Diff(mgr.Passphrase, wantPassphrase); diff != nil {
 		t.Errorf("incorrect passphrase; -got +want: %s", diff)
+	}
+	if diff := pretty.Diff(err, wantErr); diff != nil {
+		t.Errorf("incorrect error; -got +want: %s", diff)
+	}
+}
+
+func TestClientServerUnload(t *testing.T) {
+	hub := fakes.NewMessageHub()
+	mgr := &dummyManager{}
+	cli := NewClient(hub)
+	NewServer(mgr, hub)
+
+	wantKey := &LoadedKey{Object: js.Global.Get("Object").New()}
+	wantKey.Type = "type-0"
+	wantKey.SetBlob([]byte("blob-0"))
+	wantKey.Comment = "comment1"
+	wantErr := errors.New("failed")
+
+	mgr.Err = wantErr
+
+	err := syncUnload(cli, wantKey)
+	// Compare using reflect.DeepEqual since pretty.Diff causes test to fail
+	// without any output.
+	if !reflect.DeepEqual(mgr.Key, wantKey) {
+		t.Errorf("incorrect key; got %s, want %s", mgr.Key, wantKey)
 	}
 	if diff := pretty.Diff(err, wantErr); diff != nil {
 		t.Errorf("incorrect error; -got +want: %s", diff)

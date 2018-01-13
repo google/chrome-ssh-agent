@@ -70,6 +70,15 @@ func syncLoaded(mgr Manager) ([]*LoadedKey, error) {
 	return result, err
 }
 
+func syncUnload(mgr Manager, key *LoadedKey) error {
+	errc := make(chan error, 1)
+	mgr.Unload(key, func(err error) {
+		errc <- err
+		close(errc)
+	})
+	return readErr(errc)
+}
+
 func readErr(errc chan error) error {
 	for err := range errc {
 		return err
@@ -115,7 +124,7 @@ func loadedKeyIds(keys []*LoadedKey) []ID {
 func loadedKeyBlobs(keys []*LoadedKey) []string {
 	var result []string
 	for _, k := range keys {
-		result = append(result, base64.StdEncoding.EncodeToString([]byte(k.Blob)))
+		result = append(result, base64.StdEncoding.EncodeToString(k.Blob()))
 	}
 	return result
 }

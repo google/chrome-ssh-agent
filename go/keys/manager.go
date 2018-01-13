@@ -18,8 +18,10 @@ package keys
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"strings"
@@ -51,10 +53,32 @@ type LoadedKey struct {
 	*js.Object
 	// Type is the type of key loaded in the agent (e.g., 'ssh-rsa').
 	Type string `js:"type"`
-	// Blob is the public key material for the loaded key.
-	Blob string `js:"blob"`
+	// blob is the public key material for the loaded key.
+	blob string `js:"blob"`
 	// Comment is a comment for the loaded key.
 	Comment string `js:"comment"`
+}
+
+// SetBlob sets the given public key material for the loaded key.
+func (k *LoadedKey) SetBlob(b []byte) {
+	// Store as base64-encoded string. Two simpler solutions did not appear
+	// to work:
+	// - Storing as a []byte resulted in data not being passed via Chrome's
+	//   messaging.
+	// - Casting to a string resulted in different data being read from the
+	//   field.
+	k.blob = base64.StdEncoding.EncodeToString(b)
+}
+
+// Blob returns the public key material for the loaded key.
+func (k *LoadedKey) Blob() []byte {
+	b, err := base64.StdEncoding.DecodeString(k.blob)
+	if err != nil {
+		log.Printf("failed to decode key blob: %v", err)
+		return nil
+	}
+
+	return b
 }
 
 // ID returns the unique ID corresponding to the key.  If the ID cannot be
@@ -101,6 +125,10 @@ type Manager interface {
 	//
 	// NOTE: Unencrypted private keys are not currently supported.
 	Load(id ID, passphrase string, callback func(err error))
+
+	// Unload unloads a key from the agent. callback is invoked when
+	// complete.
+	Unload(key *LoadedKey, callback func(err error))
 }
 
 // PersistentStore provides access to underlying storage.  See chrome.Storage
@@ -301,7 +329,7 @@ func (m *manager) Loaded(callback func(keys []*LoadedKey, err error)) {
 	for _, l := range loaded {
 		k := &LoadedKey{Object: js.Global.Get("Object").New()}
 		k.Type = l.Type()
-		k.Blob = string(l.Marshal())
+		k.SetBlob(l.Marshal())
 		k.Comment = l.Comment
 		result = append(result, k)
 	}
@@ -338,4 +366,17 @@ func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
 		}
 		callback(nil)
 	})
+}
+
+// Unload implements Manager.Unload.
+func (m *manager) Unload(key *LoadedKey, callback func(err error)) {
+	pub := &agent.Key{
+		Format: key.Type,
+		Blob:   key.Blob(),
+	}
+	if err := m.agent.Remove(pub); err != nil {
+		callback(fmt.Errorf("failed to unload key: %v", err))
+		return
+	}
+	callback(nil)
 }

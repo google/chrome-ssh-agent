@@ -15,11 +15,14 @@
 package keys
 
 import (
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
+	"github.com/gopherjs/gopherjs/js"
 	"github.com/kr/pretty"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -28,6 +31,8 @@ import (
 type initialKey struct {
 	Name          string
 	PEMPrivateKey string
+	Load          bool
+	Passphrase    string
 }
 
 func newTestManager(agent agent.Agent, storage PersistentStore, keys []*initialKey) (Manager, error) {
@@ -35,6 +40,16 @@ func newTestManager(agent agent.Agent, storage PersistentStore, keys []*initialK
 	for _, k := range keys {
 		if err := syncAdd(mgr, k.Name, k.PEMPrivateKey); err != nil {
 			return nil, err
+		}
+
+		if k.Load {
+			id, err := findKey(mgr, InvalidID, k.Name)
+			if err != nil {
+				return nil, err
+			}
+			if err := syncLoad(mgr, id, k.Passphrase); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -411,6 +426,82 @@ func TestLoadAndLoaded(t *testing.T) {
 				t.Errorf("%s: incorrect error; -got +want: %s", tc.description, diff)
 			}
 		}()
+
+		// Ensure the correct keys are loaded at the end.
+		loaded, err := syncLoaded(mgr)
+		if err != nil {
+			t.Errorf("%s: failed to get loaded keys: %v", tc.description, err)
+		}
+		blobs := loadedKeyBlobs(loaded)
+		if diff := pretty.Diff(blobs, tc.wantLoaded); diff != nil {
+			t.Errorf("%s: incorrect loaded keys; -got +want: %s", tc.description, diff)
+		}
+	}
+}
+
+func makeLoadedKey(format, blob string) *LoadedKey {
+	b, err := base64.StdEncoding.DecodeString(blob)
+	if err != nil {
+		panic(fmt.Sprintf("failed to decode blob: %v", err))
+	}
+
+	result := &LoadedKey{Object: js.Global.Get("Object").New()}
+	result.Type = format
+	result.SetBlob(b)
+	return result
+}
+
+func TestUnload(t *testing.T) {
+	testcases := []struct {
+		description string
+		initial     []*initialKey
+		unload      *LoadedKey
+		wantLoaded  []string
+		wantErr     error
+	}{
+		{
+			description: "unload single key",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.ValidPrivateKey,
+					Load:          true,
+					Passphrase:    testdata.ValidPrivateKeyPassphrase,
+				},
+			},
+			unload:     makeLoadedKey(testdata.ValidPrivateKeyType, testdata.ValidPrivateKeyBlob),
+			wantLoaded: []string{},
+		},
+		{
+			description: "fail on invalid key",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.ValidPrivateKey,
+					Load:          true,
+					Passphrase:    testdata.ValidPrivateKeyPassphrase,
+				},
+			},
+			unload: makeLoadedKey("bogus-type", "AAAA"),
+			wantLoaded: []string{
+				testdata.ValidPrivateKeyBlob,
+			},
+			wantErr: errors.New("failed to unload key: agent: key not found"),
+		},
+	}
+
+	for _, tc := range testcases {
+		storage := fakes.NewMemStorage()
+		mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+		if err != nil {
+			t.Fatalf("%s: failed to initialize manager: %v", tc.description, err)
+		}
+
+		// Unload the key
+		err = syncUnload(mgr, tc.unload)
+		if diff := pretty.Diff(err, tc.wantErr); diff != nil {
+			t.Errorf("%s: incorrect error; -got +want: %s", tc.description, diff)
+		}
 
 		// Ensure the correct keys are loaded at the end.
 		loaded, err := syncLoaded(mgr)

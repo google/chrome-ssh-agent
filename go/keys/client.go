@@ -58,6 +58,8 @@ const (
 	msgTypeRemoveRsp
 	msgTypeLoad
 	msgTypeLoadRsp
+	msgTypeUnload
+	msgTypeUnloadRsp
 )
 
 // msgHeader are the common fields included in every message (as an embedded
@@ -115,6 +117,16 @@ type msgLoad struct {
 }
 
 type rspLoad struct {
+	*msgHeader
+	Err string `js:"err"`
+}
+
+type msgUnload struct {
+	*msgHeader
+	Key *LoadedKey `js:"key"`
+}
+
+type rspUnload struct {
 	*msgHeader
 	Err string `js:"err"`
 }
@@ -180,6 +192,14 @@ func (s *Server) onMessage(headerObj *js.Object, sender *js.Object, sendResponse
 		s.mgr.Load(m.ID, m.Passphrase, func(err error) {
 			rsp := &rspLoad{msgHeader: header}
 			rsp.Type = msgTypeLoadRsp
+			rsp.Err = makeErrStr(err)
+			sendResponse(rsp)
+		})
+	case msgTypeUnload:
+		m := &msgUnload{msgHeader: header}
+		s.mgr.Unload(m.Key, func(err error) {
+			rsp := &rspUnload{msgHeader: header}
+			rsp.Type = msgTypeUnloadRsp
 			rsp.Err = makeErrStr(err)
 			sendResponse(rsp)
 		})
@@ -270,6 +290,21 @@ func (c *client) Load(id ID, passphrase string, callback func(err error)) {
 	msg.Passphrase = passphrase
 	c.msg.SendMessage(msg, func(rspObj *js.Object) {
 		rsp := &rspLoad{msgHeader: &msgHeader{Object: rspObj}}
+		if err := c.msg.Error(); err != nil {
+			callback(fmt.Errorf("failed to send message: %v", err))
+			return
+		}
+		callback(makeErr(rsp.Err))
+	})
+}
+
+// Unload implements Manager.Unload.
+func (c *client) Unload(key *LoadedKey, callback func(err error)) {
+	msg := &msgUnload{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+	msg.Type = msgTypeUnload
+	msg.Key = key
+	c.msg.SendMessage(msg, func(rspObj *js.Object) {
+		rsp := &rspUnload{msgHeader: &msgHeader{Object: rspObj}}
 		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return

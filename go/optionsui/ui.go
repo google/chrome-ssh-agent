@@ -177,6 +177,18 @@ func (u *UI) promptPassphrase(callback func(passphrase string, ok bool)) {
 	u.dom.ShowModal(u.passphraseDialog)
 }
 
+// unload unloads the specified key.
+func (u *UI) unload(key *keys.LoadedKey) {
+	u.mgr.Unload(key, func(err error) {
+		if err != nil {
+			u.setError(fmt.Errorf("failed to unload key: %v", err))
+			return
+		}
+		u.setError(nil)
+		u.updateKeys()
+	})
+}
+
 // promptRemove displays a dialog prompting the user to confirm that a key
 // should be removed. callback is invoked when the dialog is closed; the yes
 // parameter indicates if the user clicked Yes.
@@ -234,6 +246,18 @@ type displayedKey struct {
 	Blob string
 }
 
+func (d *displayedKey) LoadedKey() (*keys.LoadedKey, error) {
+	blob, err := base64.StdEncoding.DecodeString(d.Blob)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode blob: %v", err)
+	}
+
+	l := &keys.LoadedKey{Object: js.Global.Get("Object").New()}
+	l.Type = d.Type
+	l.SetBlob(blob)
+	return l, nil
+}
+
 // DisplayedKeys returns the keys currently displayed in the UI.
 func (u *UI) displayedKeys() []*displayedKey {
 	return u.keys
@@ -245,6 +269,9 @@ type buttonKind int
 const (
 	// LoadButton indicates that the button loads the key into the agent.
 	LoadButton buttonKind = iota
+	// UnloadButton indicates that the button unloads the key from the
+	// agent.
+	UnloadButton
 	// RemoveButton indicates that the button removes the key.
 	RemoveButton
 )
@@ -256,6 +283,8 @@ func buttonID(kind buttonKind, id keys.ID) string {
 	switch kind {
 	case LoadButton:
 		s = "load"
+	case UnloadButton:
+		s = "unload"
 	case RemoveButton:
 		s = "remove"
 	}
@@ -287,8 +316,23 @@ func (u *UI) updateDisplayedKeys() {
 						return
 					}
 
-					// Load button
-					if !k.Loaded {
+					if k.Loaded {
+						// Unload button
+						u.dom.AppendChild(div, u.dom.NewElement("button"), func(btn *js.Object) {
+							btn.Set("type", "button")
+							btn.Set("id", buttonID(UnloadButton, k.ID))
+							u.dom.AppendChild(btn, u.dom.NewText("Unload"), nil)
+							u.dom.OnClick(btn, func() {
+								l, err := k.LoadedKey()
+								if err != nil {
+									u.setError(fmt.Errorf("Failed to get loaded key: %v", err))
+									return
+								}
+								u.unload(l)
+							})
+						})
+					} else {
+						// Load button
 						u.dom.AppendChild(div, u.dom.NewElement("button"), func(btn *js.Object) {
 							btn.Set("type", "button")
 							btn.Set("id", buttonID(LoadButton, k.ID))
@@ -349,7 +393,7 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 		dk := &displayedKey{
 			Loaded: true,
 			Type:   l.Type,
-			Blob:   base64.StdEncoding.EncodeToString([]byte(l.Blob)),
+			Blob:   base64.StdEncoding.EncodeToString(l.Blob()),
 		}
 		// Attempt to figure out if this is a key we loaded. If so, fill
 		// in some additional information.  It is possible that a key with

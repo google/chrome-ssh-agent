@@ -27,6 +27,7 @@ import (
 	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
+	"github.com/gopherjs/gopherjs/js"
 	"github.com/kr/pretty"
 )
 
@@ -346,6 +347,58 @@ func TestUserActions(t *testing.T) {
 				},
 			},
 			wantErr: "failed to load key: failed to parse private key: x509: decryption password incorrect",
+		},
+		{
+			description: "unload key",
+			sequence: func(h *testHarness) {
+				h.dom.DoClick(h.UI.addButton)
+				h.dom.SetValue(h.UI.addName, "new-key")
+				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.DoClick(h.UI.addOk)
+
+				id := findKey(h.UI.displayedKeys(), "new-key")
+				h.dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
+				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.DoClick(h.UI.passphraseOk)
+
+				h.dom.DoClick(h.dom.GetElement(buttonID(UnloadButton, id)))
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					ID:     validID,
+					Name:   "new-key",
+					Loaded: false,
+				},
+			},
+		},
+		{
+			description: "unload key fails",
+			sequence: func(h *testHarness) {
+				h.dom.DoClick(h.UI.addButton)
+				h.dom.SetValue(h.UI.addName, "new-key")
+				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.DoClick(h.UI.addOk)
+
+				id := findKey(h.UI.displayedKeys(), "new-key")
+				h.dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
+				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.DoClick(h.UI.passphraseOk)
+
+				k := &keys.LoadedKey{Object: js.Global.Get("Object").New()}
+				k.Type = "bogus-type"
+				k.SetBlob([]byte("bogus-blob"))
+				h.UI.unload(k)
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					ID:     validID,
+					Name:   "new-key",
+					Loaded: true,
+					Type:   testdata.ValidPrivateKeyType,
+					Blob:   testdata.ValidPrivateKeyBlob,
+				},
+			},
+			wantErr: "failed to unload key: failed to unload key: agent: key not found",
 		},
 		{
 			description: "display non-configured keys",
