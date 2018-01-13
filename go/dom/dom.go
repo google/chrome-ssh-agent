@@ -132,3 +132,13 @@ func (d *DOM) Close(o *js.Object) {
 
 	o.Call("close")
 }
+
+// RemoveEventListeners removes all event listeners from an object and its
+// children.  This is accomplished by cloning the object, which has the side
+// effect of *not* cloning the event listeners.   The newly-created object is
+// returned.
+func (d *DOM) RemoveEventListeners(o *js.Object) *js.Object {
+	clone := o.Call("cloneNode", true)
+	o.Get("parentNode").Call("replaceChild", clone, o)
+	return clone
+}
