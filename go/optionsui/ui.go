@@ -425,7 +425,7 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 	}
 
 	// Sort to ensure consistent ordering.
-	sort.Slice(result, func (i, j int) bool {
+	sort.Slice(result, func(i, j int) bool {
 		a, b := result[i], result[j]
 		if a.Name < b.Name {
 			return true
