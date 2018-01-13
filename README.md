@@ -8,25 +8,27 @@ SSH agent implementation that can be used with the
 
 # Getting Started
 
-## Installation from Chrome Web Store
+## Installation
 
-Visit the extension in the
-[Chrome Web Store](https://chrome.google.com/webstore/detail/chrome-ssh-agent/eechpbnaifiimgajnomdipfaamobdfha)
-and install it.
+Install the extension from the 
+[Chrome Web Store](https://chrome.google.com/webstore/detail/chrome-ssh-agent/eechpbnaifiimgajnomdipfaamobdfha).
 
-## Managing Keys in the SSH Agent
+## Adding and Using Keys
 
-The extension allows you to configure keys which are then stored in Chrome and
-synced across your devices.
-
-Once configured, key can be loaded into the SSH agent by providing the key's
-passphrase. Loaded keys are available for use by the Secure Shell extension.
-
-## Using Keys in the Secure Shell Extension
-
-The Secure Shell extension must be instructed to use the SSH Agent. This is
-done by adding `--ssh-agent=eechpbnaifiimgajnomdipfaamobdfha` to the
-"SSH Relay Server Options" in the properties for a SSH connection.
+1. Click on the SSH Agent extension's icon in to Chrome toolbar.
+   ![List keys](https://github.com/google/chrome-ssh-agent/raw/master/img/screenshot-list.png)
+2. Configure a new private key by clicking the 'Add' button.  Give it a name
+   and enter the PEM-encoded private key.
+   ![Add key](https://github.com/google/chrome-ssh-agent/raw/master/img/screenshot-add.png)
+   If you use Chrome Sync, configured keys will be synced to your account so
+   they are available across your devices.
+3. Load the key into the SSH agent by clicking the 'Load' button and providing
+   the key's passphrase.
+   ![Enter passphrase](https://github.com/google/chrome-ssh-agent/raw/master/img/screenshot-passphrase.png)
+4. When creating a new connection in the Secure Shell extension, add
+   `--ssh-agent=eechpbnaifiimgajnomdipfaamobdfha` to "SSH Relay Server
+   Options" field to indicate that it should use the SSH Agent for keys.
+   ![Connect](https://github.com/google/chrome-ssh-agent/raw/master/img/screenshot-connect.png)
 
 # Current Limitations
 
