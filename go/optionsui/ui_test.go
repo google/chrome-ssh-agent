@@ -137,6 +137,30 @@ func TestUserActions(t *testing.T) {
 			},
 		},
 		{
+			description: "add multiple keys",
+			sequence: func(h *testHarness) {
+				h.dom.DoClick(h.UI.addButton)
+				h.dom.SetValue(h.UI.addName, "new-key-1")
+				h.dom.SetValue(h.UI.addKey, "private-key-1")
+				h.dom.DoClick(h.UI.addOk)
+
+				h.dom.DoClick(h.UI.addButton)
+				h.dom.SetValue(h.UI.addName, "new-key-2")
+				h.dom.SetValue(h.UI.addKey, "private-key-2")
+				h.dom.DoClick(h.UI.addOk)
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					ID:   validID,
+					Name: "new-key-1",
+				},
+				&displayedKey{
+					ID:   validID,
+					Name: "new-key-2",
+				},
+			},
+		},
+		{
 			description: "add key cancelled by user",
 			sequence: func(h *testHarness) {
 				h.dom.DoClick(h.UI.addButton)

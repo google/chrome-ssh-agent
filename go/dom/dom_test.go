@@ -100,3 +100,34 @@ func TestValue(t *testing.T) {
 		t.Errorf("incorrect value; -got +want: %s", diff)
 	}
 }
+
+func TestRemoveEventListeners(t *testing.T) {
+	d := New(dt.NewDocForTesting(`
+		<button id="btn"/>
+	`))
+
+	// Add a handler, and ensure it works.
+	var clicked bool
+	d.OnClick(d.GetElement("btn"), func() { clicked = true })
+	d.DoClick(d.GetElement("btn"))
+	if !clicked {
+		t.Errorf("clicked callback not invoked")
+	}
+
+	// Remove the handler, and ensure the handler does not fire.
+	clicked = false
+	btn := d.RemoveEventListeners(d.GetElement("btn"))
+	d.DoClick(d.GetElement("btn")) // Lookup by ID.
+	d.DoClick(btn)                 // Use cloned element we got back.
+	if clicked {
+		t.Errorf("clicked callback invoked after handlers removed")
+	}
+
+	// Add the handler to the button we got back. Ensure it works.
+	clicked = false
+	d.OnClick(btn, func() { clicked = true })
+	d.DoClick(btn)
+	if !clicked {
+		t.Errorf("clicked callback not invoked")
+	}
+}
