@@ -19,6 +19,7 @@ package optionsui
 import (
 	"encoding/base64"
 	"fmt"
+	"sort"
 
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
@@ -423,7 +424,23 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 		})
 	}
 
-	// TODO(ralimi) Sort displayed items to ensure consitent ordering over time
+	// Sort to ensure consistent ordering.
+	sort.Slice(result, func (i, j int) bool {
+		a, b := result[i], result[j]
+		if a.Name < b.Name {
+			return true
+		}
+		if a.Name > b.Name {
+			return false
+		}
+		if a.Blob < b.Blob {
+			return true
+		}
+		if a.Blob > b.Blob {
+			return false
+		}
+		return a.ID < b.ID
+	})
 
 	return result
 }
