@@ -351,6 +351,19 @@ func TestLoadAndLoaded(t *testing.T) {
 			},
 		},
 		{
+			description: "load unencrypted key",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.ValidPrivateKeyWithoutPassphrase,
+				},
+			},
+			byName: "good-key",
+			wantLoaded: []string{
+				testdata.ValidPrivateKeyWithoutPassphraseBlob,
+			},
+		},
+		{
 			description: "fail on invalid private key",
 			initial: []*initialKey{
 				{

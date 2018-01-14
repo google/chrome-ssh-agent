@@ -139,9 +139,18 @@ func (u *UI) promptAdd(callback func(name, privateKey string, ok bool)) {
 }
 
 // load loads the key with the specified ID.  A dialog prompts the user for a
-// passphrase.
-func (u *UI) load(id keys.ID) {
-	u.promptPassphrase(func(passphrase string, ok bool) {
+// passphrase if the private key is encrypted.
+func (u *UI) load(id keys.ID, encrypted bool) {
+	prompt := u.promptPassphrase
+	if !encrypted {
+		// Use a dummy callback that doesn't actually prompt if no
+		// passphrase is required.
+		prompt = func(callback func(passphrase string, ok bool)) {
+			callback("", true)
+		}
+	}
+
+	prompt(func(passphrase string, ok bool) {
 		if !ok {
 			return
 		}
@@ -239,6 +248,10 @@ type displayedKey struct {
 	ID keys.ID
 	// Loaded indicates if the key is currently loaded.
 	Loaded bool
+	// Encrypted indicates if the private key is encrypted and requires a
+	// passphrase to load. This field is only valid if the key is not
+	// loaded.
+	Encrypted bool
 	// Name is the human-readable name assigned to the key.
 	Name string
 	// Type is the type of key (e.g., 'ssh-rsa').
@@ -339,7 +352,7 @@ func (u *UI) updateDisplayedKeys() {
 							btn.Set("id", buttonID(LoadButton, k.ID))
 							u.dom.AppendChild(btn, u.dom.NewText("Load"), nil)
 							u.dom.OnClick(btn, func() {
-								u.load(k.ID)
+								u.load(k.ID, k.Encrypted)
 							})
 						})
 					}
@@ -418,9 +431,10 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 		}
 
 		result = append(result, &displayedKey{
-			ID:     a.ID,
-			Loaded: false,
-			Name:   a.Name,
+			ID:        a.ID,
+			Loaded:    false,
+			Encrypted: a.Encrypted,
+			Name:      a.Name,
 		})
 	}
 

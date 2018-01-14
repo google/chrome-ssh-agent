@@ -31,12 +31,6 @@ Install the extension from the
    Options" field to indicate that it should use the SSH Agent for keys.
    ![Connect](https://github.com/google/chrome-ssh-agent/raw/master/img/screenshot-connect.png)
 
-# Current Limitations
-
-## Unencrypted Keys Are Not Supported
-
-The extension currently only supports encrypted private keys.
-
 # Credits
 
 Portions of the code and approach are heavily based on the

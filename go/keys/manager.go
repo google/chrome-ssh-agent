@@ -19,6 +19,7 @@ package keys
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"log"
@@ -46,6 +47,9 @@ type ConfiguredKey struct {
 	ID ID `js:"id"`
 	// Name is a name allocated to key.
 	Name string `js:"name"`
+	// Encrypted indicates if the key is encrypted and requires a passphrase
+	// to load.
+	Encrypted bool `js:"encrypted"`
 }
 
 // LoadedKey is a key loaded into the agent.
@@ -170,6 +174,20 @@ type storedKey struct {
 	PEMPrivateKey string `js:"pemPrivateKey"`
 }
 
+// Encrypted determines if the private key is encrypted. The Proc-Type header
+// contains 'ENCRYPTED' if the key is encrypted. See RFC 1421 Section 4.6.1.1.
+func (s *storedKey) Encrypted() bool {
+	block, _ := pem.Decode([]byte(s.PEMPrivateKey))
+	if block == nil {
+		// Attempt to handle this gracefully and guess that it isn't
+		// encrypted.  If the key is not properly formatted, we'll
+		// complain anyways when it is loaded.
+		return false
+	}
+
+	return strings.Contains(block.Headers["Proc-Type"], "ENCRYPTED")
+}
+
 const (
 	// keyPrefix is the prefix for keys stored in persistent storage.
 	// The full key is of the form 'key.<id>'.
@@ -292,6 +310,7 @@ func (m *manager) Configured(callback func(keys []*ConfiguredKey, err error)) {
 			c := &ConfiguredKey{Object: js.Global.Get("Object").New()}
 			c.ID = k.ID
 			c.Name = k.Name
+			c.Encrypted = k.Encrypted()
 			result = append(result, c)
 		}
 		callback(result, nil)
@@ -350,7 +369,12 @@ func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
 			return
 		}
 
-		priv, err := ssh.ParseRawPrivateKeyWithPassphrase([]byte(key.PEMPrivateKey), []byte(passphrase))
+		var priv interface{}
+		if key.Encrypted() {
+			priv, err = ssh.ParseRawPrivateKeyWithPassphrase([]byte(key.PEMPrivateKey), []byte(passphrase))
+		} else {
+			priv, err = ssh.ParseRawPrivateKey([]byte(key.PEMPrivateKey))
+		}
 		if err != nil {
 			callback(fmt.Errorf("failed to parse private key: %v", err))
 			return

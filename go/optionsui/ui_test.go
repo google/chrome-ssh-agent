@@ -263,7 +263,7 @@ func TestUserActions(t *testing.T) {
 			// for details.
 		},
 		{
-			description: "load key",
+			description: "load key with passphrase",
 			sequence: func(h *testHarness) {
 				h.dom.DoClick(h.UI.addButton)
 				h.dom.SetValue(h.UI.addName, "new-key")
@@ -299,8 +299,9 @@ func TestUserActions(t *testing.T) {
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
-					ID:   validID,
-					Name: "new-key",
+					ID:        validID,
+					Name:      "new-key",
+					Encrypted: true,
 				},
 			},
 		},
@@ -319,11 +320,33 @@ func TestUserActions(t *testing.T) {
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
-					ID:   validID,
-					Name: "new-key",
+					ID:        validID,
+					Name:      "new-key",
+					Encrypted: true,
 				},
 			},
 			wantErr: "failed to load key: failed to parse private key: x509: decryption password incorrect",
+		},
+		{
+			description: "load unencrypted key",
+			sequence: func(h *testHarness) {
+				h.dom.DoClick(h.UI.addButton)
+				h.dom.SetValue(h.UI.addName, "new-key")
+				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKeyWithoutPassphrase)
+				h.dom.DoClick(h.UI.addOk)
+
+				id := findKey(h.UI.displayedKeys(), "new-key")
+				h.dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
+			},
+			wantDisplayed: []*displayedKey{
+				&displayedKey{
+					ID:     validID,
+					Name:   "new-key",
+					Loaded: true,
+					Type:   testdata.ValidPrivateKeyWithoutPassphraseType,
+					Blob:   testdata.ValidPrivateKeyWithoutPassphraseBlob,
+				},
+			},
 		},
 		{
 			description: "unload key",
@@ -342,9 +365,10 @@ func TestUserActions(t *testing.T) {
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
-					ID:     validID,
-					Name:   "new-key",
-					Loaded: false,
+					ID:        validID,
+					Name:      "new-key",
+					Loaded:    false,
+					Encrypted: true,
 				},
 			},
 		},
