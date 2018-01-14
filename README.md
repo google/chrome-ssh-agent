@@ -17,13 +17,14 @@ Install the extension from the
 
 1. Click on the SSH Agent extension's icon in to Chrome toolbar.
    ![List keys](https://github.com/google/chrome-ssh-agent/raw/master/img/screenshot-list.png)
-2. Configure a new private key by clicking the 'Add' button.  Give it a name
+2. Configure a new private key by clicking the 'Add Key' button.  Give it a name
    and enter the PEM-encoded private key.
    ![Add key](https://github.com/google/chrome-ssh-agent/raw/master/img/screenshot-add.png)
-   If you use Chrome Sync, configured keys will be synced to your account so
-   they are available across your devices.
-3. Load the key into the SSH agent by clicking the 'Load' button and providing
-   the key's passphrase.
+   If you use Chrome Sync, configured keys will be synced to your account and
+   available across your devices.  Only the encrypted form of the private key
+   is synced.
+3. Click the 'Load' button and enter the key's passphrase to load the key into
+   the SSH agent.
    ![Enter passphrase](https://github.com/google/chrome-ssh-agent/raw/master/img/screenshot-passphrase.png)
 4. When creating a new connection in the Secure Shell extension, add
    `--ssh-agent=eechpbnaifiimgajnomdipfaamobdfha` to "SSH Relay Server
