@@ -88,7 +88,7 @@ func TestClientServerConfigured(t *testing.T) {
 	// Compare using reflect.DeepEqual since pretty.Diff fails to
 	// terminate on this input.
 	if !reflect.DeepEqual(configured, wantConfiguredKeys) {
-		t.Errorf("incorrect configured keys; got %s, want %s", configured, wantConfiguredKeys)
+		t.Errorf("incorrect configured keys; got %v, want %v", configured, wantConfiguredKeys)
 	}
 	if diff := pretty.Diff(err, wantErr); diff != nil {
 		t.Errorf("incorrect error; -got +want: %s", diff)
