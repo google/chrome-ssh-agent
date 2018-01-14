@@ -21,8 +21,10 @@ Install the extension from the
    and enter the PEM-encoded private key.
    ![Add key](https://github.com/google/chrome-ssh-agent/raw/master/img/screenshot-add.png)
    If you use Chrome Sync, configured keys will be synced to your account and
-   available across your devices.  Only the encrypted form of the private key
-   is synced.
+   available across your devices.  Only the raw PEM-encoded private key you
+   entered will be synced. That is, if you entered an encrypted private key, the
+   encrypted private key will be synced.  If you entered an unencrypted private
+   key, the unencrypted private key will be synced.
 3. Click the 'Load' button and enter the key's passphrase to load the key into
    the SSH agent.
    ![Enter passphrase](https://github.com/google/chrome-ssh-agent/raw/master/img/screenshot-passphrase.png)
