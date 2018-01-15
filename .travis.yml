@@ -24,11 +24,6 @@ before_install:
 - npm install chromedriver        # Eor end-to-end tests in Chrome
 - npm install mocha               # Test framework for end-to-end tests
 - npm install assert              # For assertions in end-to-end tests
-before_script:
-# Start a GUI so Chrome can run in end-to-end tests.
-- "export DISPLAY=:99.0"
-- "sh -e /etc/init.d/xvfb start"
-- sleep 3  # give xvfb some time to start
 deploy:
   # Upload zip file to GitHub as a release
   - provider: releases
