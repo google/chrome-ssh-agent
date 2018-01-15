@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/kr/pretty"
-	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
+	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/gopherjs/gopherjs/js"
+	"github.com/kr/pretty"
 )
 
 // UI implements the behavior underlying the user interface for the extension's
@@ -483,7 +483,7 @@ func (u *UI) updateKeys() {
 	})
 }
 
-func findKey(disp []*displayedKey, name string) *displayedKey {
+func lookupKey(disp []*displayedKey, name string) *displayedKey {
 	for _, k := range disp {
 		if k.Name == name {
 			return k
@@ -503,7 +503,7 @@ func (u *UI) EndToEndTest() []error {
 	u.dom.DoClick(u.addOk)
 
 	// Validate configured keys
-	key := findKey(u.displayedKeys(), keyName)
+	key := lookupKey(u.displayedKeys(), keyName)
 	if key == nil {
 		errs = append(errs, fmt.Errorf("after added: failed to find key"))
 		return errs // Remaining tests have hard dependency on configured key
@@ -515,7 +515,7 @@ func (u *UI) EndToEndTest() []error {
 	u.dom.DoClick(u.passphraseOk)
 
 	// Validate loaded keys
-	key = findKey(u.displayedKeys(), keyName)
+	key = lookupKey(u.displayedKeys(), keyName)
 	if key != nil {
 		if diff := pretty.Diff(key.Loaded, true); diff != nil {
 			errs = append(errs, fmt.Errorf("after load: incorrect loaded state: %s", diff))
@@ -534,7 +534,7 @@ func (u *UI) EndToEndTest() []error {
 	u.dom.DoClick(u.dom.GetElement(buttonID(UnloadButton, key.ID)))
 
 	// Validate loaded keys
-	key = findKey(u.displayedKeys(), keyName)
+	key = lookupKey(u.displayedKeys(), keyName)
 	if key != nil {
 		if diff := pretty.Diff(key.Loaded, false); diff != nil {
 			errs = append(errs, fmt.Errorf("after unload: incorrect loaded state: %s", diff))
@@ -553,7 +553,7 @@ func (u *UI) EndToEndTest() []error {
 	u.dom.DoClick(u.dom.GetElement(buttonID(RemoveButton, key.ID)))
 
 	// Validate configured keys
-	key = findKey(u.displayedKeys(), keyName)
+	key = lookupKey(u.displayedKeys(), keyName)
 	if key != nil {
 		errs = append(errs, fmt.Errorf("after removed: incorrectly found key"))
 	}

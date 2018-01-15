@@ -30,7 +30,6 @@ func isTest() bool {
 	return params.Call("has", "test").Bool()
 }
 
-
 func writeTestResults(d *dom.DOM, errs []error) {
 	body := d.GetElement("body")
 	// Clear the existing elements from the doc.
