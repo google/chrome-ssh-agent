@@ -29,6 +29,13 @@ function makeExtensionUrl(page) {
   return url.join("");
 }
 
+function printLogs(entries) {
+  console.log("Logs entries: " + entries.length);
+  var i;
+  for (i = 0; i < entries.length; i++) {
+    console.log(entries[i].message);
+  }
+}
 
 describe('End-to-end Tests For SSH Agent', function () {
   let driver
@@ -39,9 +46,14 @@ describe('End-to-end Tests For SSH Agent', function () {
       .toString("base64");
     options = new chrome.Options();
     options.addExtensions(extensionData);
+    logging = new webdriver.logging.Preferences();
+    logging.setLevel(webdriver.logging.Type.BROWSER, webdriver.logging.Level.DEBUG);
+    capabilities = new webdriver.Capabilities();
+    capabilities.setLoggingPrefs(logging);
     builder = new webdriver.Builder()
-      .forBrowser('chrome')
       .setChromeOptions(options)
+      .withCapabilities(capabilities)
+      .forBrowser('chrome');
     driver = await builder.build();
   })
 
@@ -54,6 +66,7 @@ describe('End-to-end Tests For SSH Agent', function () {
   })
 
   afterEach(async function() {
+    printLogs(await driver.manage().logs().get(webdriver.logging.Type.BROWSER));
     await driver.quit();
   })
 })
