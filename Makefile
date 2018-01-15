@@ -18,6 +18,7 @@ export PUBLISH_TARGET	= default
 NODE_GYP	= $(shell npm bin)/node-gyp
 NODE_SYSCALL	= node_modules/syscall.node
 
+XVFB_RUN	= $(shell which xvfb-run)
 MOCHA		= $(shell npm bin)/mocha
 
 MAKECRX		= $(BIN_DIR)/makecrx.sh
@@ -55,7 +56,7 @@ unit-test: $(GOPHERJS) $(NODE_SYSCALL)
 
 e2e-test: $(TEST_EXTENSION_CRX)
 	@echo ">> running end-to-end tests"
-	@$(MOCHA) test/e2e.js
+	@$(XVFB_RUN) $(MOCHA) test/e2e.js
 
 test: unit-test e2e-test
 

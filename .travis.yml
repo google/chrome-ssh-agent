@@ -6,6 +6,8 @@ addons:
     packages:
     # Required for script that deploys to Chrome Web Store
     - python3-requests
+    # Required to simulate display in end-to-end tests
+    - xvfb
   # Required for end-to-end tests
   chrome: stable
 before_install:
