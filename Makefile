@@ -18,6 +18,12 @@ export PUBLISH_TARGET	= default
 NODE_GYP	= $(shell npm bin)/node-gyp
 NODE_SYSCALL	= node_modules/syscall.node
 
+MOCHA		= $(shell npm bin)/mocha
+
+MAKECRX		= $(BIN_DIR)/makecrx.sh
+TEST_CRX_KEY	= $(BIN_DIR)/test-crx-key.pem
+export TEST_EXTENSION_CRX	= $(BIN_DIR)/chrome-ssh-agent.crx
+export TEST_EXTENSION_ID	= gcdecdcemcbepilaaaoljdlilamnoeob
 
 all: format style vet lint test build zip
 
@@ -43,14 +49,24 @@ lint: $(GOLINT)
 	@echo ">> linting code"
 	@$(GOLINT) $(pkgs)
 
-test: $(GOPHERJS) $(NODE_SYSCALL)
-	@echo ">> running tests"
+unit-test: $(GOPHERJS) $(NODE_SYSCALL)
+	@echo ">> running unit tests"
 	@$(GOPHERJS) test $(pkgs)
+
+e2e-test: $(TEST_EXTENSION_CRX)
+	@echo ">> running end-to-end tests"
+	@$(MOCHA) test/e2e.js
+
+test: unit-test e2e-test
 
 build: $(GOPHERJS)
 	@echo ">> building"
 	@cd go/options && $(GOPHERJS) build
 	@cd go/background && $(GOPHERJS) build
+
+$(TEST_EXTENSION_CRX): $(EXTENSION_ZIP)
+	@echo ">> building Chrome extension (CRX for testing)"
+	@$(MAKECRX) $(EXTENSION_ZIP) $(TEST_CRX_KEY) $(TEST_EXTENSION_CRX)
 
 $(EXTENSION_ZIP): build
 	@echo ">> building Chrome extension"

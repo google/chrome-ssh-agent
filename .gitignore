@@ -13,7 +13,7 @@
 *.out
 
 # GopherJS javascript output
-*.js
+go/*/*.js
 *.js.map
 
 # vim swap files

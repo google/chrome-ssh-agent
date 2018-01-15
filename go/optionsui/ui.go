@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/kr/pretty"
+	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/gopherjs/gopherjs/js"
@@ -479,4 +481,83 @@ func (u *UI) updateKeys() {
 			u.updateDisplayedKeys()
 		})
 	})
+}
+
+func findKey(disp []*displayedKey, name string) *displayedKey {
+	for _, k := range disp {
+		if k.Name == name {
+			return k
+		}
+	}
+	return nil
+}
+
+func (u *UI) EndToEndTest() []error {
+	var errs []error
+	keyName := "e2e-test-key"
+
+	// Configure a key
+	u.dom.DoClick(u.addButton)
+	u.dom.SetValue(u.addName, keyName)
+	u.dom.SetValue(u.addKey, testdata.ValidPrivateKey)
+	u.dom.DoClick(u.addOk)
+
+	// Validate configured keys
+	key := findKey(u.displayedKeys(), keyName)
+	if key == nil {
+		errs = append(errs, fmt.Errorf("after added: failed to find key"))
+		return errs // Remaining tests have hard dependency on configured key
+	}
+
+	// Load a key
+	u.dom.DoClick(u.dom.GetElement(buttonID(LoadButton, key.ID)))
+	u.dom.SetValue(u.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+	u.dom.DoClick(u.passphraseOk)
+
+	// Validate loaded keys
+	key = findKey(u.displayedKeys(), keyName)
+	if key != nil {
+		if diff := pretty.Diff(key.Loaded, true); diff != nil {
+			errs = append(errs, fmt.Errorf("after load: incorrect loaded state: %s", diff))
+		}
+		if diff := pretty.Diff(key.Type, testdata.ValidPrivateKeyType); diff != nil {
+			errs = append(errs, fmt.Errorf("after load: incorrect type: %s", diff))
+		}
+		if diff := pretty.Diff(key.Blob, testdata.ValidPrivateKeyBlob); diff != nil {
+			errs = append(errs, fmt.Errorf("after load: incorrect blob: %s", diff))
+		}
+	} else if key == nil {
+		errs = append(errs, fmt.Errorf("after load: failed to find key"))
+	}
+
+	// Unload key
+	u.dom.DoClick(u.dom.GetElement(buttonID(UnloadButton, key.ID)))
+
+	// Validate loaded keys
+	key = findKey(u.displayedKeys(), keyName)
+	if key != nil {
+		if diff := pretty.Diff(key.Loaded, false); diff != nil {
+			errs = append(errs, fmt.Errorf("after unload: incorrect loaded state: %s", diff))
+		}
+		if diff := pretty.Diff(key.Type, ""); diff != nil {
+			errs = append(errs, fmt.Errorf("after unload: incorrect type: %s", diff))
+		}
+		if diff := pretty.Diff(key.Blob, ""); diff != nil {
+			errs = append(errs, fmt.Errorf("after unload: incorrect blob: %s", diff))
+		}
+	} else if key == nil {
+		errs = append(errs, fmt.Errorf("after unload: failed to find key"))
+	}
+
+	// Remove key
+	u.dom.DoClick(u.dom.GetElement(buttonID(RemoveButton, key.ID)))
+
+	// Validate configured keys
+	key = findKey(u.displayedKeys(), keyName)
+	if key != nil {
+		errs = append(errs, fmt.Errorf("after removed: incorrectly found key"))
+	}
+
+	return errs
+
 }
