@@ -79,10 +79,10 @@ describe('End-to-end Tests For SSH Agent', function () {
   })
 
   afterEach(async function() {
-    if (this.currentTest.state === 'failed' && fs.existsSync(chromedriverLog)) {
+    if (this.currentTest.state !== 'passed' && fs.existsSync(chromedriverLog)) {
       console.log("**** chromedriver log ****\n" + fs.readFileSync(chromedriverLog))
     }
-    if (this.currentTest.state === 'failed' && fs.existsSync(chromeLog)) {
+    if (this.currentTest.state !== 'passed' && fs.existsSync(chromeLog)) {
       console.log("**** chrome log ****\n" + fs.readFileSync(chromeLog))
     }
     printLogs(await driver.manage().logs().get(logging.Type.BROWSER));
