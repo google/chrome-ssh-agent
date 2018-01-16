@@ -17,9 +17,13 @@
 package optionsui
 
 import (
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"math"
+	"math/big"
 	"sort"
+	"time"
 
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
@@ -492,9 +496,36 @@ func lookupKey(disp []*displayedKey, name string) *displayedKey {
 	return nil
 }
 
+const (
+	pollInterval = 100 * time.Millisecond
+	pollTimeout  = 5 * time.Second
+)
+
+func poll(done func() bool) {
+	timeout := time.Now().Add(pollTimeout)
+	for time.Now().Before(timeout) {
+		if done() {
+			return
+		}
+		time.Sleep(pollInterval)
+	}
+}
+
+// EndToEndTest runs a set of tests via the UI.  Failures are returned as a list
+// of errors.
+//
+// No attempt is made to clean up from any intermediate state should the test
+// fail.
 func (u *UI) EndToEndTest() []error {
 	var errs []error
-	keyName := "e2e-test-key"
+
+	// Generate a random name to use for the key.
+	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		errs = append(errs, fmt.Errorf("failed to generate random number: %v", err))
+		return errs // Remaining tests have hard dependency on key name.
+	}
+	keyName := fmt.Sprintf("e2e-test-key-%s", i.String())
 
 	// Configure a key
 	u.dom.DoClick(u.addButton)
@@ -502,11 +533,15 @@ func (u *UI) EndToEndTest() []error {
 	u.dom.SetValue(u.addKey, testdata.ValidPrivateKey)
 	u.dom.DoClick(u.addOk)
 
-	// Validate configured keys
-	key := lookupKey(u.displayedKeys(), keyName)
+	// Validate configured keys. Wait some time until key is added.
+	var key *displayedKey
+	poll(func() bool {
+		key = lookupKey(u.displayedKeys(), keyName)
+		return key != nil
+	})
 	if key == nil {
 		errs = append(errs, fmt.Errorf("after added: failed to find key"))
-		return errs // Remaining tests have hard dependency on configured key
+		return errs // Remaining tests have hard dependency on configured key.
 	}
 
 	// Load a key
@@ -514,8 +549,11 @@ func (u *UI) EndToEndTest() []error {
 	u.dom.SetValue(u.passphraseInput, testdata.ValidPrivateKeyPassphrase)
 	u.dom.DoClick(u.passphraseOk)
 
-	// Validate loaded keys
-	key = lookupKey(u.displayedKeys(), keyName)
+	// Validate loaded keys. Wait some time until key is loaded.
+	poll(func() bool {
+		key = lookupKey(u.displayedKeys(), keyName)
+		return key != nil && key.Loaded
+	})
 	if key != nil {
 		if diff := pretty.Diff(key.Loaded, true); diff != nil {
 			errs = append(errs, fmt.Errorf("after load: incorrect loaded state: %s", diff))
@@ -533,8 +571,11 @@ func (u *UI) EndToEndTest() []error {
 	// Unload key
 	u.dom.DoClick(u.dom.GetElement(buttonID(UnloadButton, key.ID)))
 
-	// Validate loaded keys
-	key = lookupKey(u.displayedKeys(), keyName)
+	// Validate loaded keys. Wait some time until key is unloaded.
+	poll(func() bool {
+		key = lookupKey(u.displayedKeys(), keyName)
+		return key != nil && !key.Loaded
+	})
 	if key != nil {
 		if diff := pretty.Diff(key.Loaded, false); diff != nil {
 			errs = append(errs, fmt.Errorf("after unload: incorrect loaded state: %s", diff))
@@ -551,9 +592,13 @@ func (u *UI) EndToEndTest() []error {
 
 	// Remove key
 	u.dom.DoClick(u.dom.GetElement(buttonID(RemoveButton, key.ID)))
+	u.dom.DoClick(u.removeYes)
 
-	// Validate configured keys
-	key = lookupKey(u.displayedKeys(), keyName)
+	// Validate configured keys. Wait some time until key is removed.
+	poll(func() bool {
+		key = lookupKey(u.displayedKeys(), keyName)
+		return key == nil
+	})
 	if key != nil {
 		errs = append(errs, fmt.Errorf("after removed: incorrectly found key"))
 	}

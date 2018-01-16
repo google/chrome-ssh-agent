@@ -13,10 +13,14 @@
 // limitations under the License.
 
 require("chromedriver");
-var webdriver = require('selenium-webdriver');
+const {Builder, By, until, logging, Capabilities}
+  = require('selenium-webdriver');
 var chrome = require('selenium-webdriver/chrome');
 var assert = require("assert");
 var fs = require("fs");
+
+var extensionData = fs.readFileSync(process.env.TEST_EXTENSION_CRX)
+  .toString("base64");
 
 function makeExtensionUrl(page) {
   var url = []
@@ -29,8 +33,8 @@ function makeExtensionUrl(page) {
   return url.join("");
 }
 
+
 function printLogs(entries) {
-  console.log("Logs entries: " + entries.length);
   var i;
   for (i = 0; i < entries.length; i++) {
     console.log(entries[i].message);
@@ -42,31 +46,26 @@ describe('End-to-end Tests For SSH Agent', function () {
   this.timeout(10000);
 
   beforeEach(async function() {
-    extensionData = fs.readFileSync(process.env.TEST_EXTENSION_CRX)
-      .toString("base64");
-    options = new chrome.Options();
-    options.addExtensions(extensionData);
-    logging = new webdriver.logging.Preferences();
-    logging.setLevel(webdriver.logging.Type.BROWSER, webdriver.logging.Level.DEBUG);
-    capabilities = new webdriver.Capabilities();
-    capabilities.setLoggingPrefs(logging);
-    builder = new webdriver.Builder()
-      .setChromeOptions(options)
-      .withCapabilities(capabilities)
-      .forBrowser('chrome');
-    driver = await builder.build();
+    logPrefs = new logging.Preferences();
+    logPrefs.setLevel(logging.Type.BROWSER, logging.Level.DEBUG);
+    driver = await new Builder()
+      .setChromeOptions(new chrome.Options().addExtensions(extensionData))
+      .withCapabilities(new Capabilities().setLoggingPrefs(logPrefs))
+      .forBrowser('chrome')
+      .build();
   })
 
   it('successfully manages keys via the Options UI', async function() {
     await driver.get(makeExtensionUrl("html/options.html?test"));
-   
-    body = await driver.findElement(webdriver.By.id("body")).getText();
-    fail = await driver.findElement(webdriver.By.id('failureCount')).getText();
+
+    fail = await driver.wait(until.elementLocated(By.id('failureCount')))
+      .getText();
+    body = await driver.wait(until.elementLocated(By.id('body'))).getText();
     assert.equal(parseInt(fail), 0, body);
   })
 
   afterEach(async function() {
-    printLogs(await driver.manage().logs().get(webdriver.logging.Type.BROWSER));
+    printLogs(await driver.manage().logs().get(logging.Type.BROWSER));
     await driver.quit();
   })
 })
