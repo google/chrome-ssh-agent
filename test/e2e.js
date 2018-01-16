@@ -63,6 +63,7 @@ describe('End-to-end Tests For SSH Agent', function () {
     driver = await new Builder()
       .setChromeOptions(new chrome.Options()
         .addExtensions(extensionData)
+        .addArguments("no-sandbox")
         .setChromeLogFile(chromeLog))
       .withCapabilities(new Capabilities().setLoggingPrefs(logPrefs))
       .forBrowser('chrome')
