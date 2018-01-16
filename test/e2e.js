@@ -18,9 +18,20 @@ const {Builder, By, until, logging, Capabilities}
 var chrome = require('selenium-webdriver/chrome');
 var assert = require("assert");
 var fs = require("fs");
+var os = require("os");
 
 var extensionData = fs.readFileSync(process.env.TEST_EXTENSION_CRX)
   .toString("base64");
+var chromeLog = os.tmpdir() + "/chrome.log";
+var chromedriverLog = os.tmpdir() + "/chromedriver.log";
+
+logging.getLogger("").setLevel(logging.Level.DEBUG);
+logging.installConsoleHandler();
+
+chrome.setDefaultService(new chrome.ServiceBuilder()
+  .loggingTo(chromedriverLog)
+  .enableVerboseLogging()
+  .build());
 
 function makeExtensionUrl(page) {
   var url = []
@@ -41,6 +52,7 @@ function printLogs(entries) {
   }
 }
 
+
 describe('End-to-end Tests For SSH Agent', function () {
   let driver
   this.timeout(10000);
@@ -49,7 +61,9 @@ describe('End-to-end Tests For SSH Agent', function () {
     logPrefs = new logging.Preferences();
     logPrefs.setLevel(logging.Type.BROWSER, logging.Level.DEBUG);
     driver = await new Builder()
-      .setChromeOptions(new chrome.Options().addExtensions(extensionData))
+      .setChromeOptions(new chrome.Options()
+        .addExtensions(extensionData)
+        .setChromeLogFile(chromeLog))
       .withCapabilities(new Capabilities().setLoggingPrefs(logPrefs))
       .forBrowser('chrome')
       .build();
@@ -65,6 +79,12 @@ describe('End-to-end Tests For SSH Agent', function () {
   })
 
   afterEach(async function() {
+    if (this.currentTest.state === 'failed' && fs.existsSync(chromedriverLog)) {
+      console.log("**** chromedriver log ****\n" + fs.readFileSync(chromedriverLog))
+    }
+    if (this.currentTest.state === 'failed' && fs.existsSync(chromeLog)) {
+      console.log("**** chrome log ****\n" + fs.readFileSync(chromeLog))
+    }
     printLogs(await driver.manage().logs().get(logging.Type.BROWSER));
     await driver.quit();
   })
