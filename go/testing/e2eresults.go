@@ -42,8 +42,8 @@ func getBody(d *dom.DOM) *js.Object {
 }
 
 // WriteResults adds elements to the supplied DOM summarizing the test results.
-// The elements added are hidden, but are given identifiers such that the
-// results can be queried by automation. The following elements are added:
+// The elements are given identifiers such that the results can be queried by
+// automation. The following elements are added:
 // - failureCount: a div element, whose contained text is the number of tests
 //     that failed.
 // - failures: A pre element, whose contained text is a human-readable list
@@ -52,10 +52,6 @@ func WriteResults(d *dom.DOM, errs []error) {
 	body := getBody(d)
 	// Top-level container element into which we'll write results.
 	d.AppendChild(body, d.NewElement("div"), func(results *js.Object) {
-		// Results are hidden from view.  They may be queried
-		// programmatically from the test framework.
-		results.Set("style", "visiblity: hidden")
-
 		// Indicate how many tests failed.
 		d.AppendChild(results, d.NewElement("div"), func(failureCount *js.Object) {
 			// Allow the element to be read by automation.
