@@ -17,8 +17,8 @@ package dom
 import (
 	"testing"
 
-	"github.com/kr/pretty"
 	"github.com/gopherjs/gopherjs/js"
+	"github.com/kr/pretty"
 )
 
 func init() {
@@ -31,29 +31,29 @@ func init() {
 }
 
 func TestHas(t *testing.T) {
-	testcases := []struct{
+	testcases := []struct {
 		description string
 		queryString string
-		param string
-		want bool
+		param       string
+		want        bool
 	}{
 		{
 			description: "param with value",
 			queryString: "?key=value",
-			param: "key",
-			want: true,
+			param:       "key",
+			want:        true,
 		},
 		{
 			description: "param without value",
 			queryString: "?key",
-			param: "key",
-			want: true,
+			param:       "key",
+			want:        true,
 		},
 		{
 			description: "no param found",
 			queryString: "?other-key",
-			param: "key",
-			want: false,
+			param:       "key",
+			want:        false,
 		},
 	}
 
