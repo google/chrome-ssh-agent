@@ -15,38 +15,12 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/optionsui"
-	"github.com/gopherjs/gopherjs/js"
+	"github.com/google/chrome-ssh-agent/go/testing"
 )
-
-func isTest() bool {
-	win := js.Global.Get("window").Get("location").Get("search")
-	params := js.Global.Get("URLSearchParams").New(win)
-	return params.Call("has", "test").Bool()
-}
-
-func writeTestResults(d *dom.DOM, errs []error) {
-	body := d.GetElement("body")
-	// Clear the existing elements from the doc.
-	d.RemoveChildren(body)
-	// Indicate how many tests failed. Give the element an ID so
-	// it can be read by automation.
-	d.AppendChild(body, d.NewElement("div"), func(failureCount *js.Object) {
-		failureCount.Set("id", "failureCount")
-		d.AppendChild(failureCount, d.NewText(fmt.Sprintf("%d", len(errs))), nil)
-	})
-	// Enumerate the failures.
-	for _, err := range errs {
-		d.AppendChild(body, d.NewElement("div"), func(failure *js.Object) {
-			d.AppendChild(failure, d.NewText(err.Error()), nil)
-		})
-	}
-}
 
 func main() {
 	c := chrome.New(nil)
@@ -54,7 +28,8 @@ func main() {
 	d := dom.New(dom.Doc)
 	ui := optionsui.New(mgr, d)
 
-	if isTest() {
-		writeTestResults(d, ui.EndToEndTest())
+	qs := dom.NewURLSearchParams(dom.DefaultQueryString())
+	if qs.Has("test") {
+		testing.WriteResults(d, ui.EndToEndTest())
 	}
 }

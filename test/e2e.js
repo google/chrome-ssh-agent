@@ -75,10 +75,11 @@ describe('SSH Agent', function () {
   it('successfully manages keys via the Options UI', async function() {
     await driver.get(makeExtensionUrl("html/options.html?test"));
 
-    fail = await driver.wait(until.elementLocated(By.id('failureCount')))
+    count = await driver.wait(until.elementLocated(By.id('failureCount')))
       .getText();
-    body = await driver.wait(until.elementLocated(By.id('body'))).getText();
-    assert.equal(parseInt(fail), 0, body);
+    failures = await driver.wait(until.elementLocated(By.id('failures')))
+      .getText();
+    assert.equal(parseInt(count), 0, failures);
   })
 
   afterEach(async function() {

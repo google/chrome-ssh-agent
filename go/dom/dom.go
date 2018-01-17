@@ -112,6 +112,16 @@ func (d *DOM) GetElement(id string) *js.Object {
 	return d.doc.Call("getElementById", id)
 }
 
+// GetElementsByTag returns the elements with the speciied tag.
+func (d *DOM) GetElementsByTag(tag string) []*js.Object {
+	var result []*js.Object
+	elts := d.doc.Call("getElementsByTagName", tag)
+	for i := 0; i < elts.Length(); i++ {
+		result = append(result, elts.Index(i))
+	}
+	return result
+}
+
 // ShowModal shows the specified dialog as a modal dialog.
 func (d *DOM) ShowModal(o *js.Object) {
 	if o.Get("showModal") == js.Undefined {
