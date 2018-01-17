@@ -86,7 +86,7 @@ zip: $(EXTENSION_ZIP)
 
 deploy-webstore: $(EXTENSION_ZIP)
 	@echo ">> deploying to Chrome Web Store"
-	@./deploy-webstore.py
+	@bin/deploy-webstore.py
 
 $(GOPHERJS):
 	@GOOS= GOARCH= $(GO) get -u github.com/gopherjs/gopherjs
