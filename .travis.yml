@@ -17,13 +17,14 @@ before_install:
 - nvm install 'lts/*'
 - nvm use 'lts/*'
 # Install packages:
-#   jsdom              Provides DOM implementation used in unit tests
+#   jsdom               Provides DOM implementation used in unit tests
 #   source-map-support  Better stack traces in gopherjs tests
 #   node-gyp            https://github.com/gopherjs/gopherjs/blob/master/doc/syscalls.md
 #   selenium-webdriver  End-to-end tests in Chrome
 #   chromedriver        Eor end-to-end tests in Chrome
 #   mocha               Test framework for end-to-end tests
 #   assert              For assertions in end-to-end tests
+#   url-search-params   For validating URLSearchParams wrapper in unit tests
 - npm install
 - npm install jsdom source-map-support node-gyp selenium-webdriver chromedriver mocha assert
 deploy:

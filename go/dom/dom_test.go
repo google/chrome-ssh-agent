@@ -131,3 +131,24 @@ func TestRemoveEventListeners(t *testing.T) {
 		t.Errorf("clicked callback not invoked")
 	}
 }
+
+func joinTextContent(d *DOM, objs []*js.Object) string {
+	var result string
+	for _, o := range objs {
+		result = result + d.TextContent(o)
+	}
+	return result
+}
+
+func TestGetElementsByTag(t *testing.T) {
+	d := New(dt.NewDocForTesting(`
+		<div>foo</div>
+		<pre>bar</pre>
+	`))
+	if diff := pretty.Diff(joinTextContent(d, d.GetElementsByTag("div")), "foo"); diff != nil {
+		t.Errorf("incorrect text content; -got +want: %s", diff)
+	}
+	if diff := pretty.Diff(joinTextContent(d, d.GetElementsByTag("pre")), "bar"); diff != nil {
+		t.Errorf("incorrect text content; -got +want: %s", diff)
+	}
+}
