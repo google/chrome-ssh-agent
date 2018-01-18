@@ -26,7 +26,7 @@ before_install:
 #   assert              For assertions in end-to-end tests
 #   url-search-params   For validating URLSearchParams wrapper in unit tests
 - npm install
-- npm install jsdom source-map-support node-gyp selenium-webdriver chromedriver mocha assert
+- npm install jsdom source-map-support node-gyp selenium-webdriver chromedriver mocha assert url-search-params
 deploy:
   # Upload zip file to GitHub as a release
   - provider: releases
