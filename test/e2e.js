@@ -56,7 +56,7 @@ chrome.setDefaultService(new chrome.ServiceBuilder()
 
 describe('SSH Agent', function () {
   let driver
-  this.timeout(10000);
+  this.timeout(30000);
 
   beforeEach(async function() {
     // Capture the browser's console logs.
