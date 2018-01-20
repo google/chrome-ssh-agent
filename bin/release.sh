@@ -18,7 +18,7 @@
 #  (1) Update version in manifest.json
 #  (2) Run release.sh
 
-cd $(dirname $0)
+cd $(dirname $0)/..
 
 function die() {
   echo $1
