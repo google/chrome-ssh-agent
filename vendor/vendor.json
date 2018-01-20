@@ -17,32 +17,44 @@
 		{
 			"checksumSHA1": "IQkUIOnvlf0tYloFx9mLaXSvXWQ=",
 			"path": "golang.org/x/crypto/curve25519",
-			"revision": "13931e22f9e72ea58bb73048bc752b48c6d4d4ac",
-			"revisionTime": "2018-01-11T11:10:38Z"
+			"revision": "a6600008915114d9c087fad9f03d75087b1a74df",
+			"revisionTime": "2018-01-19T09:51:11Z"
 		},
 		{
 			"checksumSHA1": "1hwn8cgg4EVXhCpJIqmMbzqnUo0=",
 			"path": "golang.org/x/crypto/ed25519",
-			"revision": "13931e22f9e72ea58bb73048bc752b48c6d4d4ac",
-			"revisionTime": "2018-01-11T11:10:38Z"
+			"revision": "a6600008915114d9c087fad9f03d75087b1a74df",
+			"revisionTime": "2018-01-19T09:51:11Z"
 		},
 		{
 			"checksumSHA1": "LXFcVx8I587SnWmKycSDEq9yvK8=",
 			"path": "golang.org/x/crypto/ed25519/internal/edwards25519",
-			"revision": "13931e22f9e72ea58bb73048bc752b48c6d4d4ac",
-			"revisionTime": "2018-01-11T11:10:38Z"
+			"revision": "a6600008915114d9c087fad9f03d75087b1a74df",
+			"revisionTime": "2018-01-19T09:51:11Z"
 		},
 		{
-			"checksumSHA1": "JBM5zsLZusBa5WRr+LYmZ1mUZWk=",
+			"checksumSHA1": "hfABw6DX9B4Ma+88qDDGz9qY45s=",
+			"path": "golang.org/x/crypto/internal/chacha20",
+			"revision": "a6600008915114d9c087fad9f03d75087b1a74df",
+			"revisionTime": "2018-01-19T09:51:11Z"
+		},
+		{
+			"checksumSHA1": "kVKE0OX1Xdw5mG7XKT86DLLKE2I=",
+			"path": "golang.org/x/crypto/poly1305",
+			"revision": "a6600008915114d9c087fad9f03d75087b1a74df",
+			"revisionTime": "2018-01-19T09:51:11Z"
+		},
+		{
+			"checksumSHA1": "3gmfzaf0iuWogko7jfz8lH8Adcs=",
 			"path": "golang.org/x/crypto/ssh",
-			"revision": "13931e22f9e72ea58bb73048bc752b48c6d4d4ac",
-			"revisionTime": "2018-01-11T11:10:38Z"
+			"revision": "a6600008915114d9c087fad9f03d75087b1a74df",
+			"revisionTime": "2018-01-19T09:51:11Z"
 		},
 		{
 			"checksumSHA1": "NMRX0onGReaL9IfLr0XQ3kl5Id0=",
 			"path": "golang.org/x/crypto/ssh/agent",
-			"revision": "13931e22f9e72ea58bb73048bc752b48c6d4d4ac",
-			"revisionTime": "2018-01-11T11:10:38Z"
+			"revision": "a6600008915114d9c087fad9f03d75087b1a74df",
+			"revisionTime": "2018-01-19T09:51:11Z"
 		}
 	],
 	"rootPath": "github.com/google/chrome-ssh-agent"
