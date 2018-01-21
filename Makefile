@@ -13,13 +13,22 @@ export EXTENSION_ID	= eechpbnaifiimgajnomdipfaamobdfha
 export EXTENSION_ZIP	= $(BIN_DIR)/chrome-ssh-agent.zip
 export PUBLISH_TARGET	= default
 
+# Finding the NPM bin directory is a bit tricky. First, attempt to locate it
+# from our current working directory. If modules were installed somewhere else
+# (e.g., in a global location, the user's home directory), then the returned
+# path may not actually exist. (npm bin may pick up the node_modules directory
+# that we create when we install the syscall module.)  If the returned directory
+# does not exist, then try again but from the perspective of our parent
+# directory.
+NPM_BIN		= $(shell test -d $$(npm bin) && npm bin || (cd .. && npm bin))
+
 # Finding node-gyp requires going up one level and then querying. We do not want
 # to find our own node_modules directory.
-NODE_GYP	= $(shell npm bin)/node-gyp
+NODE_GYP	= $(NPM_BIN)/node-gyp
 NODE_SYSCALL	= node_modules/syscall.node
 
 XVFB_RUN	= $(shell which xvfb-run)
-MOCHA		= $(shell npm bin)/mocha
+MOCHA		= $(NPM_BIN)/mocha
 
 MAKECRX		= $(BIN_DIR)/makecrx.sh
 TEST_CRX_KEY	= $(BIN_DIR)/test-crx-key.pem
