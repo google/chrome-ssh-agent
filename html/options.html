@@ -23,49 +23,55 @@
   <body class="body">
     <dialog id="passphraseDialog" class="dialog">
       <div class="modal-content">
-        <div>
-          <label for="passphrase">Passphrase</label>
-        </div>
-        <div>
-          <input id="passphrase" name="passphrase" type="password"/>
-        </div>
-        <div>
-          <button id="passphraseOk">OK</button>
-          <button id="passphraseCancel">Cancel</button>
-        </div>
+        <form>
+          <div>
+            <label for="passphrase">Passphrase</label>
+          </div>
+          <div>
+            <input id="passphrase" name="passphrase" type="password"/>
+          </div>
+          <div>
+            <input type="submit" id="passphraseOk" value="OK"/>
+            <button id="passphraseCancel">Cancel</button>
+          </div>
+        </form>
       </div>
     </dialog>
 
     <dialog id="addDialog" class="dialog">
       <div class="dialog-content">
-        <div>
-          <label for="addName">Name</label>
-        </div>
-        <div>
-          <input id="addName" name="name" type="text"/>
-        </div>
-        <div>
-          <label for="addKey">Private Key (PEM format)</label>
-        </div>
-        <div>
-          <textarea id="addKey" name="privateKey"></textarea>
-        </div>
-        <div>
-          <button id="addOk">Add</button>
-          <button id="addCancel">Cancel</button>
-        </div>
+        <form>
+          <div>
+            <label for="addName">Name</label>
+          </div>
+          <div>
+            <input id="addName" name="name" type="text"/>
+          </div>
+          <div>
+            <label for="addKey">Private Key (PEM format)</label>
+          </div>
+          <div>
+            <textarea id="addKey" name="privateKey"></textarea>
+          </div>
+          <div>
+            <input type="submit" id="addOk" value="Add"/>
+            <button id="addCancel">Cancel</button>
+          </div>
+        </form>
       </div>
     </dialog>
 
     <dialog id="removeDialog" class="dialog">
       <div class="dialog-content">
-        <div>
-          Are you sure you want to remove the '<span id="removeName"></span>' key?
-        </div>
-        <div>
-          <button id="removeYes">Yes</button>
-          <button id="removeNo">No</button>
-        </div>
+        <form>
+          <div>
+            Are you sure you want to remove the '<span id="removeName"></span>' key?
+          </div>
+          <div>
+            <input type="submit" id="removeYes" value="Yes"/>
+            <button id="removeNo">No</button>
+          </div>
+        </form>
       </div>
     </dialog>
 
