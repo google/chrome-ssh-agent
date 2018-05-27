@@ -75,6 +75,12 @@
 			"revisionTime": "2018-04-24T20:25:46Z"
 		},
 		{
+			"checksumSHA1": "yIkYzW7bzAD81zHyuCNmEj4+oxQ=",
+			"path": "github.com/gopherjs/gopherjs/js",
+			"revision": "8dffc02ea1cb8398bb73f30424697c60fcf8d4c5",
+			"revisionTime": "2018-04-24T20:25:46Z"
+		},
+		{
 			"checksumSHA1": "i2bq4jO1VcnMLFElT8gInUh87Jo=",
 			"path": "github.com/gopherjs/gopherjs/node-syscall",
 			"revision": "8dffc02ea1cb8398bb73f30424697c60fcf8d4c5",

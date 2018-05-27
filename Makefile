@@ -35,9 +35,7 @@ TEST_CRX_KEY	= $(BIN_DIR)/test-crx-key.pem
 export TEST_EXTENSION_CRX	= $(BIN_DIR)/chrome-ssh-agent.crx
 export TEST_EXTENSION_ID	= gcdecdcemcbepilaaaoljdlilamnoeob
 
-# TODO(ralimi) Add 'vet' back to list when it works again.
-# See https://github.com/google/chrome-ssh-agent/issues/3
-all: format style lint test build zip
+all: format style lint vet test build zip
 
 $(NODE_SYSCALL):
 	# See https://github.com/gopherjs/gopherjs/blob/master/doc/syscalls.md
