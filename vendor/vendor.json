@@ -99,16 +99,16 @@
 			"revisionTime": "2018-02-21T18:54:26Z"
 		},
 		{
-			"checksumSHA1": "eOXF2PEvYLMeD8DSzLZJWbjYzco=",
+			"checksumSHA1": "3ohk4dFYrERZ6WTdKkIwnTA0HSI=",
 			"path": "github.com/kr/pretty",
-			"revision": "cfb55aafdaf3ec08f0db22699ab822c50091b1c4",
-			"revisionTime": "2016-08-23T17:07:15Z"
+			"revision": "73f6ac0b30a98e433b289500d779f50c1a6f0712",
+			"revisionTime": "2018-05-06T08:33:45Z"
 		},
 		{
-			"checksumSHA1": "uulQHQ7IsRKqDudBC8Go9J0gtAc=",
+			"checksumSHA1": "SbguDK5lY8uhaHNrmJmNbiWIGM0=",
 			"path": "github.com/kr/text",
-			"revision": "7cafcd837844e784b526369c9bce262804aebc60",
-			"revisionTime": "2016-05-04T02:26:26Z"
+			"revision": "e2ffdb16a802fe2bb95e2e35ff34f0e53aeef34f",
+			"revisionTime": "2018-05-06T08:24:08Z"
 		},
 		{
 			"checksumSHA1": "CaUaJLLnql96d2JGRgCpYsKomxw=",
@@ -149,44 +149,44 @@
 		{
 			"checksumSHA1": "IQkUIOnvlf0tYloFx9mLaXSvXWQ=",
 			"path": "golang.org/x/crypto/curve25519",
-			"revision": "3d37316aaa6bd9929127ac9a527abf408178ea7b",
-			"revisionTime": "2018-01-22T21:46:34Z"
+			"revision": "ab813273cd59e1333f7ae7bff5d027d4aadf528c",
+			"revisionTime": "2018-05-26T08:55:52Z"
 		},
 		{
-			"checksumSHA1": "1hwn8cgg4EVXhCpJIqmMbzqnUo0=",
+			"checksumSHA1": "VqyzfAMKyP6SoLnPHcwhkrICBo0=",
 			"path": "golang.org/x/crypto/ed25519",
-			"revision": "3d37316aaa6bd9929127ac9a527abf408178ea7b",
-			"revisionTime": "2018-01-22T21:46:34Z"
+			"revision": "ab813273cd59e1333f7ae7bff5d027d4aadf528c",
+			"revisionTime": "2018-05-26T08:55:52Z"
 		},
 		{
-			"checksumSHA1": "LXFcVx8I587SnWmKycSDEq9yvK8=",
+			"checksumSHA1": "0JTAFXPkankmWcZGQJGScLDiaN8=",
 			"path": "golang.org/x/crypto/ed25519/internal/edwards25519",
-			"revision": "3d37316aaa6bd9929127ac9a527abf408178ea7b",
-			"revisionTime": "2018-01-22T21:46:34Z"
+			"revision": "ab813273cd59e1333f7ae7bff5d027d4aadf528c",
+			"revisionTime": "2018-05-26T08:55:52Z"
 		},
 		{
-			"checksumSHA1": "hfABw6DX9B4Ma+88qDDGz9qY45s=",
+			"checksumSHA1": "SEPNUEkZaGKt3dkO3B13pRAp6ho=",
 			"path": "golang.org/x/crypto/internal/chacha20",
-			"revision": "3d37316aaa6bd9929127ac9a527abf408178ea7b",
-			"revisionTime": "2018-01-22T21:46:34Z"
+			"revision": "ab813273cd59e1333f7ae7bff5d027d4aadf528c",
+			"revisionTime": "2018-05-26T08:55:52Z"
 		},
 		{
-			"checksumSHA1": "kVKE0OX1Xdw5mG7XKT86DLLKE2I=",
+			"checksumSHA1": "vKbPb9fpjCdzuoOvajOJnYfHG2g=",
 			"path": "golang.org/x/crypto/poly1305",
-			"revision": "3d37316aaa6bd9929127ac9a527abf408178ea7b",
-			"revisionTime": "2018-01-22T21:46:34Z"
+			"revision": "ab813273cd59e1333f7ae7bff5d027d4aadf528c",
+			"revisionTime": "2018-05-26T08:55:52Z"
 		},
 		{
-			"checksumSHA1": "Wy1ExvSqSli5OSnOwCknLUR77o4=",
+			"checksumSHA1": "5UDaK1KsPOI7P/Q1b17FnNno36o=",
 			"path": "golang.org/x/crypto/ssh",
-			"revision": "3d37316aaa6bd9929127ac9a527abf408178ea7b",
-			"revisionTime": "2018-01-22T21:46:34Z"
+			"revision": "ab813273cd59e1333f7ae7bff5d027d4aadf528c",
+			"revisionTime": "2018-05-26T08:55:52Z"
 		},
 		{
-			"checksumSHA1": "NMRX0onGReaL9IfLr0XQ3kl5Id0=",
+			"checksumSHA1": "R9VBzgWGaphXv2/b4DLeMAbq9Xg=",
 			"path": "golang.org/x/crypto/ssh/agent",
-			"revision": "3d37316aaa6bd9929127ac9a527abf408178ea7b",
-			"revisionTime": "2018-01-22T21:46:34Z"
+			"revision": "ab813273cd59e1333f7ae7bff5d027d4aadf528c",
+			"revisionTime": "2018-05-26T08:55:52Z"
 		},
 		{
 			"checksumSHA1": "BGm8lKZmvJbf/YOJLeL1rw2WVjA=",
