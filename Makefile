@@ -35,13 +35,15 @@ TEST_CRX_KEY	= $(BIN_DIR)/test-crx-key.pem
 export TEST_EXTENSION_CRX	= $(BIN_DIR)/chrome-ssh-agent.crx
 export TEST_EXTENSION_ID	= gcdecdcemcbepilaaaoljdlilamnoeob
 
-all: format style vet lint test build zip
+# TODO(ralimi) Add 'vet' back to list when it works again.
+# See https://github.com/google/chrome-ssh-agent/issues/3
+all: format style lint test build zip
 
 $(NODE_SYSCALL):
 	# See https://github.com/gopherjs/gopherjs/blob/master/doc/syscalls.md
-	@cd $(GOPATH)/src/github.com/gopherjs/gopherjs/node-syscall && $(NODE_GYP) rebuild
+	@cd vendor/github.com/gopherjs/gopherjs/node-syscall && $(NODE_GYP) rebuild
 	@mkdir -p $(shell dirname $(NODE_SYSCALL))
-	@ln $(GOPATH)/src/github.com/gopherjs/gopherjs/node-syscall/build/Release/syscall.node $(NODE_SYSCALL)
+	@ln vendor/github.com/gopherjs/gopherjs/node-syscall/build/Release/syscall.node $(NODE_SYSCALL)
 
 format:
 	@echo ">> formatting code"
@@ -98,7 +100,7 @@ deploy-webstore: $(EXTENSION_ZIP)
 	@bin/deploy-webstore.py
 
 $(GOPHERJS):
-	@GOOS= GOARCH= $(GO) get -u github.com/gopherjs/gopherjs
+	@$(GO) install github.com/google/chrome-ssh-agent/vendor/github.com/gopherjs/gopherjs
 
 $(GOLINT):
 	@GOOS= GOARCH= $(GO) get -u github.com/golang/lint/golint
