@@ -219,10 +219,10 @@
 			"revisionTime": "2018-01-20T03:12:17Z"
 		},
 		{
-			"checksumSHA1": "nTHIcoXI4be0TEnsESCDWa/x1xM=",
-			"path": "golang.org/x/tools/go/internal/gcimporter",
-			"revision": "a5b4c53f6e8bdcafa95a94671bf2d1203365858b",
-			"revisionTime": "2018-05-20T07:57:22Z"
+			"checksumSHA1": "o6uoZozSLnj3Ph+hj399ZPqJYhE=",
+			"path": "golang.org/x/tools/go/gcimporter15",
+			"revision": "99037e3760ed7d9c772c980caee42b17779b80ce",
+			"revisionTime": "2018-01-20T03:12:17Z"
 		},
 		{
 			"checksumSHA1": "QKvPv3TJ+ZnOLkUeUkT8Wm8eCV0=",

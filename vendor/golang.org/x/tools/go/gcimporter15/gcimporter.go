@@ -6,10 +6,14 @@
 // but it also contains the original source-based importer code for Go1.6.
 // Once we stop supporting 1.6, we can remove that code.
 
-// Package gcimporter provides various functions for reading
+// Package gcimporter15 provides various functions for reading
 // gc-generated object files that can be used to implement the
 // Importer interface defined by the Go 1.5 standard library package.
-package gcimporter // import "golang.org/x/tools/go/internal/gcimporter"
+//
+// Deprecated: this package will be deleted in October 2017.
+// New code should use golang.org/x/tools/go/gcexportdata.
+//
+package gcimporter // import "golang.org/x/tools/go/gcimporter15"
 
 import (
 	"bufio"
