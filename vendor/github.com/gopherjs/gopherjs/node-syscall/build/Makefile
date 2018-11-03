@@ -143,7 +143,7 @@ cmd_alink_thin = rm -f $@ && $(AR.$(TOOLSET)) crsT $@ $(filter %.o,$^)
 # special "figure out circular dependencies" flags around the entire
 # input list during linking.
 quiet_cmd_link = LINK($(TOOLSET)) $@
-cmd_link = $(LINK.$(TOOLSET)) $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -o $@ -Wl,--start-group $(LD_INPUTS) -Wl,--end-group $(LIBS)
+cmd_link = $(LINK.$(TOOLSET)) $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -o $@ -Wl,--start-group $(LD_INPUTS) $(LIBS) -Wl,--end-group
 
 # We support two kinds of shared objects (.so):
 # 1) shared_library, which is just bundling together many dependent libraries
@@ -308,8 +308,8 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
 endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
-cmd_regen_makefile = cd $(srcdir); /home/ralimi/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/home/ralimi/gocode/src/github.com/google/chrome-ssh-agent/vendor/github.com/gopherjs/gopherjs/node-syscall/build/config.gypi -I/home/ralimi/node_modules/node-gyp/addon.gypi -I/home/ralimi/.node-gyp/8.11.1/include/node/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/home/ralimi/.node-gyp/8.11.1" "-Dnode_gyp_dir=/home/ralimi/node_modules/node-gyp" "-Dnode_lib_file=/home/ralimi/.node-gyp/8.11.1/<(target_arch)/node.lib" "-Dmodule_root_dir=/home/ralimi/gocode/src/github.com/google/chrome-ssh-agent/vendor/github.com/gopherjs/gopherjs/node-syscall" "-Dnode_engine=v8" binding.gyp
-Makefile: $(srcdir)/../../../../../../../../../../.node-gyp/8.11.1/include/node/common.gypi $(srcdir)/../../../../../../../../../../node_modules/node-gyp/addon.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp
+cmd_regen_makefile = cd $(srcdir); /home/ralimi/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/home/ralimi/gocode/src/github.com/google/chrome-ssh-agent/vendor/github.com/gopherjs/gopherjs/node-syscall/build/config.gypi -I/home/ralimi/node_modules/node-gyp/addon.gypi -I/home/ralimi/.node-gyp/10.13.0/include/node/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/home/ralimi/.node-gyp/10.13.0" "-Dnode_gyp_dir=/home/ralimi/node_modules/node-gyp" "-Dnode_lib_file=/home/ralimi/.node-gyp/10.13.0/<(target_arch)/node.lib" "-Dmodule_root_dir=/home/ralimi/gocode/src/github.com/google/chrome-ssh-agent/vendor/github.com/gopherjs/gopherjs/node-syscall" "-Dnode_engine=v8" binding.gyp
+Makefile: $(srcdir)/../../../../../../../../../../.node-gyp/10.13.0/include/node/common.gypi $(srcdir)/../../../../../../../../../../node_modules/node-gyp/addon.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp
 	$(call do_cmd,regen_makefile)
 
 # "all" is a concatenation of the "all" targets from all the included
