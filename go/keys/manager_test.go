@@ -69,7 +69,7 @@ func TestAdd(t *testing.T) {
 		{
 			description:    "add single key",
 			name:           "new-key",
-			pemPrivateKey:  testdata.ValidPrivateKey,
+			pemPrivateKey:  testdata.WithPassphrase.Private,
 			wantConfigured: []string{"new-key"},
 		},
 		{
@@ -77,11 +77,11 @@ func TestAdd(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "new-key-1",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			name:           "new-key-2",
-			pemPrivateKey:  testdata.ValidPrivateKey,
+			pemPrivateKey:  testdata.WithPassphrase.Private,
 			wantConfigured: []string{"new-key-1", "new-key-2"},
 		},
 		{
@@ -89,23 +89,23 @@ func TestAdd(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "new-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			name:           "new-key",
-			pemPrivateKey:  testdata.ValidPrivateKey,
+			pemPrivateKey:  testdata.WithPassphrase.Private,
 			wantConfigured: []string{"new-key", "new-key"},
 		},
 		{
 			description:   "reject invalid name",
 			name:          "",
-			pemPrivateKey: testdata.ValidPrivateKey,
+			pemPrivateKey: testdata.WithPassphrase.Private,
 			wantErr:       errors.New("name must not be empty"),
 		},
 		{
 			description:   "fail to write to storage",
 			name:          "new-key",
-			pemPrivateKey: testdata.ValidPrivateKey,
+			pemPrivateKey: testdata.WithPassphrase.Private,
 			storageErr: fakes.Errs{
 				Set: errors.New("storage.Set failed"),
 			},
@@ -158,7 +158,7 @@ func TestRemove(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "new-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			byName:         "new-key",
@@ -169,7 +169,7 @@ func TestRemove(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "new-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			byID:           ID("bogus-id"),
@@ -180,7 +180,7 @@ func TestRemove(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "new-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			byName: "new-key",
@@ -195,7 +195,7 @@ func TestRemove(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "new-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			byName: "new-key",
@@ -259,11 +259,11 @@ func TestConfigured(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "new-key-1",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 				{
 					Name:          "new-key-2",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			wantConfigured: []string{"new-key-1", "new-key-2"},
@@ -273,7 +273,7 @@ func TestConfigured(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "new-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			storageErr: fakes.Errs{
@@ -323,13 +323,13 @@ func TestLoadAndLoaded(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "good-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			byName:     "good-key",
-			passphrase: testdata.ValidPrivateKeyPassphrase,
+			passphrase: testdata.WithPassphrase.Passphrase,
 			wantLoaded: []string{
-				testdata.ValidPrivateKeyBlob,
+				testdata.WithPassphrase.Blob,
 			},
 		},
 		{
@@ -341,13 +341,13 @@ func TestLoadAndLoaded(t *testing.T) {
 				},
 				{
 					Name:          "good-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			byName:     "good-key",
-			passphrase: testdata.ValidPrivateKeyPassphrase,
+			passphrase: testdata.WithPassphrase.Passphrase,
 			wantLoaded: []string{
-				testdata.ValidPrivateKeyBlob,
+				testdata.WithPassphrase.Blob,
 			},
 		},
 		{
@@ -355,12 +355,12 @@ func TestLoadAndLoaded(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "good-key",
-					PEMPrivateKey: testdata.ValidPrivateKeyWithoutPassphrase,
+					PEMPrivateKey: testdata.WithoutPassphrase.Private,
 				},
 			},
 			byName: "good-key",
 			wantLoaded: []string{
-				testdata.ValidPrivateKeyWithoutPassphraseBlob,
+				testdata.WithoutPassphrase.Blob,
 			},
 		},
 		{
@@ -380,7 +380,7 @@ func TestLoadAndLoaded(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "good-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			byName:     "good-key",
@@ -392,7 +392,7 @@ func TestLoadAndLoaded(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "good-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			byID:       ID("bogus-id"),
@@ -404,11 +404,11 @@ func TestLoadAndLoaded(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "good-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 				},
 			},
 			byName:     "good-key",
-			passphrase: testdata.ValidPrivateKeyPassphrase,
+			passphrase: testdata.WithPassphrase.Passphrase,
 			storageErr: fakes.Errs{
 				Get: errors.New("storage.Get failed"),
 			},
@@ -477,12 +477,12 @@ func TestUnload(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "good-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 					Load:          true,
-					Passphrase:    testdata.ValidPrivateKeyPassphrase,
+					Passphrase:    testdata.WithPassphrase.Passphrase,
 				},
 			},
-			unload:     makeLoadedKey(testdata.ValidPrivateKeyType, testdata.ValidPrivateKeyBlob),
+			unload:     makeLoadedKey(testdata.WithPassphrase.Type, testdata.WithPassphrase.Blob),
 			wantLoaded: []string{},
 		},
 		{
@@ -490,14 +490,14 @@ func TestUnload(t *testing.T) {
 			initial: []*initialKey{
 				{
 					Name:          "good-key",
-					PEMPrivateKey: testdata.ValidPrivateKey,
+					PEMPrivateKey: testdata.WithPassphrase.Private,
 					Load:          true,
-					Passphrase:    testdata.ValidPrivateKeyPassphrase,
+					Passphrase:    testdata.WithPassphrase.Passphrase,
 				},
 			},
 			unload: makeLoadedKey("bogus-type", "AAAA"),
 			wantLoaded: []string{
-				testdata.ValidPrivateKeyBlob,
+				testdata.WithPassphrase.Blob,
 			},
 			wantErr: errors.New("failed to unload key: agent: key not found"),
 		},
@@ -536,7 +536,7 @@ func TestGetID(t *testing.T) {
 	mgr, err := newTestManager(agt, storage, []*initialKey{
 		{
 			Name:          "good-key",
-			PEMPrivateKey: testdata.ValidPrivateKey,
+			PEMPrivateKey: testdata.WithPassphrase.Private,
 		},
 	})
 	if err != nil {
@@ -550,7 +550,7 @@ func TestGetID(t *testing.T) {
 	}
 
 	// Load the key.
-	if err := syncLoad(mgr, wantID, testdata.ValidPrivateKeyPassphrase); err != nil {
+	if err := syncLoad(mgr, wantID, testdata.WithPassphrase.Passphrase); err != nil {
 		t.Errorf("failed to load key: %v", err)
 	}
 
@@ -566,7 +566,7 @@ func TestGetID(t *testing.T) {
 	// Now, also load a key into the agent directly (i.e., not through the
 	// manager). We will ensure that we get InvalidID back when we try
 	// to extract the ID from it.
-	priv, err := ssh.ParseRawPrivateKey([]byte(testdata.ValidPrivateKeyWithoutPassphrase))
+	priv, err := ssh.ParseRawPrivateKey([]byte(testdata.WithoutPassphrase.Private))
 	if err != nil {
 		t.Errorf("failed to parse private key: %v", err)
 	}

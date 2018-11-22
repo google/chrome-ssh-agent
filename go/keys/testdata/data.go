@@ -14,8 +14,16 @@
 
 package testdata
 
-const (
-	ValidPrivateKey = `
+type TestKey struct {
+	Private    string
+	Passphrase string
+	Blob       string
+	Type       string
+}
+
+var (
+	WithPassphrase = TestKey{
+		Private: `
 -----BEGIN RSA PRIVATE KEY-----
 Proc-Type: 4,ENCRYPTED
 DEK-Info: AES-256-CBC,3F17234B07052C56268A529F4C96A478
@@ -45,12 +53,14 @@ dW5FfsFY8ftVQIozCnxUEw3TwDztRkbVXxQ1O4tOjbzhkkFA3H/NukrbLLCEMjDI
 o038XwjZI5MEPLZlhh69e6jbL3kSsVARD5ahkarLuvUyKpqiInrnUWLHZETwiSH2
 wy+03hJeDFxANxHpz25t87FwzHR4FceteqJXHWoR6XiH805u+2KHCHhv+6nvQCe2
 SQv684pfXIhZ8Lfr13deSx5G8h+ULUDyfHzgheSXWOPyve+wdehAOyh71npHjyXe
------END RSA PRIVATE KEY-----`
-	ValidPrivateKeyPassphrase = "secret"
-	ValidPrivateKeyBlob       = "AAAAB3NzaC1yc2EAAAADAQABAAABAQC8c/qTG/jF0SFloU74KvKEYxYlPpxplKXfd4NXtIx578iuKzbX1HQSgEpr2aWUXoPQNMqNpkhNFaDU3nVLtD74vEn2Yn3QuzRUgMeOybqImN5v2TvAmpUt2YOHO3FraDQaYSGBS5FXp2eulvgZ2KnQyMFBo+R1m2VIfuq2rQZPEgyaq/DYbLLKpmgH2Ud8csVo+2RcnzBx2ZpOppFQ+EjgHljwYPpHf93LNX4Q/auU6+RA8Z0JpH/hw0US4d5eNvdifHTuvSAj3bIjTeyfQGZnfHzrwfk2FvtsBFS/bLwEUlD/htZCcW6zaDxEYAsXKPizW5dNDt77C9QIWy+kZy7X"
-	ValidPrivateKeyType       = "ssh-rsa"
+-----END RSA PRIVATE KEY-----`,
+		Passphrase: "secret",
+		Blob:       "AAAAB3NzaC1yc2EAAAADAQABAAABAQC8c/qTG/jF0SFloU74KvKEYxYlPpxplKXfd4NXtIx578iuKzbX1HQSgEpr2aWUXoPQNMqNpkhNFaDU3nVLtD74vEn2Yn3QuzRUgMeOybqImN5v2TvAmpUt2YOHO3FraDQaYSGBS5FXp2eulvgZ2KnQyMFBo+R1m2VIfuq2rQZPEgyaq/DYbLLKpmgH2Ud8csVo+2RcnzBx2ZpOppFQ+EjgHljwYPpHf93LNX4Q/auU6+RA8Z0JpH/hw0US4d5eNvdifHTuvSAj3bIjTeyfQGZnfHzrwfk2FvtsBFS/bLwEUlD/htZCcW6zaDxEYAsXKPizW5dNDt77C9QIWy+kZy7X",
+		Type:       "ssh-rsa",
+	}
 
-	ValidPrivateKeyWithoutPassphrase = `
+	WithoutPassphrase = TestKey{
+		Private: `
 -----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAqvs4Aur/N3tFjDvuAqcLQ4BJVHpoqzO/RbwbXSBA5bCmd7rO
 4cy2inJK0oGphOTn6KRxpRJM8Wwl67iZrRYMTgHC357ymzOurMRXN1L1IZNRn4QO
@@ -77,7 +87,8 @@ C+EXxZOfq6hGwwUMzoVYKsvPoK7GNRkVUVMyUMONore+BKQ8GM2WmbPn4idymv/Q
 WhZ+0QKBgFaSJH2os/hjuyjtHAXOU8ktvudy7IegEUlNUzX0Xzk4eToDvDQNevad
 SkxRM2/9n4E6QAADUWlLjVgl92W+lLHylDV5baWe+QKMut3vyXjUJYe1ZKYe6zZV
 3wx1s/evfKXpd2Vs4ulNEaVs4nDmZ5zyS7TUp/ByabdkAJ5JnUpR
------END RSA PRIVATE KEY-----`
-	ValidPrivateKeyWithoutPassphraseBlob = "AAAAB3NzaC1yc2EAAAADAQABAAABAQCq+zgC6v83e0WMO+4CpwtDgElUemirM79FvBtdIEDlsKZ3us7hzLaKckrSgamE5OfopHGlEkzxbCXruJmtFgxOAcLfnvKbM66sxFc3UvUhk1GfhA7EGhqa5f3ykxGk8zIGzp0RChUkCwtobtlN1YZe6a8ZWQYN2K37rBoYGoPtelWXZDaI1kdO6Fa9I8+hPKGOK/s2WXvNBWnCbC+7/up2UYRLZIfU/geZncTZB7YpnViPhESyKDhahQ8uD7G/6oDSBQ1kQfGIArLpGzvzuawZLduJRdiGYpQbxpEfGObFlyqGXrZScULN4NC2mi9m2VOq2gNlCxk5vfP/VOXEkDwJ"
-	ValidPrivateKeyWithoutPassphraseType = "ssh-rsa"
+-----END RSA PRIVATE KEY-----`,
+		Blob: "AAAAB3NzaC1yc2EAAAADAQABAAABAQCq+zgC6v83e0WMO+4CpwtDgElUemirM79FvBtdIEDlsKZ3us7hzLaKckrSgamE5OfopHGlEkzxbCXruJmtFgxOAcLfnvKbM66sxFc3UvUhk1GfhA7EGhqa5f3ykxGk8zIGzp0RChUkCwtobtlN1YZe6a8ZWQYN2K37rBoYGoPtelWXZDaI1kdO6Fa9I8+hPKGOK/s2WXvNBWnCbC+7/up2UYRLZIfU/geZncTZB7YpnViPhESyKDhahQ8uD7G/6oDSBQ1kQfGIArLpGzvzuawZLduJRdiGYpQbxpEfGObFlyqGXrZScULN4NC2mi9m2VOq2gNlCxk5vfP/VOXEkDwJ",
+		Type: "ssh-rsa",
+	}
 )

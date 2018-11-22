@@ -530,7 +530,7 @@ func (u *UI) EndToEndTest() []error {
 	// Configure a key
 	u.dom.DoClick(u.addButton)
 	u.dom.SetValue(u.addName, keyName)
-	u.dom.SetValue(u.addKey, testdata.ValidPrivateKey)
+	u.dom.SetValue(u.addKey, testdata.WithPassphrase.Private)
 	u.dom.DoClick(u.addOk)
 
 	// Validate configured keys. Wait some time until key is added.
@@ -546,7 +546,7 @@ func (u *UI) EndToEndTest() []error {
 
 	// Load a key
 	u.dom.DoClick(u.dom.GetElement(buttonID(LoadButton, key.ID)))
-	u.dom.SetValue(u.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+	u.dom.SetValue(u.passphraseInput, testdata.WithPassphrase.Passphrase)
 	u.dom.DoClick(u.passphraseOk)
 
 	// Validate loaded keys. Wait some time until key is loaded.
@@ -558,10 +558,10 @@ func (u *UI) EndToEndTest() []error {
 		if diff := pretty.Diff(key.Loaded, true); diff != nil {
 			errs = append(errs, fmt.Errorf("after load: incorrect loaded state: %s", diff))
 		}
-		if diff := pretty.Diff(key.Type, testdata.ValidPrivateKeyType); diff != nil {
+		if diff := pretty.Diff(key.Type, testdata.WithPassphrase.Type); diff != nil {
 			errs = append(errs, fmt.Errorf("after load: incorrect type: %s", diff))
 		}
-		if diff := pretty.Diff(key.Blob, testdata.ValidPrivateKeyBlob); diff != nil {
+		if diff := pretty.Diff(key.Blob, testdata.WithPassphrase.Blob); diff != nil {
 			errs = append(errs, fmt.Errorf("after load: incorrect blob: %s", diff))
 		}
 	} else if key == nil {

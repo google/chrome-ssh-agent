@@ -267,12 +267,12 @@ func TestUserActions(t *testing.T) {
 			sequence: func(h *testHarness) {
 				h.dom.DoClick(h.UI.addButton)
 				h.dom.SetValue(h.UI.addName, "new-key")
-				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.SetValue(h.UI.addKey, testdata.WithPassphrase.Private)
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				h.dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
-				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.SetValue(h.UI.passphraseInput, testdata.WithPassphrase.Passphrase)
 				h.dom.DoClick(h.UI.passphraseOk)
 			},
 			wantDisplayed: []*displayedKey{
@@ -280,8 +280,8 @@ func TestUserActions(t *testing.T) {
 					ID:     validID,
 					Name:   "new-key",
 					Loaded: true,
-					Type:   testdata.ValidPrivateKeyType,
-					Blob:   testdata.ValidPrivateKeyBlob,
+					Type:   testdata.WithPassphrase.Type,
+					Blob:   testdata.WithPassphrase.Blob,
 				},
 			},
 		},
@@ -290,7 +290,7 @@ func TestUserActions(t *testing.T) {
 			sequence: func(h *testHarness) {
 				h.dom.DoClick(h.UI.addButton)
 				h.dom.SetValue(h.UI.addName, "new-key")
-				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.SetValue(h.UI.addKey, testdata.WithPassphrase.Private)
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
@@ -310,7 +310,7 @@ func TestUserActions(t *testing.T) {
 			sequence: func(h *testHarness) {
 				h.dom.DoClick(h.UI.addButton)
 				h.dom.SetValue(h.UI.addName, "new-key")
-				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.SetValue(h.UI.addKey, testdata.WithPassphrase.Private)
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
@@ -332,7 +332,7 @@ func TestUserActions(t *testing.T) {
 			sequence: func(h *testHarness) {
 				h.dom.DoClick(h.UI.addButton)
 				h.dom.SetValue(h.UI.addName, "new-key")
-				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKeyWithoutPassphrase)
+				h.dom.SetValue(h.UI.addKey, testdata.WithoutPassphrase.Private)
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
@@ -343,8 +343,8 @@ func TestUserActions(t *testing.T) {
 					ID:     validID,
 					Name:   "new-key",
 					Loaded: true,
-					Type:   testdata.ValidPrivateKeyWithoutPassphraseType,
-					Blob:   testdata.ValidPrivateKeyWithoutPassphraseBlob,
+					Type:   testdata.WithoutPassphrase.Type,
+					Blob:   testdata.WithoutPassphrase.Blob,
 				},
 			},
 		},
@@ -353,12 +353,12 @@ func TestUserActions(t *testing.T) {
 			sequence: func(h *testHarness) {
 				h.dom.DoClick(h.UI.addButton)
 				h.dom.SetValue(h.UI.addName, "new-key")
-				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.SetValue(h.UI.addKey, testdata.WithPassphrase.Private)
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				h.dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
-				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.SetValue(h.UI.passphraseInput, testdata.WithPassphrase.Passphrase)
 				h.dom.DoClick(h.UI.passphraseOk)
 
 				h.dom.DoClick(h.dom.GetElement(buttonID(UnloadButton, id)))
@@ -377,12 +377,12 @@ func TestUserActions(t *testing.T) {
 			sequence: func(h *testHarness) {
 				h.dom.DoClick(h.UI.addButton)
 				h.dom.SetValue(h.UI.addName, "new-key")
-				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.SetValue(h.UI.addKey, testdata.WithPassphrase.Private)
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				h.dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
-				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.SetValue(h.UI.passphraseInput, testdata.WithPassphrase.Passphrase)
 				h.dom.DoClick(h.UI.passphraseOk)
 
 				k := &keys.LoadedKey{Object: js.Global.Get("Object").New()}
@@ -395,8 +395,8 @@ func TestUserActions(t *testing.T) {
 					ID:     validID,
 					Name:   "new-key",
 					Loaded: true,
-					Type:   testdata.ValidPrivateKeyType,
-					Blob:   testdata.ValidPrivateKeyBlob,
+					Type:   testdata.WithPassphrase.Type,
+					Blob:   testdata.WithPassphrase.Blob,
 				},
 			},
 			wantErr: "failed to unload key: failed to unload key: agent: key not found",
@@ -405,33 +405,33 @@ func TestUserActions(t *testing.T) {
 			description: "display non-configured keys",
 			sequence: func(h *testHarness) {
 				// Load an additional key directly into the agent.
-				directLoadKey(h.agent, testdata.ValidPrivateKeyWithoutPassphrase)
+				directLoadKey(h.agent, testdata.WithoutPassphrase.Private)
 
 				// Configure a key of our own.
 				h.dom.DoClick(h.UI.addButton)
 				h.dom.SetValue(h.UI.addName, "new-key")
-				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.SetValue(h.UI.addKey, testdata.WithPassphrase.Private)
 				h.dom.DoClick(h.UI.addOk)
 
 				// Load the key we configured.
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				h.dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
-				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.SetValue(h.UI.passphraseInput, testdata.WithPassphrase.Passphrase)
 				h.dom.DoClick(h.UI.passphraseOk)
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
 					ID:     keys.InvalidID,
 					Loaded: true,
-					Type:   testdata.ValidPrivateKeyWithoutPassphraseType,
-					Blob:   testdata.ValidPrivateKeyWithoutPassphraseBlob,
+					Type:   testdata.WithoutPassphrase.Type,
+					Blob:   testdata.WithoutPassphrase.Blob,
 				},
 				&displayedKey{
 					ID:     validID,
 					Name:   "new-key",
 					Loaded: true,
-					Type:   testdata.ValidPrivateKeyType,
-					Blob:   testdata.ValidPrivateKeyBlob,
+					Type:   testdata.WithPassphrase.Type,
+					Blob:   testdata.WithPassphrase.Blob,
 				},
 			},
 		},
@@ -440,12 +440,12 @@ func TestUserActions(t *testing.T) {
 			sequence: func(h *testHarness) {
 				h.dom.DoClick(h.UI.addButton)
 				h.dom.SetValue(h.UI.addName, "new-key")
-				h.dom.SetValue(h.UI.addKey, testdata.ValidPrivateKey)
+				h.dom.SetValue(h.UI.addKey, testdata.WithPassphrase.Private)
 				h.dom.DoClick(h.UI.addOk)
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				h.dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
-				h.dom.SetValue(h.UI.passphraseInput, testdata.ValidPrivateKeyPassphrase)
+				h.dom.SetValue(h.UI.passphraseInput, testdata.WithPassphrase.Passphrase)
 				h.dom.DoClick(h.UI.passphraseOk)
 
 				h.dom.DoClick(h.dom.GetElement(buttonID(RemoveButton, id)))
@@ -455,8 +455,8 @@ func TestUserActions(t *testing.T) {
 				&displayedKey{
 					ID:     keys.InvalidID,
 					Loaded: true,
-					Type:   testdata.ValidPrivateKeyType,
-					Blob:   testdata.ValidPrivateKeyBlob,
+					Type:   testdata.WithPassphrase.Type,
+					Blob:   testdata.WithPassphrase.Blob,
 				},
 			},
 		},
