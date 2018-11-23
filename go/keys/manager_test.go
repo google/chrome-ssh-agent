@@ -363,21 +363,20 @@ func TestLoadAndLoaded(t *testing.T) {
 				testdata.WithoutPassphrase.Blob,
 			},
 		},
-		// Go's crypto libraries don't yet support OpenSSH-formatted encrypted keys.
-		//{
-		//	description: "load openssh format key",
-		//	initial: []*initialKey{
-		//		{
-		//			Name:          "good-key",
-		//			PEMPrivateKey: testdata.OpenSSHFormat.Private,
-		//		},
-		//	},
-		//	byName:     "good-key",
-		//	passphrase: testdata.OpenSSHFormat.Passphrase,
-		//	wantLoaded: []string{
-		//		testdata.OpenSSHFormat.Blob,
-		//	},
-		//},
+		{
+			description: "load openssh format key",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.OpenSSHFormat.Private,
+				},
+			},
+			byName:     "good-key",
+			passphrase: testdata.OpenSSHFormat.Passphrase,
+			wantLoaded: []string{
+				testdata.OpenSSHFormat.Blob,
+			},
+		},
 		{
 			description: "load openssh format key without passphrase",
 			initial: []*initialKey{
