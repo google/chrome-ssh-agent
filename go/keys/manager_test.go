@@ -364,6 +364,19 @@ func TestLoadAndLoaded(t *testing.T) {
 			},
 		},
 		{
+			description: "load openssh format key",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.OpenSSHFormat.Private,
+				},
+			},
+			byName: "good-key",
+			wantLoaded: []string{
+				testdata.OpenSSHFormat.Blob,
+			},
+		},
+		{
 			description: "fail on invalid private key",
 			initial: []*initialKey{
 				{
