@@ -27,6 +27,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ScaleFT/sshkeys"
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/youmark/pkcs8"
 	"golang.org/x/crypto/ssh"
@@ -173,6 +174,19 @@ type storedKey struct {
 	ID            ID     `js:"id"`
 	Name          string `js:"name"`
 	PEMPrivateKey string `js:"pemPrivateKey"`
+}
+
+// OpenSSH determines if the private key is an OpenSSH-formatted key.
+func (s *storedKey) OpenSSH() bool {
+	block, _ := pem.Decode([]byte(s.PEMPrivateKey))
+	if block == nil {
+		// Attempt to handle this gracefully and guess that it isn't
+		// OpenSSH formatted. If the key is not properly formatted,
+		// we'll complain when it is loaded.
+		return false
+	}
+
+	return block.Type == "OPENSSH PRIVATE KEY"
 }
 
 // PKCS8 determines if the private key is a PKCS#8 formatted key.
@@ -392,7 +406,13 @@ func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
 		}
 
 		var priv interface{}
-		if key.PKCS8() {
+		if key.OpenSSH() && passphrase != "" {
+			// Crypto libraries don't yet support encrypted OpenSSH keys:
+			//   https://github.com/golang/go/issues/18692
+			priv, err = sshkeys.ParseEncryptedRawPrivateKey([]byte(key.PEMPrivateKey), []byte(passphrase))
+		} else if key.PKCS8() {
+			// Crypto libraries don't yet support encrypted PKCS#8 keys:
+			//   https://github.com/golang/go/issues/8860
 			var block *pem.Block
 			block, _ = pem.Decode([]byte(key.PEMPrivateKey))
 			if block == nil {

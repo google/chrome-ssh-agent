@@ -3,6 +3,18 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "u7y7HHQcRnjlUEHdD774abs3bfQ=",
+			"path": "github.com/ScaleFT/sshkeys",
+			"revision": "82451a80368171b074c7129d43b47fc2773f6e9f",
+			"revisionTime": "2018-11-12T16:08:50Z"
+		},
+		{
+			"checksumSHA1": "2OWjM0zejVMdE8UfnUnWH02r7kI=",
+			"path": "github.com/dchest/bcrypt_pbkdf",
+			"revision": "83f37f9c154a678179d11e218bff73ebe5717f99",
+			"revisionTime": "2015-02-05T18:45:40Z"
+		},
+		{
 			"checksumSHA1": "7NP1qUMF8Kx1y0zANxx0e+oq9Oo=",
 			"path": "github.com/fsnotify/fsnotify",
 			"revision": "ccc981bf80385c528a65fbfdd49bf2d8da22aa23",
@@ -157,6 +169,12 @@
 			"path": "github.com/youmark/pkcs8",
 			"revision": "1be2e3e5546da8a58903ff4adcfab015022538ea",
 			"revisionTime": "2018-11-17T22:31:30Z"
+		},
+		{
+			"checksumSHA1": "oVPHWesOmZ02vLq2fglGvf+AMgk=",
+			"path": "golang.org/x/crypto/blowfish",
+			"revision": "3d3f9f413869b949e48070b5bc593aa22cc2b8f2",
+			"revisionTime": "2018-11-10T06:03:37Z"
 		},
 		{
 			"checksumSHA1": "IQkUIOnvlf0tYloFx9mLaXSvXWQ=",
