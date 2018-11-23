@@ -221,6 +221,15 @@ func (s *storedKey) Encrypted() bool {
 		return true
 	}
 
+	// OpenSSH keys don't have a type or header indicating if they are
+	// encrypted. We could parse the key to determine that, but that would
+	// reimplement the underlying crypto libraries. Instead, just attempt to
+	// decrypt it without a passphrase.
+	if block.Type == "OPENSSH PRIVATE KEY" {
+		_, err := ssh.ParseRawPrivateKey([]byte(s.PEMPrivateKey))
+		return err != nil
+	}
+
 	return strings.Contains(block.Headers["Proc-Type"], "ENCRYPTED")
 }
 
