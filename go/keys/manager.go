@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/gopherjs/gopherjs/js"
+	"github.com/youmark/pkcs8"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -174,6 +175,21 @@ type storedKey struct {
 	PEMPrivateKey string `js:"pemPrivateKey"`
 }
 
+// PKCS8 determines if the private key is a PKCS#8 formatted key.
+func (s *storedKey) PKCS8() bool {
+	block, _ := pem.Decode([]byte(s.PEMPrivateKey))
+	if block == nil {
+		// Attempt to handle this gracefully and guess that it isn't
+		// PKCS#8 formatted. If the key is not properly formatted,
+		// we'll complain when it is loaded.
+		return false
+	}
+
+	// Types used for PKCS#8 keys:
+	// https://github.com/kjur/jsrsasign/wiki/Tutorial-for-PKCS5-and-PKCS8-PEM-private-key-formats-differences
+	return block.Type == "ENCRYPTED PRIVATE KEY" || block.Type == "PRIVATE KEY"
+}
+
 // Encrypted determines if the private key is encrypted. The Proc-Type header
 // contains 'ENCRYPTED' if the key is encrypted. See RFC 1421 Section 4.6.1.1.
 func (s *storedKey) Encrypted() bool {
@@ -183,6 +199,12 @@ func (s *storedKey) Encrypted() bool {
 		// encrypted.  If the key is not properly formatted, we'll
 		// complain anyways when it is loaded.
 		return false
+	}
+
+	// Type used for PKCS#8 keys.
+	// https://github.com/kjur/jsrsasign/wiki/Tutorial-for-PKCS5-and-PKCS8-PEM-private-key-formats-differences
+	if block.Type == "ENCRYPTED PRIVATE KEY" {
+		return true
 	}
 
 	return strings.Contains(block.Headers["Proc-Type"], "ENCRYPTED")
@@ -370,7 +392,19 @@ func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
 		}
 
 		var priv interface{}
-		if key.Encrypted() {
+		if key.PKCS8() {
+			var block *pem.Block
+			block, _ = pem.Decode([]byte(key.PEMPrivateKey))
+			if block == nil {
+				callback(fmt.Errorf("failed to decode encrypted private key"))
+				return
+			}
+			if passphrase != "" {
+				priv, err = pkcs8.ParsePKCS8PrivateKey(block.Bytes, []byte(passphrase))
+			} else {
+				priv, err = pkcs8.ParsePKCS8PrivateKey(block.Bytes, nil)
+			}
+		} else if key.Encrypted() {
 			priv, err = ssh.ParseRawPrivateKeyWithPassphrase([]byte(key.PEMPrivateKey), []byte(passphrase))
 		} else {
 			priv, err = ssh.ParseRawPrivateKey([]byte(key.PEMPrivateKey))
