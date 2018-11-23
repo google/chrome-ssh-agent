@@ -1,6 +1,6 @@
 {
   "name": "SSH Agent for Google Chrome™",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "Provides an SSH Agent implementation for Chrome's Secure Shell extension",
   "manifest_version": 2,
   "icons": {
