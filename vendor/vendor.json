@@ -153,6 +153,12 @@
 			"revisionTime": "2018-10-24T21:20:40Z"
 		},
 		{
+			"checksumSHA1": "JxM8JHynJ8M8KLhSN21xAKYlJco=",
+			"path": "github.com/youmark/pkcs8",
+			"revision": "1be2e3e5546da8a58903ff4adcfab015022538ea",
+			"revisionTime": "2018-11-17T22:31:30Z"
+		},
+		{
 			"checksumSHA1": "IQkUIOnvlf0tYloFx9mLaXSvXWQ=",
 			"path": "golang.org/x/crypto/curve25519",
 			"revision": "4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06",
@@ -181,6 +187,12 @@
 			"path": "golang.org/x/crypto/internal/subtle",
 			"revision": "4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06",
 			"revisionTime": "2018-10-23T16:52:47Z"
+		},
+		{
+			"checksumSHA1": "1MGpGDQqnUoRpv7VEcQrXOBydXE=",
+			"path": "golang.org/x/crypto/pbkdf2",
+			"revision": "3d3f9f413869b949e48070b5bc593aa22cc2b8f2",
+			"revisionTime": "2018-11-10T06:03:37Z"
 		},
 		{
 			"checksumSHA1": "vKbPb9fpjCdzuoOvajOJnYfHG2g=",
