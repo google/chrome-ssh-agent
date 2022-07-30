@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +17,8 @@
 package main
 
 import (
+	"syscall/js"
+
 	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
@@ -23,7 +27,11 @@ import (
 )
 
 func main() {
-	c := chrome.New(nil)
+	dom.Log("Starting Options UI")
+	defer dom.Log("Exiting Options UI")
+	done := make(chan struct{}, 0)
+
+	c := chrome.New(js.Null())
 	mgr := keys.NewClient(c)
 	d := dom.New(dom.Doc)
 	ui := optionsui.New(mgr, d)
@@ -32,4 +40,6 @@ func main() {
 	if qs.Has("test") {
 		testing.WriteResults(d, ui.EndToEndTest())
 	}
+
+	<-done // Do not terminate.
 }

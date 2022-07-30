@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // The MIT License
 //
 // Copyright (c) 2015- Stripe, Inc. (https://stripe.com)
@@ -27,13 +29,14 @@ package agentport
 import (
 	"encoding/binary"
 	"io"
-	"log"
+	"syscall/js"
 
-	"github.com/gopherjs/gopherjs/js"
+	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/norunners/vert"
 )
 
 type agentPort struct {
-	p         *js.Object
+	p         js.Value
 	inReader  *io.PipeReader
 	inWriter  *io.PipeWriter
 	outReader *io.PipeReader
@@ -45,7 +48,7 @@ type agentPort struct {
 //
 // p is a Chrome Port object to which the Chrome Secure Shell Extension
 // has connected.
-func New(p *js.Object) io.ReadWriter {
+func New(p js.Value) io.ReadWriter {
 	ir, iw := io.Pipe()
 	or, ow := io.Pipe()
 	ap := &agentPort{
@@ -56,10 +59,10 @@ func New(p *js.Object) io.ReadWriter {
 		outWriter: ow,
 	}
 	ap.p.Get("onDisconnect").Call("addListener", func() {
-		go ap.OnDisconnect()
+		ap.OnDisconnect()
 	})
-	ap.p.Get("onMessage").Call("addListener", func(msg js.M) {
-		go ap.OnMessage(msg)
+	ap.p.Get("onMessage").Call("addListener", func(msg js.Value) {
+		ap.OnMessage(msg)
 	})
 
 	go ap.SendMessages()
@@ -71,31 +74,28 @@ func (ap *agentPort) OnDisconnect() {
 	ap.inWriter.Close()
 }
 
-func (ap *agentPort) OnMessage(msg js.M) {
-	d, ok := msg["data"].([]interface{})
-	if !ok {
-		log.Printf("Message did not contain Array data field: %v", msg)
+type message struct {
+	Data []int `js:"data"`
+}
+
+func (ap *agentPort) OnMessage(msg js.Value) {
+	var parsed message
+	if err := vert.ValueOf(msg).AssignTo(&parsed); err != nil {
+		dom.Log("Failed to parse message %s: %s", msg, err)
 		ap.p.Call("disconnect")
 		return
 	}
 
-	framed := make([]byte, 4+len(d))
-	binary.BigEndian.PutUint32(framed, uint32(len(d)))
+	framed := make([]byte, 4+len(parsed.Data))
+	binary.BigEndian.PutUint32(framed, uint32(len(parsed.Data)))
 
-	for i, raw := range d {
-		n, ok := raw.(float64)
-		if !ok {
-			log.Printf("Message contained non-numeric data: %v", msg)
-			ap.p.Call("disconnect")
-			return
-		}
-
-		framed[i+4] = byte(n)
+	for i, raw := range parsed.Data {
+		framed[i+4] = byte(raw)
 	}
 
 	_, err := ap.inWriter.Write(framed)
 	if err != nil {
-		log.Printf("Error writing to pipe: %v", err)
+		dom.Log("Error writing to pipe: %v", err)
 		ap.p.Call("disconnect")
 	}
 }
@@ -104,12 +104,16 @@ func (ap *agentPort) Read(p []byte) (n int, err error) {
 	return ap.inReader.Read(p)
 }
 
+var (
+	array = js.Global().Get("Array")
+)
+
 func (ap *agentPort) SendMessages() {
 	for {
 		l := make([]byte, 4)
 		_, err := io.ReadFull(ap.outReader, l)
 		if err != nil {
-			log.Printf("Error reading from pipe: %v", err)
+			dom.Log("Error reading from pipe: %v", err)
 			ap.outReader.Close()
 			return
 		}
@@ -118,19 +122,18 @@ func (ap *agentPort) SendMessages() {
 		data := make([]byte, length)
 		_, err = io.ReadFull(ap.outReader, data)
 		if err != nil {
-			log.Printf("Error reading from pipe: %v", err)
+			dom.Log("Error reading from pipe: %v", err)
 			ap.outReader.Close()
 			return
 		}
 
-		encoded := make(js.S, length)
+		var encoded message
+		encoded.Data = make([]int, len(data))
 		for i, b := range data {
-			encoded[i] = float64(b)
+			encoded.Data[i] = int(b)
 		}
 
-		ap.p.Call("postMessage", js.M{
-			"data": encoded,
-		})
+		ap.p.Call("postMessage", vert.ValueOf(encoded))
 	}
 }
 

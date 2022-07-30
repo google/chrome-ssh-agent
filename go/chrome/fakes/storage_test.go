@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +18,17 @@ package fakes
 
 import (
 	"errors"
+	"syscall/js"
 	"testing"
 
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+)
+
+var (
+	getError    = errors.New("Get() failed")
+	setError    = errors.New("Set() failed")
+	deleteError = errors.New("Delete() failed")
 )
 
 func TestFunctions(t *testing.T) {
@@ -26,74 +36,74 @@ func TestFunctions(t *testing.T) {
 		description string
 		sequence    func(m *MemStorage, errc chan<- error)
 		errs        Errs
-		want        map[string]interface{}
+		want        map[string]js.Value
 		wantErrs    []error
 	}{
 		{
 			description: "set keys",
 			sequence: func(m *MemStorage, errc chan<- error) {
-				m.Set(map[string]interface{}{"key1": 42}, func(err error) {
+				m.Set(map[string]js.Value{"key1": js.ValueOf(42)}, func(err error) {
 					errc <- err
 				})
-				m.Set(map[string]interface{}{"key2": "bar"}, func(err error) {
+				m.Set(map[string]js.Value{"key2": js.ValueOf("bar")}, func(err error) {
 					errc <- err
 				})
 			},
-			want: map[string]interface{}{
-				"key1": 42.0,
-				"key2": "bar",
+			want: map[string]js.Value{
+				"key1": js.ValueOf(42.0),
+				"key2": js.ValueOf("bar"),
 			},
 		},
 		{
 			description: "overwrite key",
 			sequence: func(m *MemStorage, errc chan<- error) {
-				m.Set(map[string]interface{}{"key1": 42}, func(err error) {
+				m.Set(map[string]js.Value{"key1": js.ValueOf(42)}, func(err error) {
 					errc <- err
 				})
-				m.Set(map[string]interface{}{"key1": 32, "key2": "bar"}, func(err error) {
+				m.Set(map[string]js.Value{"key1": js.ValueOf(32), "key2": js.ValueOf("bar")}, func(err error) {
 					errc <- err
 				})
 			},
-			want: map[string]interface{}{
-				"key1": 32.0,
-				"key2": "bar",
+			want: map[string]js.Value{
+				"key1": js.ValueOf(32.0),
+				"key2": js.ValueOf("bar"),
 			},
 		},
 		{
 			description: "delete key",
 			sequence: func(m *MemStorage, errc chan<- error) {
-				m.Set(map[string]interface{}{"key1": 42, "key2": "bar"}, func(err error) {
+				m.Set(map[string]js.Value{"key1": js.ValueOf(42), "key2": js.ValueOf("bar")}, func(err error) {
 					errc <- err
 				})
 				m.Delete([]string{"key1"}, func(err error) {
 					errc <- err
 				})
 			},
-			want: map[string]interface{}{
-				"key2": "bar",
+			want: map[string]js.Value{
+				"key2": js.ValueOf("bar"),
 			},
 		},
 		{
 			description: "delete non-existent key returns no error",
 			sequence: func(m *MemStorage, errc chan<- error) {
-				m.Set(map[string]interface{}{"key1": 42}, func(err error) {
+				m.Set(map[string]js.Value{"key1": js.ValueOf(42)}, func(err error) {
 					errc <- err
 				})
 				m.Delete([]string{"key2"}, func(err error) {
 					errc <- err
 				})
 			},
-			want: map[string]interface{}{
-				"key1": 42.0,
+			want: map[string]js.Value{
+				"key1": js.ValueOf(42.0),
 			},
 		},
 		{
 			description: "return errors",
 			sequence: func(m *MemStorage, errc chan<- error) {
-				m.Set(map[string]interface{}{"key1": 42}, func(err error) {
+				m.Set(map[string]js.Value{"key1": js.ValueOf(42)}, func(err error) {
 					errc <- err
 				})
-				m.Get(func(data map[string]interface{}, err error) {
+				m.Get(func(data map[string]js.Value, err error) {
 					errc <- err
 				})
 				m.Delete([]string{"key1"}, func(err error) {
@@ -101,52 +111,55 @@ func TestFunctions(t *testing.T) {
 				})
 			},
 			errs: Errs{
-				Get:    errors.New("storage.Get failed"),
-				Set:    errors.New("storage.Set failed"),
-				Delete: errors.New("storage.Delete failed"),
+				Get:    getError,
+				Set:    setError,
+				Delete: deleteError,
 			},
-			want: map[string]interface{}{},
+			want: map[string]js.Value{},
 			wantErrs: []error{
-				errors.New("storage.Set failed"),
-				errors.New("storage.Get failed"),
-				errors.New("storage.Delete failed"),
+				setError,
+				getError,
+				deleteError,
 			},
 		},
 	}
 
 	for _, tc := range testcases {
-		m := NewMemStorage()
-		errc := make(chan error, 10)
+		t.Run(tc.description, func(t *testing.T) {
 
-		// Execute the test case, applying any configured errors.
-		func() {
-			m.SetError(tc.errs)
-			defer m.SetError(Errs{})
+			m := NewMemStorage()
+			errc := make(chan error, 10)
 
-			tc.sequence(m, errc)
-		}()
+			// Execute the test case, applying any configured errors.
+			func() {
+				m.SetError(tc.errs)
+				defer m.SetError(Errs{})
 
-		// Get final state of storage.
-		var final map[string]interface{}
-		m.Get(func(data map[string]interface{}, err error) {
-			final = data
-			errc <- err
-		})
+				tc.sequence(m, errc)
+			}()
 
-		close(errc)
+			// Get final state of storage.
+			var final map[string]js.Value
+			m.Get(func(data map[string]js.Value, err error) {
+				final = data
+				errc <- err
+			})
 
-		var errs []error
-		for err := range errc {
-			if err != nil {
-				errs = append(errs, err)
+			close(errc)
+
+			var errs []error
+			for err := range errc {
+				if err != nil {
+					errs = append(errs, err)
+				}
 			}
-		}
 
-		if diff := pretty.Diff(errs, tc.wantErrs); diff != nil {
-			t.Errorf("%s: incorrect errors; -got +want: %s", tc.description, diff)
-		}
-		if diff := pretty.Diff(final, tc.want); diff != nil {
-			t.Errorf("%s: incorrect final data; -got +want: %s", tc.description, diff)
-		}
+			if diff := cmp.Diff(errs, tc.wantErrs, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("incorrect errors; -got +want: %s", diff)
+			}
+			if diff := cmp.Diff(final, tc.want); diff != "" {
+				t.Errorf("incorrect final data; -got +want: %s", diff)
+			}
+		})
 	}
 }

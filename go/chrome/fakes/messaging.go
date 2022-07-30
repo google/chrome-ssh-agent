@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,12 +17,12 @@
 package fakes
 
 import (
-	"github.com/gopherjs/gopherjs/js"
+	"syscall/js"
 )
 
 // MessageHub is a fake implementation of Chrome's messaging APIs.
 type MessageHub struct {
-	handlers []func(*js.Object, *js.Object, func(interface{})) bool
+	handlers []func(js.Value, js.Value, func(js.Value)) bool
 }
 
 // NewMessageHub returns a fake implementation of Chrome's messaging APIs.
@@ -29,15 +31,15 @@ func NewMessageHub() *MessageHub {
 }
 
 // OnMessage is a fake implementation of chrome.C.OnMessage.
-func (m *MessageHub) OnMessage(callback func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool) {
+func (m *MessageHub) OnMessage(callback func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool) {
 	m.handlers = append(m.handlers, callback)
 }
 
 // SendMessage is a fake implementation of chrome.C.SendMessage.
-func (m *MessageHub) SendMessage(msg interface{}, callback func(rsp *js.Object)) {
+func (m *MessageHub) SendMessage(msg js.Value, callback func(rsp js.Value)) {
 	for _, h := range m.handlers {
-		h(toJSObject(msg), nil, func(rsp interface{}) {
-			callback(toJSObject(rsp))
+		h(msg, js.Null(), func(rsp js.Value) {
+			callback(rsp)
 		})
 	}
 }

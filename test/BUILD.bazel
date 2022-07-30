@@ -1,0 +1,46 @@
+load("@io_bazel_rules_webtesting//web:go.bzl", "go_web_test_suite")
+load("@io_bazel_rules_webtesting//web:web.bzl", "browser")
+load("@io_bazel_rules_go//extras:embed_data.bzl", "go_embed_data")
+
+go_embed_data(
+	name = "test_extension_data",
+	src = "//:chrome-ssh-agent.zip",
+	package = "test",
+	var = "ExtensionData",
+)
+
+go_web_test_suite(
+    name = "test",
+    srcs = [
+    "e2e.go",
+    "extension.go",
+    ":test_extension_data",
+    ],
+    browsers = [
+	    ":chromium-local",
+    ],
+    importpath = "github.com/google/chrome-ssh-agent/test",
+    deps = [
+        "@com_github_tebeka_selenium//:selenium",
+        "@com_github_tebeka_selenium//log",
+        "@com_github_tebeka_selenium//chrome",
+        "@com_github_bazelbuild_rules_webtesting//go/webtest:go_default_library",
+    ],
+    data = [
+	   "//:chrome-ssh-agent.zip",
+    ],
+    local = True,
+)
+
+
+browser(
+    name = "chromium-local",
+    metadata = "@io_bazel_rules_webtesting//browsers:chromium-local.json",
+    required_tags = ["native"],
+    testonly = True,
+    deps = [
+        "@io_bazel_rules_webtesting//go/wsl",
+	"@chromedriver_wasm//:metadata",
+	"@chromium_wasm//:metadata",
+    ],
+)

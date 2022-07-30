@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,17 +17,17 @@
 package dom
 
 import (
+	"syscall/js"
 	"testing"
 
-	"github.com/gopherjs/gopherjs/js"
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 )
 
 func init() {
 	// Make URLSearchParams JavaScript implementation available in unit
 	// tests, which run under node.js.  It is available by default when
 	// running inside of browsers.
-	js.Global.Call("eval", `
+	js.Global().Call("eval", `
 		var URLSearchParams = require('url-search-params');
 	`)
 }
@@ -58,9 +60,13 @@ func TestHas(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		qs := NewURLSearchParams(tc.queryString)
-		if diff := pretty.Diff(qs.Has(tc.param), tc.want); diff != nil {
-			t.Errorf("incorrect result; -got +want: %s", diff)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
+			qs := NewURLSearchParams(tc.queryString)
+			if diff := cmp.Diff(qs.Has(tc.param), tc.want); diff != "" {
+				t.Errorf("incorrect result; -got +want: %s", diff)
+			}
+		})
 	}
 }

@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,26 +17,26 @@
 package dom
 
 import (
-	"github.com/gopherjs/gopherjs/js"
+	"syscall/js"
 )
 
 // URLSearchParams is a thin wrapper around the URLSearchParams API.
 // See https://url.spec.whatwg.org/#urlsearchparams.
 type URLSearchParams struct {
-	o *js.Object
+	o js.Value
 }
 
 // DefaultQueryString returns the query string used to request the current
 // document.  This is likely not available during unit tests, but is
 // available in normal operation.
 func DefaultQueryString() string {
-	return js.Global.Get("window").Get("location").Get("search").String()
+	return js.Global().Get("window").Get("location").Get("search").String()
 }
 
 // NewURLSearchParams returns a URLSearchParams for the specified query string.
 func NewURLSearchParams(queryString string) *URLSearchParams {
 	return &URLSearchParams{
-		o: js.Global.Get("URLSearchParams").New(queryString),
+		o: js.Global().Get("URLSearchParams").New(queryString),
 	}
 }
 

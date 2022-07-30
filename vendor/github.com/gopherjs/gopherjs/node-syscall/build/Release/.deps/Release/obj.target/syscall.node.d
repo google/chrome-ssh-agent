@@ -1,1 +1,0 @@
-cmd_Release/obj.target/syscall.node := g++ -shared -pthread -rdynamic -m64  -Wl,-soname=syscall.node -o Release/obj.target/syscall.node -Wl,--start-group Release/obj.target/syscall/syscall.o -Wl,--end-group 

@@ -1,0 +1,1 @@
+* Consistently release js.Func objects. Search for invocations of js.FuncOf().

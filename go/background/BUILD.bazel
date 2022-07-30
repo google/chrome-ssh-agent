@@ -1,0 +1,39 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_binary")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_files", "pkg_filegroup")
+
+go_library(
+    name = "background_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/google/chrome-ssh-agent/go/background",
+    deps = [
+        "//go/agentport",
+        "//go/chrome",
+        "//go/keys:keys",
+        "//go/dom:dom",
+        "@org_golang_x_crypto//ssh/agent",
+    ],
+)
+
+go_binary(
+    name = "background",
+    out = "background.wasm",
+    embed = [":background_lib"],
+    goos = "js",
+    goarch = "wasm",
+)
+
+pkg_files(
+    name = "pkg_files",
+    srcs = [
+        ":background",
+    ],
+)
+
+pkg_filegroup(
+    name = "pkg",
+    srcs = [
+        ":pkg_files",
+    ],
+    prefix = "/go/background",
+    visibility = ["//visibility:public"],
+)

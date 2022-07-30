@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,18 +19,19 @@ package chrome
 
 import (
 	"errors"
+	"syscall/js"
 
-	"github.com/gopherjs/gopherjs/js"
+	"github.com/google/chrome-ssh-agent/go/dom"
 )
 
 // C provides access to Chrome's extension APIs.
 type C struct {
 	// chrome is a reference to the top-level 'chrome' Javascript object.
-	chrome *js.Object
+	chrome js.Value
 	// runtime is a reference to 'chrome.runtime'.
-	runtime *js.Object
+	runtime js.Value
 	// syncStorage is a reference to 'chrome.storage.sync'.
-	syncStorage *js.Object
+	syncStorage js.Value
 	// extensionID is the unique ID allocated to our extension.
 	extensionID string
 }
@@ -36,9 +39,9 @@ type C struct {
 // New returns an instance of C that can be used to access Chrome's extension
 // APIs. Set chrome to nil to access the default Chrome API implementation;
 // it should only be overridden for testing.
-func New(chrome *js.Object) *C {
-	if chrome == nil {
-		chrome = js.Global.Get("chrome")
+func New(chrome js.Value) *C {
+	if chrome.IsUndefined() || chrome.IsNull() {
+		chrome = js.Global().Get("chrome")
 	}
 
 	return &C{
@@ -64,8 +67,15 @@ func (c *C) SyncStorage() *Storage {
 // receives a message.
 //
 // See https://developer.chrome.com/apps/runtime#event-onMessage.
-func (c *C) OnMessage(callback func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool) {
-	c.runtime.Get("onMessage").Call("addListener", callback)
+func (c *C) OnMessage(callback func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool) {
+	cb := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		var header, sender, sendResponse js.Value
+		dom.ExpandArgs(args, &header, &sender, &sendResponse)
+		return callback(header, sender, func(rsp js.Value) {
+			sendResponse.Invoke(rsp)
+		})
+	})
+	c.runtime.Get("onMessage").Call("addListener", cb)
 }
 
 // SendMessage sends a message within our extension. While the underlying
@@ -73,16 +83,26 @@ func (c *C) OnMessage(callback func(header *js.Object, sender *js.Object, sendRe
 // expose functionality to send within the same extension.
 //
 // See https://developer.chrome.com/apps/runtime#method-sendMessage.
-func (c *C) SendMessage(msg interface{}, callback func(rsp *js.Object)) {
-	c.runtime.Call("sendMessage", c.extensionID, msg, nil, callback)
+func (c *C) SendMessage(msg js.Value, callback func(rsp js.Value)) {
+	var cb js.Func
+	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		defer cb.Release() // One-shot callback; release after invoked.
+		callback(dom.SingleArg(args))
+		return nil
+	})
+	c.runtime.Call("sendMessage", c.extensionID, msg, nil, cb)
 }
 
 // OnConnectExternal installs a callback that will be invoked when an external
 // connection is received.
 //
 // See https://developer.chrome.com/apps/runtime#event-onConnectExternal.
-func (c *C) OnConnectExternal(callback func(port *js.Object)) {
-	c.runtime.Get("onConnectExternal").Call("addListener", callback)
+func (c *C) OnConnectExternal(callback func(port js.Value)) {
+	cb := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		callback(dom.SingleArg(args))
+		return nil
+	})
+	c.runtime.Get("onConnectExternal").Call("addListener", cb)
 }
 
 // Error returns the error (if any) from the last call. Returns nil if there
@@ -90,7 +110,7 @@ func (c *C) OnConnectExternal(callback func(port *js.Object)) {
 //
 // See https://developer.chrome.com/apps/runtime#property-lastError.
 func (c *C) Error() error {
-	if err := c.runtime.Get("lastError"); err != nil && err != js.Undefined {
+	if err := c.runtime.Get("lastError"); !err.IsNull() && !err.IsUndefined() {
 		return errors.New(err.Get("message").String())
 	}
 	return nil

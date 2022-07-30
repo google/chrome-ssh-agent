@@ -1,0 +1,11 @@
+diff -Naur rules_go/go/private/BUILD.sdk.bazel rules_go_new/go/private/BUILD.sdk.bazel
+--- rules_go/go/private/BUILD.sdk.bazel	2022-07-19 09:30:17.000000000 -0700
++++ rules_go_new/go/private/BUILD.sdk.bazel	2022-07-24 13:21:43.017776532 -0700
+@@ -74,6 +74,6 @@
+ )
+ 
+ exports_files(
+-    ["lib/time/zoneinfo.zip"],
++    ["lib/time/zoneinfo.zip"] + glob(["misc/wasm/**"]),
+     visibility = ["//visibility:public"],
+ )

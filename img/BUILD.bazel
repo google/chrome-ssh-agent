@@ -1,0 +1,15 @@
+load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
+
+pkg_files(
+    name = "pkg_files",
+    srcs = glob(["*.png"]),
+)
+
+pkg_filegroup(
+    name = "pkg",
+    srcs = [
+        ":pkg_files",
+    ],
+    prefix = "/img",
+    visibility = ["//visibility:public"],
+)

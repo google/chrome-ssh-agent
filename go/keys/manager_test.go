@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +17,7 @@
 package keys
 
 import (
+	"crypto/x509"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -22,8 +25,8 @@ import (
 
 	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
-	"github.com/gopherjs/gopherjs/js"
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -34,6 +37,12 @@ type initialKey struct {
 	Load          bool
 	Passphrase    string
 }
+
+var (
+	storageGetErr    = errors.New("Storage.Get() failed")
+	storageSetErr    = errors.New("Storage.Set() failed")
+	storageDeleteErr = errors.New("Storage.Delete() failed")
+)
 
 func newTestManager(agent agent.Agent, storage PersistentStore, keys []*initialKey) (Manager, error) {
 	mgr := NewManager(agent, storage)
@@ -100,46 +109,49 @@ func TestAdd(t *testing.T) {
 			description:   "reject invalid name",
 			name:          "",
 			pemPrivateKey: testdata.WithPassphrase.Private,
-			wantErr:       errors.New("name must not be empty"),
+			wantErr:       errInvalidName,
 		},
 		{
 			description:   "fail to write to storage",
 			name:          "new-key",
 			pemPrivateKey: testdata.WithPassphrase.Private,
 			storageErr: fakes.Errs{
-				Set: errors.New("storage.Set failed"),
+				Set: storageSetErr,
 			},
-			wantErr: errors.New("storage.Set failed"),
+			wantErr: storageSetErr,
 		},
 	}
 
 	for _, tc := range testcases {
-		storage := fakes.NewMemStorage()
-		mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
-		if err != nil {
-			t.Fatalf("%s: failed to initialize manager: %v", tc.description, err)
-		}
-
-		// Add the key.
-		func() {
-			storage.SetError(tc.storageErr)
-			defer storage.SetError(fakes.Errs{})
-
-			err := syncAdd(mgr, tc.name, tc.pemPrivateKey)
-			if diff := pretty.Diff(err, tc.wantErr); diff != nil {
-				t.Errorf("%s: incorrect error; -got +want: %s", tc.description, diff)
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			storage := fakes.NewMemStorage()
+			mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+			if err != nil {
+				t.Fatalf("failed to initialize manager: %v", err)
 			}
-		}()
 
-		// Ensure the correct keys are configured at the end.
-		configured, err := syncConfigured(mgr)
-		if err != nil {
-			t.Errorf("%s: failed to get configured keys: %v", tc.description, err)
-		}
-		names := configuredKeyNames(configured)
-		if diff := pretty.Diff(names, tc.wantConfigured); diff != nil {
-			t.Errorf("%s: incorrect configured keys; -got +want: %s", tc.description, diff)
-		}
+			// Add the key.
+			func() {
+				storage.SetError(tc.storageErr)
+				defer storage.SetError(fakes.Errs{})
+
+				ferr := syncAdd(mgr, tc.name, tc.pemPrivateKey)
+				if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error; -got +want: %s", diff)
+				}
+			}()
+
+			// Ensure the correct keys are configured at the end.
+			configured, err := syncConfigured(mgr)
+			if err != nil {
+				t.Errorf("failed to get configured keys: %v", err)
+			}
+			names := configuredKeyNames(configured)
+			if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
+				t.Errorf("incorrect configured keys; -got +want: %s", diff)
+			}
+		})
 	}
 }
 
@@ -185,10 +197,10 @@ func TestRemove(t *testing.T) {
 			},
 			byName: "new-key",
 			storageErr: fakes.Errs{
-				Get: errors.New("storage.Get failed"),
+				Get: storageGetErr,
 			},
 			wantConfigured: []string{"new-key"},
-			wantErr:        errors.New("failed to enumerate keys: failed to read from storage: storage.Get failed"),
+			wantErr:        storageGetErr,
 		},
 		{
 			description: "fail to write to storage",
@@ -200,46 +212,49 @@ func TestRemove(t *testing.T) {
 			},
 			byName: "new-key",
 			storageErr: fakes.Errs{
-				Delete: errors.New("storage.Delete failed"),
+				Delete: storageDeleteErr,
 			},
 			wantConfigured: []string{"new-key"},
-			wantErr:        errors.New("failed to delete keys: storage.Delete failed"),
+			wantErr:        storageDeleteErr,
 		},
 	}
 
 	for _, tc := range testcases {
-		storage := fakes.NewMemStorage()
-		mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
-		if err != nil {
-			t.Fatalf("%s: failed to initialize manager: %v", tc.description, err)
-		}
-
-		// Figure out the ID of the key we will try to remove.
-		id, err := findKey(mgr, tc.byID, tc.byName)
-		if err != nil {
-			t.Fatalf("%s: failed to find key: %v", tc.description, err)
-		}
-
-		// Remove the key
-		func() {
-			storage.SetError(tc.storageErr)
-			defer storage.SetError(fakes.Errs{})
-
-			err := syncRemove(mgr, id)
-			if diff := pretty.Diff(err, tc.wantErr); diff != nil {
-				t.Errorf("%s: incorrect error; -got +want: %s", tc.description, diff)
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			storage := fakes.NewMemStorage()
+			mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+			if err != nil {
+				t.Fatalf("failed to initialize manager: %v", err)
 			}
-		}()
 
-		// Ensure the correct keys are configured at the end.
-		configured, err := syncConfigured(mgr)
-		if err != nil {
-			t.Errorf("%s: failed to get configured keys: %v", tc.description, err)
-		}
-		names := configuredKeyNames(configured)
-		if diff := pretty.Diff(names, tc.wantConfigured); diff != nil {
-			t.Errorf("%s: incorrect configured keys; -got +want: %s", tc.description, diff)
-		}
+			// Figure out the ID of the key we will try to remove.
+			id, err := findKey(mgr, tc.byID, tc.byName)
+			if err != nil {
+				t.Fatalf("failed to find key: %v", err)
+			}
+
+			// Remove the key
+			func() {
+				storage.SetError(tc.storageErr)
+				defer storage.SetError(fakes.Errs{})
+
+				ferr := syncRemove(mgr, id)
+				if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error; -got +want: %s", diff)
+				}
+			}()
+
+			// Ensure the correct keys are configured at the end.
+			configured, err := syncConfigured(mgr)
+			if err != nil {
+				t.Errorf("failed to get configured keys: %v", err)
+			}
+			names := configuredKeyNames(configured)
+			if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
+				t.Errorf("incorrect configured keys; -got +want: %s", diff)
+			}
+		})
 	}
 }
 
@@ -277,33 +292,37 @@ func TestConfigured(t *testing.T) {
 				},
 			},
 			storageErr: fakes.Errs{
-				Get: errors.New("storage.Get failed"),
+				Get: storageGetErr,
 			},
-			wantErr: errors.New("failed to read keys: failed to read from storage: storage.Get failed"),
+			wantErr: storageGetErr,
 		},
 	}
 
 	for _, tc := range testcases {
-		storage := fakes.NewMemStorage()
-		mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
-		if err != nil {
-			t.Fatalf("%s: failed to initialize manager: %v", tc.description, err)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
 
-		// Enumerate the keys.
-		func() {
-			storage.SetError(tc.storageErr)
-			defer storage.SetError(fakes.Errs{})
+			storage := fakes.NewMemStorage()
+			mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+			if err != nil {
+				t.Fatalf("failed to initialize manager: %v", err)
+			}
 
-			configured, err := syncConfigured(mgr)
-			if diff := pretty.Diff(err, tc.wantErr); diff != nil {
-				t.Errorf("%s: incorrect error; -got +want: %s", tc.description, diff)
-			}
-			names := configuredKeyNames(configured)
-			if diff := pretty.Diff(names, tc.wantConfigured); diff != nil {
-				t.Errorf("%s: incorrect configured keys; -got +want: %s", tc.description, diff)
-			}
-		}()
+			// Enumerate the keys.
+			func() {
+				storage.SetError(tc.storageErr)
+				defer storage.SetError(fakes.Errs{})
+
+				configured, err := syncConfigured(mgr)
+				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error; -got +want: %s", diff)
+				}
+				names := configuredKeyNames(configured)
+				if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
+					t.Errorf("incorrect configured keys; -got +want: %s", diff)
+				}
+			}()
+		})
 	}
 }
 
@@ -427,7 +446,7 @@ func TestLoadAndLoaded(t *testing.T) {
 			},
 			byName:     "bad-key",
 			passphrase: "some passphrase",
-			wantErr:    errors.New("failed to parse private key: ssh: no key found"),
+			wantErr:    errParseFailed,
 		},
 		{
 			description: "fail on invalid password",
@@ -439,7 +458,7 @@ func TestLoadAndLoaded(t *testing.T) {
 			},
 			byName:     "good-key",
 			passphrase: "incorrect passphrase",
-			wantErr:    errors.New("failed to parse private key: x509: decryption password incorrect"),
+			wantErr:    x509.IncorrectPasswordError,
 		},
 		{
 			description: "fail on invalid ID",
@@ -451,7 +470,7 @@ func TestLoadAndLoaded(t *testing.T) {
 			},
 			byID:       ID("bogus-id"),
 			passphrase: "some passphrase",
-			wantErr:    errors.New("failed to find key with ID bogus-id"),
+			wantErr:    errKeyNotFound,
 		},
 		{
 			description: "fail to read from storage",
@@ -464,45 +483,49 @@ func TestLoadAndLoaded(t *testing.T) {
 			byName:     "good-key",
 			passphrase: testdata.WithPassphrase.Passphrase,
 			storageErr: fakes.Errs{
-				Get: errors.New("storage.Get failed"),
+				Get: storageGetErr,
 			},
-			wantErr: errors.New("failed to read key: failed to read keys: failed to read from storage: storage.Get failed"),
+			wantErr: storageGetErr,
 		},
 	}
 
 	for _, tc := range testcases {
-		storage := fakes.NewMemStorage()
-		mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
-		if err != nil {
-			t.Fatalf("%s: failed to initialize manager: %v", tc.description, err)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
 
-		// Figure out the ID of the key we will try to load.
-		id, err := findKey(mgr, tc.byID, tc.byName)
-		if err != nil {
-			t.Fatalf("%s: failed to find key: %v", tc.description, err)
-		}
-
-		// Load the key
-		func() {
-			storage.SetError(tc.storageErr)
-			defer storage.SetError(fakes.Errs{})
-
-			err := syncLoad(mgr, id, tc.passphrase)
-			if diff := pretty.Diff(err, tc.wantErr); diff != nil {
-				t.Errorf("%s: incorrect error; -got +want: %s", tc.description, diff)
+			storage := fakes.NewMemStorage()
+			mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+			if err != nil {
+				t.Fatalf("failed to initialize manager: %v", err)
 			}
-		}()
 
-		// Ensure the correct keys are loaded at the end.
-		loaded, err := syncLoaded(mgr)
-		if err != nil {
-			t.Errorf("%s: failed to get loaded keys: %v", tc.description, err)
-		}
-		blobs := loadedKeyBlobs(loaded)
-		if diff := pretty.Diff(blobs, tc.wantLoaded); diff != nil {
-			t.Errorf("%s: incorrect loaded keys; -got +want: %s", tc.description, diff)
-		}
+			// Figure out the ID of the key we will try to load.
+			id, err := findKey(mgr, tc.byID, tc.byName)
+			if err != nil {
+				t.Fatalf("failed to find key: %v", err)
+			}
+
+			// Load the key
+			func() {
+				storage.SetError(tc.storageErr)
+				defer storage.SetError(fakes.Errs{})
+
+				ferr := syncLoad(mgr, id, tc.passphrase)
+				if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error; -got +want: %s", diff)
+				}
+			}()
+
+			// Ensure the correct keys are loaded at the end.
+			loaded, err := syncLoaded(mgr)
+			if err != nil {
+				t.Errorf("failed to get loaded keys: %v", err)
+			}
+			blobs := loadedKeyBlobs(loaded)
+			if diff := cmp.Diff(blobs, tc.wantLoaded); diff != "" {
+				t.Errorf("incorrect loaded keys; -got +want: %s", diff)
+			}
+		})
 	}
 }
 
@@ -512,10 +535,9 @@ func makeLoadedKey(format, blob string) *LoadedKey {
 		panic(fmt.Sprintf("failed to decode blob: %v", err))
 	}
 
-	result := &LoadedKey{Object: js.Global.Get("Object").New()}
-	result.Type = format
+	result := LoadedKey{Type: format}
 	result.SetBlob(b)
-	return result
+	return &result
 }
 
 func TestUnload(t *testing.T) {
@@ -537,7 +559,7 @@ func TestUnload(t *testing.T) {
 				},
 			},
 			unload:     makeLoadedKey(testdata.WithPassphrase.Type, testdata.WithPassphrase.Blob),
-			wantLoaded: []string{},
+			wantLoaded: nil,
 		},
 		{
 			description: "fail on invalid key",
@@ -553,32 +575,36 @@ func TestUnload(t *testing.T) {
 			wantLoaded: []string{
 				testdata.WithPassphrase.Blob,
 			},
-			wantErr: errors.New("failed to unload key: agent: key not found"),
+			wantErr: errUnloadFailed,
 		},
 	}
 
 	for _, tc := range testcases {
-		storage := fakes.NewMemStorage()
-		mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
-		if err != nil {
-			t.Fatalf("%s: failed to initialize manager: %v", tc.description, err)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
 
-		// Unload the key
-		err = syncUnload(mgr, tc.unload)
-		if diff := pretty.Diff(err, tc.wantErr); diff != nil {
-			t.Errorf("%s: incorrect error; -got +want: %s", tc.description, diff)
-		}
+			storage := fakes.NewMemStorage()
+			mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+			if err != nil {
+				t.Fatalf("failed to initialize manager: %v", err)
+			}
 
-		// Ensure the correct keys are loaded at the end.
-		loaded, err := syncLoaded(mgr)
-		if err != nil {
-			t.Errorf("%s: failed to get loaded keys: %v", tc.description, err)
-		}
-		blobs := loadedKeyBlobs(loaded)
-		if diff := pretty.Diff(blobs, tc.wantLoaded); diff != nil {
-			t.Errorf("%s: incorrect loaded keys; -got +want: %s", tc.description, diff)
-		}
+			// Unload the key
+			err = syncUnload(mgr, tc.unload)
+			if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("incorrect error; -got +want: %s", diff)
+			}
+
+			// Ensure the correct keys are loaded at the end.
+			loaded, err := syncLoaded(mgr)
+			if err != nil {
+				t.Errorf("failed to get loaded keys: %v", err)
+			}
+			blobs := loadedKeyBlobs(loaded)
+			if diff := cmp.Diff(blobs, tc.wantLoaded); diff != "" {
+				t.Errorf("incorrect loaded keys; -got +want: %s", diff)
+			}
+		})
 	}
 }
 
@@ -604,7 +630,7 @@ func TestGetID(t *testing.T) {
 	}
 
 	// Load the key.
-	if err := syncLoad(mgr, wantID, testdata.WithPassphrase.Passphrase); err != nil {
+	if err = syncLoad(mgr, wantID, testdata.WithPassphrase.Passphrase); err != nil {
 		t.Errorf("failed to load key: %v", err)
 	}
 
@@ -613,7 +639,7 @@ func TestGetID(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to enumerate loaded keys: %v", err)
 	}
-	if diff := pretty.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != nil {
+	if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != "" {
 		t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
 	}
 
@@ -635,7 +661,7 @@ func TestGetID(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to enumerate loaded keys: %v", err)
 	}
-	if diff := pretty.Diff(loadedKeyIds(loaded), []ID{wantID, InvalidID}); diff != nil {
+	if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID, InvalidID}); diff != "" {
 		t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
 	}
 }

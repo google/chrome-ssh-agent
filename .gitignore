@@ -26,4 +26,6 @@ go/*/*.js
 # Node.js installation
 nvm
 node_modules
-package-lock.json
+
+# Bazel build output
+bazel-*

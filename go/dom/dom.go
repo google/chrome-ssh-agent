@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,56 +18,66 @@
 package dom
 
 import (
-	"log"
-
-	"github.com/gopherjs/gopherjs/js"
+	"syscall/js"
 )
 
 var (
 	// Doc is the default 'document' object.  This should be used for regular
 	// code. See NewDocForTesting() for a Document object that can be used in
 	// unit tests.
-	Doc = js.Global.Get("document")
+	Doc = js.Global().Get("document")
+
+	// Console is the default 'console' object for the browser.
+	Console = js.Global().Get("console")
 )
+
+// Event provides an API for interacting with events.
+type Event struct {
+	js.Value
+}
 
 // DOM provides an API for interacting with the DOM for a Document.
 type DOM struct {
-	doc *js.Object
+	doc js.Value
 }
 
 // New returns a DOM instance for interacting with the specified
 // Document object.
-func New(doc *js.Object) *DOM {
+func New(doc js.Value) *DOM {
 	return &DOM{doc: doc}
 }
 
 // RemoveChildren removes all children of the specified node.
-func (d *DOM) RemoveChildren(p *js.Object) {
+func (d *DOM) RemoveChildren(p js.Value) {
 	for p.Call("hasChildNodes").Bool() {
 		p.Call("removeChild", p.Get("firstChild"))
 	}
 }
 
 // NewElement returns a new element with the specified tag (e.g., 'tr', 'td').
-func (d *DOM) NewElement(tag string) *js.Object {
+func (d *DOM) NewElement(tag string) js.Value {
 	return d.doc.Call("createElement", tag)
 }
 
 // NewText returns a new text element with the specified text.
-func (d *DOM) NewText(text string) *js.Object {
+func (d *DOM) NewText(text string) js.Value {
 	return d.doc.Call("createTextNode", text)
 }
 
 // DoClick simulates a click. Any callback registered by OnClick() will be
 // invoked.
-func (d *DOM) DoClick(o *js.Object) {
+func (d *DOM) DoClick(o js.Value) {
 	o.Call("click")
 }
 
 // OnClick registers a callback to be invoked when the specified object is
 // clicked.
-func (d *DOM) OnClick(o *js.Object, callback func()) {
-	o.Call("addEventListener", "click", callback)
+func (d *DOM) OnClick(o js.Value, callback func(evt Event)) {
+	cb := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		callback(Event{Value: SingleArg(args)})
+		return nil
+	})
+	o.Call("addEventListener", "click", cb)
 }
 
 // DoDOMContentLoaded simulates the DOMContentLoaded event. Any callback
@@ -79,28 +91,34 @@ func (d *DOM) DoDOMContentLoaded() {
 // OnDOMContentLoaded registers a callback to be invoked when the DOM has
 // finished loading.
 func (d *DOM) OnDOMContentLoaded(callback func()) {
-	d.doc.Call("addEventListener", "DOMContentLoaded", callback)
+	var cb js.Func
+	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		defer cb.Release() // One-time callback; release when done.
+		callback()
+		return nil
+	})
+	d.doc.Call("addEventListener", "DOMContentLoaded", cb)
 }
 
 // Value returns the value of an object as a string.
-func (d *DOM) Value(o *js.Object) string {
+func (d *DOM) Value(o js.Value) string {
 	return o.Get("value").String()
 }
 
 // SetValue sets the of the object.
-func (d *DOM) SetValue(o *js.Object, value string) {
+func (d *DOM) SetValue(o js.Value, value string) {
 	o.Set("value", value)
 }
 
 // TextContent returns the text content of the specified object (and its
 // children).
-func (d *DOM) TextContent(o *js.Object) string {
+func (d *DOM) TextContent(o js.Value) string {
 	return o.Get("textContent").String()
 }
 
 // AppendChild adds the child object.  If non-nil, the populate() function is
 // invoked on the child to initialize it.
-func (d *DOM) AppendChild(parent, child *js.Object, populate func(child *js.Object)) {
+func (d *DOM) AppendChild(parent, child js.Value, populate func(child js.Value)) {
 	if populate != nil {
 		populate(child)
 	}
@@ -108,13 +126,13 @@ func (d *DOM) AppendChild(parent, child *js.Object, populate func(child *js.Obje
 }
 
 // GetElement returns the element with the specified ID.
-func (d *DOM) GetElement(id string) *js.Object {
+func (d *DOM) GetElement(id string) js.Value {
 	return d.doc.Call("getElementById", id)
 }
 
 // GetElementsByTag returns the elements with the speciied tag.
-func (d *DOM) GetElementsByTag(tag string) []*js.Object {
-	var result []*js.Object
+func (d *DOM) GetElementsByTag(tag string) []js.Value {
+	var result []js.Value
 	elts := d.doc.Call("getElementsByTagName", tag)
 	for i := 0; i < elts.Length(); i++ {
 		result = append(result, elts.Index(i))
@@ -123,20 +141,20 @@ func (d *DOM) GetElementsByTag(tag string) []*js.Object {
 }
 
 // ShowModal shows the specified dialog as a modal dialog.
-func (d *DOM) ShowModal(o *js.Object) {
-	if o.Get("showModal") == js.Undefined {
+func (d *DOM) ShowModal(o js.Value) {
+	if o.Get("showModal").IsUndefined() {
 		// jsdom (which is used in tests) does not support showModal.
-		log.Printf("showModal() not found")
+		Log("showModal() not found")
 		return
 	}
 	o.Call("showModal")
 }
 
 // Close closes the specified dialog.
-func (d *DOM) Close(o *js.Object) {
-	if o.Get("close") == js.Undefined {
+func (d *DOM) Close(o js.Value) {
+	if o.Get("close").IsUndefined() {
 		// jsdom (which is used in tests) does not support showModal.
-		log.Printf("close() not found")
+		Log("close() not found")
 		return
 	}
 
@@ -147,8 +165,37 @@ func (d *DOM) Close(o *js.Object) {
 // children.  This is accomplished by cloning the object, which has the side
 // effect of *not* cloning the event listeners.   The newly-created object is
 // returned.
-func (d *DOM) RemoveEventListeners(o *js.Object) *js.Object {
+func (d *DOM) RemoveEventListeners(o js.Value) js.Value {
 	clone := o.Call("cloneNode", true)
 	o.Get("parentNode").Call("replaceChild", clone, o)
 	return clone
+}
+
+// Log logs general information to the Javascript Console.
+func Log(objs ...interface{}) {
+	Console.Call("log", objs...)
+}
+
+// LogError logs an error to the Javascript Console.
+func LogError(objs ...interface{}) {
+	Console.Call("error", objs...)
+}
+
+// ExpandArgs unpacks function arguments to target values.
+func ExpandArgs(args []js.Value, target ...*js.Value) {
+	// Assign args to target.
+	for i := 0; i < len(args) && i < len(target); i++ {
+		*(target[i]) = args[i]
+	}
+	// Any excessive targets are set to undefined.
+	for i := len(args); i < len(target); i++ {
+		*(target[i]) = js.Undefined()
+	}
+}
+
+// SingleArg unpacks a single function argument and returns it.
+func SingleArg(args []js.Value) js.Value {
+	var val js.Value
+	ExpandArgs(args, &val)
+	return val
 }

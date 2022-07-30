@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +19,9 @@ package keys
 import (
 	"encoding/base64"
 	"fmt"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func syncAdd(mgr Manager, name string, pemPrivateKey string) error {
@@ -98,7 +103,7 @@ func findKey(mgr Manager, byID ID, byName string) (ID, error) {
 
 	for _, k := range configured {
 		if k.Name == byName {
-			return k.ID, nil
+			return ID(k.ID), nil
 		}
 	}
 
@@ -128,3 +133,19 @@ func loadedKeyBlobs(keys []*LoadedKey) []string {
 	}
 	return result
 }
+
+var (
+	// Custom Comparer for LoadedKey type.  'blob' is an unexported
+	// field, so we explicitly compare it.
+	loadedKeyCmp = cmp.Comparer(func(a, b *LoadedKey) bool {
+		return cmp.Equal(a.Type, b.Type, cmpopts.IgnoreUnexported(LoadedKey{})) &&
+			cmp.Equal(a.Blob(), b.Blob())
+	})
+
+	// Custom Comparers for errors. Used only when we can't use
+	// the standard cmpopts.EquateErrors. Usage of these comparers
+	// should document why cmpopts.EquateErrors does not suffice.
+	errStringCmp = cmp.Comparer(func(a, b error) bool {
+		return a.Error() == b.Error()
+	})
+)

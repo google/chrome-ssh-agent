@@ -1,0 +1,8 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "testdata",
+    srcs = ["data.go"],
+    importpath = "github.com/google/chrome-ssh-agent/go/keys/testdata",
+    visibility = ["//visibility:public"],
+)

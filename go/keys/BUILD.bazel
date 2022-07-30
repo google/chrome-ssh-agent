@@ -1,0 +1,45 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//build_defs:wasm.bzl", "go_wasm_test")
+
+go_library(
+    name = "keys",
+    srcs = [
+        "client.go",
+        "manager.go",
+    ],
+    importpath = "github.com/google/chrome-ssh-agent/go/keys",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//go/dom:dom",
+        "@com_github_scaleft_sshkeys//:sshkeys",
+        "@com_github_youmark_pkcs8//:pkcs8",
+        "@org_golang_x_crypto//ssh",
+        "@org_golang_x_crypto//ssh/agent",
+	"@com_github_norunners_vert//:vert",
+    ],
+)
+
+go_library(
+    name = "keys_testlib",
+    srcs = [
+        "client_test.go",
+        "common_test.go",
+        "manager_test.go",
+    ],
+    embed = [":keys"],
+    importpath = "github.com/google/chrome-ssh-agent/go/keys",
+    deps = [
+        "//go/chrome/fakes",
+        "//go/keys/testdata",
+        "@com_github_google_go_cmp//cmp",
+        "@com_github_google_go_cmp//cmp/cmpopts",
+        "@org_golang_x_crypto//ssh",
+        "@org_golang_x_crypto//ssh/agent",
+    ],
+    testonly = True,
+)
+
+go_wasm_test(
+    name = "keys_test",
+    testlib = ":keys_testlib",
+)

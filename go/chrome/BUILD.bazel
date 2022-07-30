@@ -1,0 +1,36 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//build_defs:wasm.bzl", "go_wasm_test")
+
+go_library(
+    name = "chrome",
+    srcs = [
+        "chrome.go",
+        "storage.go",
+    ],
+    importpath = "github.com/google/chrome-ssh-agent/go/chrome",
+    visibility = ["//visibility:public"],
+    deps = [
+	    "//go/dom:dom",
+	"@com_github_norunners_vert//:vert",
+    ],
+)
+
+go_library(
+    name = "chrome_testlib",
+    srcs = [
+        "storage_test.go",
+    ],
+    embed = [":chrome"],
+    importpath = "github.com/google/chrome-ssh-agent/go/chrome",
+    deps = [
+        "@com_github_google_go_cmp//cmp",
+        "@com_github_google_go_cmp//cmp/cmpopts",
+	"@com_github_norunners_vert//:vert",
+    ],
+    testonly = True,
+)
+
+go_wasm_test(
+    name = "chrome_test",
+    testlib = ":chrome_testlib",
+)

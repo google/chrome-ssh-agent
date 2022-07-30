@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,55 +17,56 @@
 package fakes
 
 import (
+	"syscall/js"
 	"testing"
 
-	"github.com/gopherjs/gopherjs/js"
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
+	"github.com/norunners/vert"
 )
 
 func TestMessagePassing(t *testing.T) {
 	hub := NewMessageHub()
 
 	// Add handlers that respond to different values.
-	hub.OnMessage(func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool {
-		if header.Int() == 42 {
-			sendResponse("int")
+	hub.OnMessage(func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool {
+		if header.Type() == js.TypeNumber && header.Int() == 42 {
+			sendResponse(js.ValueOf("int"))
 		}
 		return true
 	})
-	hub.OnMessage(func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool {
-		if header.String() == "foo" {
-			sendResponse("string")
+	hub.OnMessage(func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool {
+		if header.Type() == js.TypeString && header.String() == "foo" {
+			sendResponse(js.ValueOf("string"))
 		}
 		return true
 	})
-	hub.OnMessage(func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool {
-		if header.Get("some-key") != js.Undefined {
-			sendResponse("map")
+	hub.OnMessage(func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool {
+		if header.Type() == js.TypeObject && !header.Get("some-key").IsUndefined() {
+			sendResponse(js.ValueOf("map"))
 		}
 		return true
 	})
 
 	// Send messages of the various types.
-	var intRsp, strRsp, mapRsp *js.Object
-	hub.SendMessage(42, func(rsp *js.Object) {
+	var intRsp, strRsp, mapRsp js.Value
+	hub.SendMessage(js.ValueOf(42), func(rsp js.Value) {
 		intRsp = rsp
 	})
-	hub.SendMessage("foo", func(rsp *js.Object) {
+	hub.SendMessage(js.ValueOf("foo"), func(rsp js.Value) {
 		strRsp = rsp
 	})
-	hub.SendMessage(map[string]int{"some-key": 7}, func(rsp *js.Object) {
+	hub.SendMessage(vert.ValueOf(map[string]int{"some-key": 7}).JSValue(), func(rsp js.Value) {
 		mapRsp = rsp
 	})
 
 	// Ensure we got the correct responses.
-	if diff := pretty.Diff(intRsp.String(), "int"); diff != nil {
+	if diff := cmp.Diff(intRsp.String(), "int"); diff != "" {
 		t.Errorf("incorrect response for int; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(strRsp.String(), "string"); diff != nil {
+	if diff := cmp.Diff(strRsp.String(), "string"); diff != "" {
 		t.Errorf("incorrect response for string; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(mapRsp.String(), "map"); diff != nil {
+	if diff := cmp.Diff(mapRsp.String(), "map"); diff != "" {
 		t.Errorf("incorrect response for map; -got +want: %s", diff)
 	}
 }

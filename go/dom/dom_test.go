@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,18 +17,18 @@
 package dom
 
 import (
+	"syscall/js"
 	"testing"
 
 	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
-	"github.com/gopherjs/gopherjs/js"
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestTextContent(t *testing.T) {
 	d := New(dt.NewDocForTesting(`
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
-	if diff := pretty.Diff(d.TextContent(d.GetElement("list")), "firstsecond"); diff != nil {
+	if diff := cmp.Diff(d.TextContent(d.GetElement("list")), "firstsecond"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
 }
@@ -36,7 +38,7 @@ func TestRemoveChildren(t *testing.T) {
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
 	d.RemoveChildren(d.GetElement("list"))
-	if diff := pretty.Diff(d.TextContent(d.GetElement("list")), ""); diff != nil {
+	if diff := cmp.Diff(d.TextContent(d.GetElement("list")), ""); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
 }
@@ -45,21 +47,21 @@ func TestNewElement(t *testing.T) {
 	d := New(dt.NewDocForTesting(`
 		<div id="list"></div>
 	`))
-	d.AppendChild(d.GetElement("list"), d.NewElement("div"), func(child *js.Object) {
+	d.AppendChild(d.GetElement("list"), d.NewElement("div"), func(child js.Value) {
 		child.Set("id", "first")
 		d.AppendChild(child, d.NewText("first"), nil)
 	})
-	d.AppendChild(d.GetElement("list"), d.NewElement("div"), func(child *js.Object) {
+	d.AppendChild(d.GetElement("list"), d.NewElement("div"), func(child js.Value) {
 		child.Set("id", "second")
 		d.AppendChild(child, d.NewText("second"), nil)
 	})
-	if diff := pretty.Diff(d.TextContent(d.GetElement("list")), "firstsecond"); diff != nil {
+	if diff := cmp.Diff(d.TextContent(d.GetElement("list")), "firstsecond"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(d.TextContent(d.GetElement("first")), "first"); diff != nil {
+	if diff := cmp.Diff(d.TextContent(d.GetElement("first")), "first"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(d.TextContent(d.GetElement("second")), "second"); diff != nil {
+	if diff := cmp.Diff(d.TextContent(d.GetElement("second")), "second"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
 }
@@ -69,7 +71,7 @@ func TestNewText(t *testing.T) {
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
 	d.AppendChild(d.GetElement("list"), d.NewText("third"), nil)
-	if diff := pretty.Diff(d.TextContent(d.GetElement("list")), "firstsecondthird"); diff != nil {
+	if diff := cmp.Diff(d.TextContent(d.GetElement("list")), "firstsecondthird"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
 }
@@ -79,7 +81,7 @@ func TestClick(t *testing.T) {
 		<button id="btn"/>
 	`))
 	var clicked bool
-	d.OnClick(d.GetElement("btn"), func() { clicked = true })
+	d.OnClick(d.GetElement("btn"), func(evt Event) { clicked = true })
 	d.DoClick(d.GetElement("btn"))
 	if !clicked {
 		t.Errorf("clicked callback not invoked")
@@ -91,12 +93,12 @@ func TestValue(t *testing.T) {
 		<input id="ipt" type="text" value="Hello">
 	`))
 
-	if diff := pretty.Diff(d.Value(d.GetElement("ipt")), "Hello"); diff != nil {
+	if diff := cmp.Diff(d.Value(d.GetElement("ipt")), "Hello"); diff != "" {
 		t.Errorf("incorrect value; -got +want: %s", diff)
 	}
 
 	d.SetValue(d.GetElement("ipt"), "World")
-	if diff := pretty.Diff(d.Value(d.GetElement("ipt")), "World"); diff != nil {
+	if diff := cmp.Diff(d.Value(d.GetElement("ipt")), "World"); diff != "" {
 		t.Errorf("incorrect value; -got +want: %s", diff)
 	}
 }
@@ -108,7 +110,7 @@ func TestRemoveEventListeners(t *testing.T) {
 
 	// Add a handler, and ensure it works.
 	var clicked bool
-	d.OnClick(d.GetElement("btn"), func() { clicked = true })
+	d.OnClick(d.GetElement("btn"), func(evt Event) { clicked = true })
 	d.DoClick(d.GetElement("btn"))
 	if !clicked {
 		t.Errorf("clicked callback not invoked")
@@ -125,14 +127,14 @@ func TestRemoveEventListeners(t *testing.T) {
 
 	// Add the handler to the button we got back. Ensure it works.
 	clicked = false
-	d.OnClick(btn, func() { clicked = true })
+	d.OnClick(btn, func(evt Event) { clicked = true })
 	d.DoClick(btn)
 	if !clicked {
 		t.Errorf("clicked callback not invoked")
 	}
 }
 
-func joinTextContent(d *DOM, objs []*js.Object) string {
+func joinTextContent(d *DOM, objs []js.Value) string {
 	var result string
 	for _, o := range objs {
 		result = result + d.TextContent(o)
@@ -145,10 +147,10 @@ func TestGetElementsByTag(t *testing.T) {
 		<div>foo</div>
 		<pre>bar</pre>
 	`))
-	if diff := pretty.Diff(joinTextContent(d, d.GetElementsByTag("div")), "foo"); diff != nil {
+	if diff := cmp.Diff(joinTextContent(d, d.GetElementsByTag("div")), "foo"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(joinTextContent(d, d.GetElementsByTag("pre")), "bar"); diff != nil {
+	if diff := cmp.Diff(joinTextContent(d, d.GetElementsByTag("pre")), "bar"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
 }

@@ -1,0 +1,53 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//build_defs:wasm.bzl", "go_wasm_test")
+load("@io_bazel_rules_go//extras:embed_data.bzl", "go_embed_data")
+
+go_library(
+    name = "optionsui",
+    srcs = ["ui.go"],
+    importpath = "github.com/google/chrome-ssh-agent/go/optionsui",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//go/dom:dom",
+        "//go/keys:keys",
+        "//go/keys/testdata",
+        "@com_github_google_go_cmp//cmp",
+    ],
+)
+
+go_embed_data(
+	name = "optionsui_html",
+	src = "//html:optionsui_htmlonly",
+	package = "optionsui",
+	var = "OptionsHTMLData",
+	testonly = True,
+)
+
+go_library(
+    name = "optionsui_testlib",
+    srcs = [
+        "ui_test.go",
+        ":optionsui_html",
+    ],
+    embed = [":optionsui"],
+    importpath = "github.com/google/chrome-ssh-agent/go/optionsui",
+    deps = [
+        "//go/chrome/fakes",
+        "//go/dom",
+        "//go/dom/testing",
+        "//go/keys",
+        "//go/keys/testdata",
+        "@com_github_google_go_cmp//cmp",
+        "@org_golang_x_crypto//ssh",
+        "@org_golang_x_crypto//ssh/agent",
+    ],
+    testonly = True,
+)
+
+go_wasm_test(
+    name = "optionsui_test",
+    testlib = ":optionsui_testlib",
+    node_deps = [
+        "@npm//jsdom",
+    ],
+)

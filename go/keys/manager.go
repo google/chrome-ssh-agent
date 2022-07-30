@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,17 +20,19 @@ package keys
 
 import (
 	"crypto/rand"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"math/big"
 	"strings"
+	"syscall/js"
 
 	"github.com/ScaleFT/sshkeys"
-	"github.com/gopherjs/gopherjs/js"
+	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/norunners/vert"
 	"github.com/youmark/pkcs8"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -44,9 +48,8 @@ const (
 
 // ConfiguredKey is a key configured for use.
 type ConfiguredKey struct {
-	*js.Object
 	// Id is the unique ID for this key.
-	ID ID `js:"id"`
+	ID string `js:"id"`
 	// Name is a name allocated to key.
 	Name string `js:"name"`
 	// Encrypted indicates if the key is encrypted and requires a passphrase
@@ -56,11 +59,11 @@ type ConfiguredKey struct {
 
 // LoadedKey is a key loaded into the agent.
 type LoadedKey struct {
-	*js.Object
 	// Type is the type of key loaded in the agent (e.g., 'ssh-rsa').
 	Type string `js:"type"`
-	// blob is the public key material for the loaded key.
-	blob string `js:"blob"`
+	// InternalBlob is the public key material for the loaded key. Must
+	// be exported to be handled correctly in conversion to/from js.Value.
+	InternalBlob string `js:"blob"`
 	// Comment is a comment for the loaded key.
 	Comment string `js:"comment"`
 }
@@ -73,14 +76,14 @@ func (k *LoadedKey) SetBlob(b []byte) {
 	//   messaging.
 	// - Casting to a string resulted in different data being read from the
 	//   field.
-	k.blob = base64.StdEncoding.EncodeToString(b)
+	k.InternalBlob = base64.StdEncoding.EncodeToString(b)
 }
 
 // Blob returns the public key material for the loaded key.
 func (k *LoadedKey) Blob() []byte {
-	b, err := base64.StdEncoding.DecodeString(k.blob)
+	b, err := base64.StdEncoding.DecodeString(k.InternalBlob)
 	if err != nil {
-		log.Printf("failed to decode key blob: %v", err)
+		dom.LogError("failed to decode key blob: %v", err)
 		return nil
 	}
 
@@ -142,10 +145,10 @@ type Manager interface {
 // implementations during testing.
 type PersistentStore interface {
 	// Set stores new data. See chrome.Storage.Set() for details.
-	Set(data map[string]interface{}, callback func(err error))
+	Set(data map[string]js.Value, callback func(err error))
 
 	// Get gets data from storage. See chrome.Storage.Get() for details.
-	Get(callback func(data map[string]interface{}, err error))
+	Get(callback func(data map[string]js.Value, err error))
 
 	// Delete deletes data from storage. See chrome.Storage.Delete() for
 	// details.
@@ -170,8 +173,7 @@ type manager struct {
 // storedKey is the raw object stored in persistent storage for a configured
 // key.
 type storedKey struct {
-	*js.Object
-	ID            ID     `js:"id"`
+	ID            string `js:"id"`
 	Name          string `js:"name"`
 	PEMPrivateKey string `js:"pemPrivateKey"`
 }
@@ -243,22 +245,12 @@ const (
 	commentPrefix = "chrome-ssh-agent:"
 )
 
-// newStoredKey converts a key-value map (e.g., which is supplied when reading
-// from persistent storage) into a storedKey.
-func newStoredKey(m map[string]interface{}) *storedKey {
-	o := js.Global.Get("Object").New()
-	for k, v := range m {
-		o.Set(k, v)
-	}
-	return &storedKey{Object: o}
-}
-
 // readKeys returns all the stored keys from persistent storage. callback is
 // invoked with the returned keys.
 func (m *manager) readKeys(callback func(keys []*storedKey, err error)) {
-	m.storage.Get(func(data map[string]interface{}, err error) {
+	m.storage.Get(func(data map[string]js.Value, err error) {
 		if err != nil {
-			callback(nil, fmt.Errorf("failed to read from storage: %v", err))
+			callback(nil, fmt.Errorf("failed to read from storage: %w", err))
 			return
 		}
 
@@ -268,7 +260,13 @@ func (m *manager) readKeys(callback func(keys []*storedKey, err error)) {
 				continue
 			}
 
-			keys = append(keys, newStoredKey(v.(map[string]interface{})))
+			var sk storedKey
+			if err := vert.ValueOf(v).AssignTo(&sk); err != nil {
+				dom.LogError(fmt.Sprintf("failed to parse key %s; dropping", k))
+				continue
+			}
+
+			keys = append(keys, &sk)
 		}
 		callback(keys, nil)
 	})
@@ -279,12 +277,12 @@ func (m *manager) readKeys(callback func(keys []*storedKey, err error)) {
 func (m *manager) readKey(id ID, callback func(key *storedKey, err error)) {
 	m.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
-			callback(nil, fmt.Errorf("failed to read keys: %v", err))
+			callback(nil, fmt.Errorf("failed to read keys: %w", err))
 			return
 		}
 
 		for _, k := range keys {
-			if k.ID == id {
+			if ID(k.ID) == id {
 				callback(k, nil)
 				return
 			}
@@ -299,17 +297,18 @@ func (m *manager) readKey(id ID, callback func(key *storedKey, err error)) {
 func (m *manager) writeKey(name string, pemPrivateKey string, callback func(err error)) {
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
-		callback(fmt.Errorf("failed to generate new ID: %v", err))
+		callback(fmt.Errorf("failed to generate new ID: %w", err))
 		return
 	}
 	id := ID(i.String())
 	storageKey := fmt.Sprintf("%s%s", keyPrefix, id)
-	sk := &storedKey{Object: js.Global.Get("Object").New()}
-	sk.ID = id
-	sk.Name = name
-	sk.PEMPrivateKey = pemPrivateKey
-	data := map[string]interface{}{
-		storageKey: sk,
+	sk := storedKey{
+		ID:            string(id),
+		Name:          name,
+		PEMPrivateKey: pemPrivateKey,
+	}
+	data := map[string]js.Value{
+		storageKey: vert.ValueOf(sk).JSValue(),
 	}
 	m.storage.Set(data, func(err error) {
 		callback(err)
@@ -321,20 +320,20 @@ func (m *manager) writeKey(name string, pemPrivateKey string, callback func(err 
 func (m *manager) removeKey(id ID, callback func(err error)) {
 	m.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
-			callback(fmt.Errorf("failed to enumerate keys: %v", err))
+			callback(fmt.Errorf("failed to enumerate keys: %w", err))
 			return
 		}
 
 		var storageKeys []string
 		for _, k := range keys {
-			if k.ID == id {
+			if ID(k.ID) == id {
 				storageKeys = append(storageKeys, fmt.Sprintf("%s%s", keyPrefix, k.ID))
 			}
 		}
 
 		m.storage.Delete(storageKeys, func(err error) {
 			if err != nil {
-				callback(fmt.Errorf("failed to delete keys: %v", err))
+				callback(fmt.Errorf("failed to delete keys: %w", err))
 				return
 			}
 			callback(nil)
@@ -346,26 +345,31 @@ func (m *manager) removeKey(id ID, callback func(err error)) {
 func (m *manager) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	m.readKeys(func(keys []*storedKey, err error) {
 		if err != nil {
-			callback(nil, fmt.Errorf("failed to read keys: %v", err))
+			callback(nil, fmt.Errorf("failed to read keys: %w", err))
 			return
 		}
 
 		var result []*ConfiguredKey
 		for _, k := range keys {
-			c := &ConfiguredKey{Object: js.Global.Get("Object").New()}
-			c.ID = k.ID
-			c.Name = k.Name
-			c.Encrypted = k.Encrypted()
-			result = append(result, c)
+			c := ConfiguredKey{
+				ID:        k.ID,
+				Name:      k.Name,
+				Encrypted: k.Encrypted(),
+			}
+			result = append(result, &c)
 		}
 		callback(result, nil)
 	})
 }
 
+var (
+	errInvalidName = errors.New("invalid name")
+)
+
 // Add implements Manager.Add.
 func (m *manager) Add(name string, pemPrivateKey string, callback func(err error)) {
 	if name == "" {
-		callback(errors.New("name must not be empty"))
+		callback(fmt.Errorf("%w: name must not be empty", errInvalidName))
 		return
 	}
 
@@ -385,32 +389,39 @@ func (m *manager) Remove(id ID, callback func(err error)) {
 func (m *manager) Loaded(callback func(keys []*LoadedKey, err error)) {
 	loaded, err := m.agent.List()
 	if err != nil {
-		callback(nil, fmt.Errorf("failed to list loaded keys: %v", err))
+		callback(nil, fmt.Errorf("failed to list loaded keys: %w", err))
 		return
 	}
 
 	var result []*LoadedKey
 	for _, l := range loaded {
-		k := &LoadedKey{Object: js.Global.Get("Object").New()}
-		k.Type = l.Type()
+		k := LoadedKey{
+			Type:    l.Type(),
+			Comment: l.Comment,
+		}
 		k.SetBlob(l.Marshal())
-		k.Comment = l.Comment
-		result = append(result, k)
+		result = append(result, &k)
 	}
 
 	callback(result, nil)
 }
 
+var (
+	errKeyNotFound  = errors.New("key not found")
+	errDecodeFailed = errors.New("key decode failed")
+	errParseFailed  = errors.New("key parse failed")
+)
+
 // Load implements Manager.Load.
 func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
 	m.readKey(id, func(key *storedKey, err error) {
 		if err != nil {
-			callback(fmt.Errorf("failed to read key: %v", err))
+			callback(fmt.Errorf("failed to read key: %w", err))
 			return
 		}
 
 		if key == nil {
-			callback(fmt.Errorf("failed to find key with ID %s", id))
+			callback(fmt.Errorf("%w: failed to find key with ID %s", errKeyNotFound, id))
 			return
 		}
 
@@ -425,7 +436,7 @@ func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
 			var block *pem.Block
 			block, _ = pem.Decode([]byte(key.PEMPrivateKey))
 			if block == nil {
-				callback(fmt.Errorf("failed to decode encrypted private key"))
+				callback(fmt.Errorf("%w: failed to decode encrypted private key", errDecodeFailed))
 				return
 			}
 			if passphrase != "" {
@@ -438,8 +449,14 @@ func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
 		} else {
 			priv, err = ssh.ParseRawPrivateKey([]byte(key.PEMPrivateKey))
 		}
+		// Forward incorrect password errors on directly.
+		if err != nil && errors.Is(err, x509.IncorrectPasswordError) {
+			callback(fmt.Errorf("failed to parse private key: %w", err))
+			return
+		}
+		// Wrap all other non-specific errors.
 		if err != nil {
-			callback(fmt.Errorf("failed to parse private key: %v", err))
+			callback(fmt.Errorf("%w: %v", errParseFailed, err))
 			return
 		}
 
@@ -448,12 +465,16 @@ func (m *manager) Load(id ID, passphrase string, callback func(err error)) {
 			Comment:    fmt.Sprintf("%s%s", commentPrefix, id),
 		})
 		if err != nil {
-			callback(fmt.Errorf("failed to add key to agent: %v", err))
+			callback(fmt.Errorf("failed to add key to agent: %w", err))
 			return
 		}
 		callback(nil)
 	})
 }
+
+var (
+	errUnloadFailed = errors.New("key unload failed")
+)
 
 // Unload implements Manager.Unload.
 func (m *manager) Unload(key *LoadedKey, callback func(err error)) {
@@ -462,7 +483,7 @@ func (m *manager) Unload(key *LoadedKey, callback func(err error)) {
 		Blob:   key.Blob(),
 	}
 	if err := m.agent.Remove(pub); err != nil {
-		callback(fmt.Errorf("failed to unload key: %v", err))
+		callback(fmt.Errorf("%w: %v", errUnloadFailed, err))
 		return
 	}
 	callback(nil)

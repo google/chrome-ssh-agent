@@ -1,0 +1,37 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//build_defs:wasm.bzl", "go_wasm_test")
+
+go_library(
+    name = "dom",
+    srcs = [
+        "dom.go",
+        "url.go",
+    ],
+    importpath = "github.com/google/chrome-ssh-agent/go/dom",
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "dom_testlib",
+    srcs = [
+        "dom_test.go",
+        "url_test.go",
+    ],
+    embed = [":dom"],
+    importpath = "github.com/google/chrome-ssh-agent/go/dom",
+    deps = [
+        "//go/dom/testing",
+        "@com_github_google_go_cmp//cmp",
+    ],
+    testonly = True,
+)
+
+go_wasm_test(
+    name = "dom_test",
+    testlib = ":dom_testlib",
+    node_deps = [
+        "@npm//jsdom",
+        "@npm//url-search-params",
+    ],
+)
+

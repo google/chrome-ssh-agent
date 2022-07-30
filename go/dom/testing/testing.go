@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,29 +18,38 @@
 package testing
 
 import (
-	"github.com/gopherjs/gopherjs/js"
+	"syscall/js"
 )
 
 var (
-	// funcs contains Javascript functions that can be invoked by Go library
-	// functions in this package. The following are defined:
-	// - newDoc: Uses jsdom to create a new Document object. For use in
-	//     testing only. This requires node.js (which is used by
-	//     'gopherjs test') with the jsdom package installed.
-	funcs = js.Global.Call("eval", `({
-		newDoc: function(html) {
-			const jsdom = require("jsdom");
-			const virtualConsole = new jsdom.VirtualConsole();
-			virtualConsole.sendTo(console);
-			const { JSDOM } = jsdom;
-			const dom = new JSDOM(html);
-			return dom.window.document;
-		},
-	})`)
+	// We use jsdom to create a new Document object. For use in testing
+	// only. This requires running under node.js with the jsdom package
+	// installed.
+	jsdom = js.Global().Call("eval", `{
+		const jsdom = require("jsdom");
+                const { JSDOM } = jsdom;
+		JSDOM;
+	}`)
 )
 
 // NewDocForTesting returns a Document object that can be used for testing.
 // The DOM in the Document object is instantiated using the supplied HTML.
-func NewDocForTesting(html string) *js.Object {
-	return funcs.Call("newDoc", html)
+func NewDocForTesting(html string) js.Value {
+	dom := jsdom.New(html, map[string]interface{}{
+		"runScripts": "dangerously",
+		"resources":  "usable",
+	})
+
+	// Create doc, but then wait until loading is complete and constructed
+	// doc is returned. By default, jsdom loads doc asynchronously:
+	//   https://oliverjam.es/blog/frontend-testing-node-jsdom/#waiting-for-external-resources
+	c := make(chan js.Value)
+	var loaded js.Func
+	loaded = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		defer loaded.Release()
+		c <- dom.Get("window").Get("document")
+		return nil
+	})
+	dom.Get("window").Call("addEventListener", "load", loaded)
+	return <-c
 }

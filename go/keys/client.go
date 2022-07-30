@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,14 +19,16 @@ package keys
 import (
 	"errors"
 	"fmt"
+	"syscall/js"
 
-	"github.com/gopherjs/gopherjs/js"
+	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/norunners/vert"
 )
 
 // MessageReceiver defines methods sufficient to receive messages and send
 // responses.
 type MessageReceiver interface {
-	OnMessage(callback func(header *js.Object, sender *js.Object, sendResponse func(interface{})) bool)
+	OnMessage(callback func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool)
 }
 
 // Server exposes a Manager instance via a messaging API so that a shared
@@ -62,73 +66,71 @@ const (
 	msgTypeUnloadRsp
 )
 
-// msgHeader are the common fields included in every message (as an embedded
-// type).
+// msgHeader are the common fields included in every message.
 type msgHeader struct {
-	*js.Object
 	Type int `js:"type"`
 }
 
 type msgConfigured struct {
-	*msgHeader
+	Type int `js:"type"`
 }
 
 type rspConfigured struct {
-	*msgHeader
+	Type int              `js:"type"`
 	Keys []*ConfiguredKey `js:"keys"`
 	Err  string           `js:"err"`
 }
 
 type msgLoaded struct {
-	*msgHeader
+	Type int `js:"type"`
 }
 
 type rspLoaded struct {
-	*msgHeader
+	Type int          `js:"type"`
 	Keys []*LoadedKey `js:"keys"`
 	Err  string       `js:"err"`
 }
 
 type msgAdd struct {
-	*msgHeader
+	Type          int    `js:"type"`
 	Name          string `js:"name"`
 	PEMPrivateKey string `js:"pemPrivateKey"`
 }
 
 type rspAdd struct {
-	*msgHeader
-	Err string `js:"err"`
+	Type int    `js:"type"`
+	Err  string `js:"err"`
 }
 
 type msgRemove struct {
-	*msgHeader
-	ID ID `js:"id"`
+	Type int    `js:"type"`
+	ID   string `js:"id"`
 }
 
 type rspRemove struct {
-	*msgHeader
-	Err string `js:"err"`
+	Type int    `js:"type"`
+	Err  string `js:"err"`
 }
 
 type msgLoad struct {
-	*msgHeader
-	ID         ID     `js:"id"`
+	Type       int    `js:"type"`
+	ID         string `js:"id"`
 	Passphrase string `js:"passphrase"`
 }
 
 type rspLoad struct {
-	*msgHeader
-	Err string `js:"err"`
+	Type int    `js:"type"`
+	Err  string `js:"err"`
 }
 
 type msgUnload struct {
-	*msgHeader
-	Key *LoadedKey `js:"key"`
+	Type int        `js:"type"`
+	Key  *LoadedKey `js:"key"`
 }
 
 type rspUnload struct {
-	*msgHeader
-	Err string `js:"err"`
+	Type int    `js:"type"`
+	Err  string `js:"err"`
 }
 
 // makeErr converts a string to an error. Empty string returns nil (i.e., no
@@ -152,64 +154,94 @@ func makeErrStr(err error) string {
 // onMessage is the callback invoked when a message is received. It determines
 // the type of request received, invokes the appropriate method on the
 // underlying manager instance, and then sends a response with the result.
-func (s *Server) onMessage(headerObj *js.Object, sender *js.Object, sendResponse func(interface{})) bool {
-	header := &msgHeader{Object: headerObj}
+func (s *Server) onMessage(headerObj js.Value, sender js.Value, sendResponse func(js.Value)) bool {
+	var header msgHeader
+	if err := vert.ValueOf(headerObj).AssignTo(&header); err != nil {
+		dom.LogError(fmt.Sprintf("failed to parse message header: %v", err))
+		return false
+	}
+
 	switch header.Type {
 	case msgTypeConfigured:
 		s.mgr.Configured(func(keys []*ConfiguredKey, err error) {
-			rsp := &rspConfigured{msgHeader: header}
-			rsp.Type = msgTypeConfiguredRsp
-			rsp.Keys = keys
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
+			rsp := rspConfigured{
+				Type: msgTypeConfiguredRsp,
+				Keys: keys,
+				Err:  makeErrStr(err),
+			}
+			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
 	case msgTypeLoaded:
 		s.mgr.Loaded(func(keys []*LoadedKey, err error) {
-			rsp := &rspLoaded{msgHeader: header}
-			rsp.Type = msgTypeLoadedRsp
-			rsp.Keys = keys
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
+			rsp := rspLoaded{
+				Type: msgTypeLoadedRsp,
+				Keys: keys,
+				Err:  makeErrStr(err),
+			}
+			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
 	case msgTypeAdd:
-		m := &msgAdd{msgHeader: header}
+		var m msgAdd
+		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
+			dom.LogError(fmt.Sprintf("failed to parse Add message: %v", err))
+			return false
+		}
 		s.mgr.Add(m.Name, m.PEMPrivateKey, func(err error) {
-			rsp := &rspAdd{msgHeader: header}
-			rsp.Type = msgTypeAddRsp
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
+			rsp := rspAdd{
+				Type: msgTypeAddRsp,
+				Err:  makeErrStr(err),
+			}
+			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
 	case msgTypeRemove:
-		m := &msgRemove{msgHeader: header}
-		s.mgr.Remove(m.ID, func(err error) {
-			rsp := &rspRemove{msgHeader: header}
-			rsp.Type = msgTypeRemoveRsp
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
+		var m msgRemove
+		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
+			dom.LogError(fmt.Sprintf("failed to parse Remove message: %v", err))
+			return false
+		}
+		s.mgr.Remove(ID(m.ID), func(err error) {
+			rsp := rspRemove{
+				Type: msgTypeRemoveRsp,
+				Err:  makeErrStr(err),
+			}
+			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
 	case msgTypeLoad:
-		m := &msgLoad{msgHeader: header}
-		s.mgr.Load(m.ID, m.Passphrase, func(err error) {
-			rsp := &rspLoad{msgHeader: header}
-			rsp.Type = msgTypeLoadRsp
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
+		var m msgLoad
+		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
+			dom.LogError(fmt.Sprintf("failed to parse Load message: %v", err))
+			return false
+		}
+		s.mgr.Load(ID(m.ID), m.Passphrase, func(err error) {
+			rsp := rspLoad{
+				Type: msgTypeLoadRsp,
+				Err:  makeErrStr(err),
+			}
+			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
 	case msgTypeUnload:
-		m := &msgUnload{msgHeader: header}
+		var m msgUnload
+		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
+			dom.LogError(fmt.Sprintf("failed to parse Unload message: %v", err))
+			return false
+		}
 		s.mgr.Unload(m.Key, func(err error) {
-			rsp := &rspUnload{msgHeader: header}
-			rsp.Type = msgTypeUnloadRsp
-			rsp.Err = makeErrStr(err)
-			sendResponse(rsp)
+			rsp := rspUnload{
+				Type: msgTypeUnloadRsp,
+				Err:  makeErrStr(err),
+			}
+			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
+	default:
+		dom.LogError(fmt.Sprintf("received invalid message type: %d", header.Type))
+		return false
 	}
 	return true
 }
 
 // MessageSender defines methods sufficient to send messages.
 type MessageSender interface {
-	SendMessage(msg interface{}, callback func(rsp *js.Object))
+	SendMessage(msg js.Value, callback func(rsp js.Value))
 	Error() error
 }
 
@@ -225,12 +257,16 @@ func NewClient(msg MessageSender) Manager {
 
 // Configured implements Manager.Configured.
 func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
-	msg := &msgConfigured{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+	var msg msgConfigured
 	msg.Type = msgTypeConfigured
-	c.msg.SendMessage(msg, func(rspObj *js.Object) {
-		rsp := &rspConfigured{msgHeader: &msgHeader{Object: rspObj}}
+	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
 		if err := c.msg.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
+			return
+		}
+		var rsp rspConfigured
+		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+			callback(nil, fmt.Errorf("failed to parse response: %v", err))
 			return
 		}
 		callback(rsp.Keys, makeErr(rsp.Err))
@@ -239,12 +275,16 @@ func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 
 // Loaded implements Manager.Loaded.
 func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
-	msg := &msgLoaded{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+	var msg msgLoaded
 	msg.Type = msgTypeLoaded
-	c.msg.SendMessage(msg, func(rspObj *js.Object) {
-		rsp := &rspLoaded{msgHeader: &msgHeader{Object: rspObj}}
+	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
 		if err := c.msg.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
+			return
+		}
+		var rsp rspLoaded
+		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+			callback(nil, fmt.Errorf("failed to parse response: %v", err))
 			return
 		}
 		callback(rsp.Keys, makeErr(rsp.Err))
@@ -253,14 +293,18 @@ func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
 
 // Add implements Manager.Add.
 func (c *client) Add(name string, pemPrivateKey string, callback func(err error)) {
-	msg := &msgAdd{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+	var msg msgAdd
 	msg.Type = msgTypeAdd
 	msg.Name = name
 	msg.PEMPrivateKey = pemPrivateKey
-	c.msg.SendMessage(msg, func(rspObj *js.Object) {
-		rsp := &rspAdd{msgHeader: &msgHeader{Object: rspObj}}
+	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
 		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
+			return
+		}
+		var rsp rspAdd
+		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+			callback(fmt.Errorf("failed to parse response: %v", err))
 			return
 		}
 		callback(makeErr(rsp.Err))
@@ -269,13 +313,17 @@ func (c *client) Add(name string, pemPrivateKey string, callback func(err error)
 
 // Remove implements Manager.Remove.
 func (c *client) Remove(id ID, callback func(err error)) {
-	msg := &msgRemove{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+	var msg msgRemove
 	msg.Type = msgTypeRemove
-	msg.ID = id
-	c.msg.SendMessage(msg, func(rspObj *js.Object) {
-		rsp := &rspRemove{msgHeader: &msgHeader{Object: rspObj}}
+	msg.ID = string(id)
+	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
 		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
+			return
+		}
+		var rsp rspRemove
+		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+			callback(fmt.Errorf("failed to parse response: %v", err))
 			return
 		}
 		callback(makeErr(rsp.Err))
@@ -284,14 +332,18 @@ func (c *client) Remove(id ID, callback func(err error)) {
 
 // Load implements Manager.Load.
 func (c *client) Load(id ID, passphrase string, callback func(err error)) {
-	msg := &msgLoad{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+	var msg msgLoad
 	msg.Type = msgTypeLoad
-	msg.ID = id
+	msg.ID = string(id)
 	msg.Passphrase = passphrase
-	c.msg.SendMessage(msg, func(rspObj *js.Object) {
-		rsp := &rspLoad{msgHeader: &msgHeader{Object: rspObj}}
+	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
 		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
+			return
+		}
+		var rsp rspLoad
+		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+			callback(fmt.Errorf("failed to parse response: %v", err))
 			return
 		}
 		callback(makeErr(rsp.Err))
@@ -300,13 +352,17 @@ func (c *client) Load(id ID, passphrase string, callback func(err error)) {
 
 // Unload implements Manager.Unload.
 func (c *client) Unload(key *LoadedKey, callback func(err error)) {
-	msg := &msgUnload{msgHeader: &msgHeader{Object: js.Global.Get("Object").New()}}
+	var msg msgUnload
 	msg.Type = msgTypeUnload
 	msg.Key = key
-	c.msg.SendMessage(msg, func(rspObj *js.Object) {
-		rsp := &rspUnload{msgHeader: &msgHeader{Object: rspObj}}
+	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
 		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
+			return
+		}
+		var rsp rspUnload
+		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+			callback(fmt.Errorf("failed to parse response: %v", err))
 			return
 		}
 		callback(makeErr(rsp.Err))

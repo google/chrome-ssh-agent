@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +18,6 @@ package optionsui
 
 import (
 	"fmt"
-	"io/ioutil"
 	"testing"
 
 	"golang.org/x/crypto/ssh"
@@ -27,24 +28,12 @@ import (
 	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
-	"github.com/gopherjs/gopherjs/js"
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 )
 
 var (
 	validID = keys.ID("1")
-
-	optionsHTML = ""
 )
-
-func init() {
-	b, err := ioutil.ReadFile("../../html/options.html")
-	if err != nil {
-		panic(fmt.Sprintf("failed to read options html: %v", err))
-	}
-
-	optionsHTML = string(b)
-}
 
 type testHarness struct {
 	storage   *fakes.MemStorage
@@ -65,7 +54,7 @@ func newHarness() *testHarness {
 	mgr := keys.NewManager(agt, storage)
 	srv := keys.NewServer(mgr, msg)
 	cli := keys.NewClient(msg)
-	dom := dom.New(dt.NewDocForTesting(optionsHTML))
+	dom := dom.New(dt.NewDocForTesting(string(OptionsHTMLData)))
 	ui := New(cli, dom)
 
 	// In our test, DOMContentLoaded is not called automatically. Do it here.
@@ -178,7 +167,7 @@ func TestUserActions(t *testing.T) {
 				h.dom.SetValue(h.UI.addKey, "private-key")
 				h.dom.DoClick(h.UI.addOk)
 			},
-			wantErr: "failed to add key: name must not be empty",
+			wantErr: "failed to add key: invalid name: name must not be empty",
 		},
 		{
 			description: "remove key",
@@ -385,8 +374,7 @@ func TestUserActions(t *testing.T) {
 				h.dom.SetValue(h.UI.passphraseInput, testdata.WithPassphrase.Passphrase)
 				h.dom.DoClick(h.UI.passphraseOk)
 
-				k := &keys.LoadedKey{Object: js.Global.Get("Object").New()}
-				k.Type = "bogus-type"
+				k := &keys.LoadedKey{Type: "bogus-type"}
 				k.SetBlob([]byte("bogus-blob"))
 				h.UI.unload(k)
 			},
@@ -399,7 +387,7 @@ func TestUserActions(t *testing.T) {
 					Blob:   testdata.WithPassphrase.Blob,
 				},
 			},
-			wantErr: "failed to unload key: failed to unload key: agent: key not found",
+			wantErr: "failed to unload key: key unload failed: agent: key not found",
 		},
 		{
 			description: "display non-configured keys",
@@ -467,11 +455,11 @@ func TestUserActions(t *testing.T) {
 		tc.sequence(h)
 
 		displayed := equalizeIds(h.UI.displayedKeys())
-		if diff := pretty.Diff(displayed, tc.wantDisplayed); diff != nil {
+		if diff := cmp.Diff(displayed, tc.wantDisplayed); diff != "" {
 			t.Errorf("%s: incorrect displayed keys; -got +want: %s", tc.description, diff)
 		}
 		err := h.dom.TextContent(h.UI.errorText)
-		if diff := pretty.Diff(err, tc.wantErr); diff != nil {
+		if diff := cmp.Diff(err, tc.wantErr); diff != "" {
 			t.Errorf("%s: incorrect error; -got +want: %s", tc.description, diff)
 		}
 	}

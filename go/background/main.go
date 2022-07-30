@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,29 +17,34 @@
 package main
 
 import (
-	"log"
+	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/agentport"
 	"github.com/google/chrome-ssh-agent/go/chrome"
+	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/keys"
-
-	"github.com/gopherjs/gopherjs/js"
 	"golang.org/x/crypto/ssh/agent"
 )
 
 func main() {
+	dom.Log("Starting background worker")
+	defer dom.Log("Exiting background worker")
+
+	done := make(chan struct{}, 0)
 
 	// Create a keyring with loaded keys.
 	a := agent.NewKeyring()
 
 	// Create a wrapper that can update the loaded keys. Exposed the
 	// wrapper so it can be used by other pages in the extension.
-	c := chrome.New(nil)
+	c := chrome.New(js.Null())
 	mgr := keys.NewManager(a, c.SyncStorage())
 	keys.NewServer(mgr, c)
 
-	c.OnConnectExternal(func(port *js.Object) {
-		log.Printf("Starting agent for new port")
+	c.OnConnectExternal(func(port js.Value) {
+		dom.Log("Starting agent for new port")
 		go agent.ServeAgent(a, agentport.New(port))
 	})
+
+	<-done // Do not terminate.
 }

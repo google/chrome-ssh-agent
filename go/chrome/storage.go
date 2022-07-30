@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,14 +18,40 @@ package chrome
 
 import (
 	"fmt"
+	"syscall/js"
 
-	"github.com/gopherjs/gopherjs/js"
+	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/norunners/vert"
 )
 
 // Storage supports storing and retrieving data using Chrome's Storage API.
 type Storage struct {
 	chrome *C
-	o      *js.Object
+	o      js.Value
+}
+
+var object = js.Global().Get("Object")
+
+func dataToValue(data map[string]js.Value) js.Value {
+	res := object.New()
+	for k, v := range data {
+		res.Set(k, v)
+	}
+	return res
+}
+
+func valueToData(val js.Value) (map[string]js.Value, error) {
+	if val.Type() != js.TypeObject {
+		return nil, fmt.Errorf("failed to read data: got unexpected type %s", val.Type())
+	}
+
+	data := map[string]js.Value{}
+	keys := object.Call("keys", val)
+	for i := 0; i < keys.Length(); i++ {
+		k := keys.Index(i).String()
+		data[k] = val.Get(k)
+	}
+	return data, nil
 }
 
 // Set stores new data in storage. data is a map of key-value pairs to be
@@ -31,14 +59,18 @@ type Storage struct {
 // be invoked when complete.
 //
 // See set() in https://developer.chrome.com/apps/storage#type-StorageArea.
-func (s *Storage) Set(data map[string]interface{}, callback func(err error)) {
-	s.o.Call("set", data, func() {
+func (s *Storage) Set(data map[string]js.Value, callback func(err error)) {
+	var cb js.Func
+	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		defer cb.Release() // One-time callback; release when done.
 		if err := s.chrome.Error(); err != nil {
 			callback(fmt.Errorf("failed to set data: %v", err))
-			return
+			return nil
 		}
 		callback(nil)
+		return nil
 	})
+	s.o.Call("set", dataToValue(data), cb)
 }
 
 // Get reads all the data items currently stored.  The callback will be
@@ -47,15 +79,25 @@ func (s *Storage) Set(data map[string]interface{}, callback func(err error)) {
 // each representing a distinct item from storage.
 //
 // See get() in https://developer.chrome.com/apps/storage#type-StorageArea.
-func (s *Storage) Get(callback func(data map[string]interface{}, err error)) {
-	s.o.Call("get", nil, func(vals interface{}) {
+func (s *Storage) Get(callback func(data map[string]js.Value, err error)) {
+	var cb js.Func
+	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		defer cb.Release() // One-time callback; release when done.
 		if err := s.chrome.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to get data: %v", err))
-			return
+			return nil
 		}
 
-		callback(vals.(map[string]interface{}), nil)
+		data, err := valueToData(dom.SingleArg(args))
+		if err != nil {
+			callback(nil, fmt.Errorf("failed to parse data: %v", err))
+			return nil
+		}
+
+		callback(data, nil)
+		return nil
 	})
+	s.o.Call("get", js.Null(), cb)
 }
 
 // Delete removes the items from storage with the specified keys. If a key is
@@ -64,12 +106,15 @@ func (s *Storage) Get(callback func(data map[string]interface{}, err error)) {
 //
 // See remove() in https://developer.chrome.com/apps/storage#type-StorageArea.
 func (s *Storage) Delete(keys []string, callback func(err error)) {
-	s.o.Call("remove", keys, func() {
+	var cb js.Func
+	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		defer cb.Release() // One-time callback; release when done.
 		if err := s.chrome.Error(); err != nil {
 			callback(fmt.Errorf("failed to delete data: %v", err))
-			return
+			return nil
 		}
-
 		callback(nil)
+		return nil
 	})
+	s.o.Call("remove", vert.ValueOf(keys).JSValue(), cb)
 }

@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +18,10 @@
 // ease unit testing.
 package fakes
 
+import (
+	"syscall/js"
+)
+
 // Errs contains errors that should be returned by the fake implementation.
 type Errs struct {
 	// Get is the error that should be returned by Storage.Get().
@@ -28,14 +34,14 @@ type Errs struct {
 
 // MemStorage is a fake implementation of Chrome's storage API.
 type MemStorage struct {
-	data map[string]interface{}
+	data map[string]js.Value
 	err  Errs
 }
 
 // NewMemStorage returns a fake implementation of Chrome's storage API.
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
-		data: make(map[string]interface{}),
+		data: make(map[string]js.Value),
 	}
 }
 
@@ -47,20 +53,20 @@ func (m *MemStorage) SetError(err Errs) {
 }
 
 // Set is a fake implmentation of chrome.Storage.Set().
-func (m *MemStorage) Set(data map[string]interface{}, callback func(err error)) {
+func (m *MemStorage) Set(data map[string]js.Value, callback func(err error)) {
 	if m.err.Set != nil {
 		callback(m.err.Set)
 		return
 	}
 
 	for k, v := range data {
-		m.data[k] = toJSObject(v).Interface()
+		m.data[k] = v
 	}
 	callback(nil)
 }
 
 // Get is a fake implmentation of chrome.Storage.Get().
-func (m *MemStorage) Get(callback func(data map[string]interface{}, err error)) {
+func (m *MemStorage) Get(callback func(data map[string]js.Value, err error)) {
 	if m.err.Get != nil {
 		callback(nil, m.err.Get)
 		return

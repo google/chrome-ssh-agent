@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +20,9 @@ package testing
 import (
 	"fmt"
 	"strings"
+	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/dom"
-	"github.com/gopherjs/gopherjs/js"
 )
 
 // resultsAsString returns the test results as a single string suitable for
@@ -34,11 +36,11 @@ func resultsAsString(errs []error) string {
 }
 
 // getBody returns the body object, and undefined if none is present.
-func getBody(d *dom.DOM) *js.Object {
+func getBody(d *dom.DOM) js.Value {
 	for _, e := range d.GetElementsByTag("body") {
 		return e
 	}
-	return js.Undefined
+	return js.Undefined()
 }
 
 // WriteResults adds elements to the supplied DOM summarizing the test results.
@@ -51,9 +53,9 @@ func getBody(d *dom.DOM) *js.Object {
 func WriteResults(d *dom.DOM, errs []error) {
 	body := getBody(d)
 	// Top-level container element into which we'll write results.
-	d.AppendChild(body, d.NewElement("div"), func(results *js.Object) {
+	d.AppendChild(body, d.NewElement("div"), func(results js.Value) {
 		// Indicate how many tests failed.
-		d.AppendChild(results, d.NewElement("div"), func(failureCount *js.Object) {
+		d.AppendChild(results, d.NewElement("div"), func(failureCount js.Value) {
 			// Allow the element to be read by automation.
 			failureCount.Set("id", "failureCount")
 			d.AppendChild(failureCount, d.NewText(fmt.Sprintf("%d", len(errs))), nil)
@@ -61,7 +63,7 @@ func WriteResults(d *dom.DOM, errs []error) {
 
 		// Enumerate the failures. This is a more readable list of the
 		// individual tests that failed.
-		d.AppendChild(results, d.NewElement("pre"), func(failures *js.Object) {
+		d.AppendChild(results, d.NewElement("pre"), func(failures js.Value) {
 			// Allow element to be read by automation.
 			failures.Set("id", "failures")
 			d.AppendChild(failures, d.NewText(resultsAsString(errs)), nil)

@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,12 +18,10 @@ package keys
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
-	"github.com/gopherjs/gopherjs/js"
-	"github.com/kr/pretty"
+	"github.com/google/go-cmp/cmp"
 )
 
 type dummyManager struct {
@@ -71,11 +71,11 @@ func TestClientServerConfigured(t *testing.T) {
 	cli := NewClient(hub)
 	NewServer(mgr, hub)
 
-	k0 := &ConfiguredKey{Object: js.Global.Get("Object").New()}
-	k0.ID = ID("id-0")
+	k0 := &ConfiguredKey{}
+	k0.ID = "id-0"
 	k0.Name = "key-0"
-	k1 := &ConfiguredKey{Object: js.Global.Get("Object").New()}
-	k1.ID = ID("id-1")
+	k1 := &ConfiguredKey{}
+	k1.ID = "id-1"
 	k1.Name = "key-1"
 
 	wantConfiguredKeys := []*ConfiguredKey{k0, k1}
@@ -85,12 +85,12 @@ func TestClientServerConfigured(t *testing.T) {
 	mgr.Err = wantErr
 
 	configured, err := syncConfigured(cli)
-	// Compare using reflect.DeepEqual since pretty.Diff fails to
-	// terminate on this input.
-	if !reflect.DeepEqual(configured, wantConfiguredKeys) {
-		t.Errorf("incorrect configured keys; got %v, want %v", configured, wantConfiguredKeys)
+	if diff := cmp.Diff(configured, wantConfiguredKeys); diff != "" {
+		t.Errorf("incorrect configured keys; -got, +want: %s", diff)
 	}
-	if diff := pretty.Diff(err, wantErr); diff != nil {
+	// Compare by error string; cmp.EquateErrors doesn't work since type
+	// information is lost on conversion to/from JSON in message hub.
+	if diff := cmp.Diff(err, wantErr, errStringCmp); diff != "" {
 		t.Errorf("incorrect error; -got +want: %s", diff)
 	}
 }
@@ -108,13 +108,15 @@ func TestClientServerAdd(t *testing.T) {
 	mgr.Err = wantErr
 
 	err := syncAdd(cli, wantName, wantPrivateKey)
-	if diff := pretty.Diff(mgr.Name, wantName); diff != nil {
+	if diff := cmp.Diff(mgr.Name, wantName); diff != "" {
 		t.Errorf("incorrect name; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(mgr.PEMPrivateKey, wantPrivateKey); diff != nil {
+	if diff := cmp.Diff(mgr.PEMPrivateKey, wantPrivateKey); diff != "" {
 		t.Errorf("incorrect private key; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(err, wantErr); diff != nil {
+	// Compare by error string; cmp.EquateErrors doesn't work since type
+	// information is lost on conversion to/from JSON in message hub.
+	if diff := cmp.Diff(err, wantErr, errStringCmp); diff != "" {
 		t.Errorf("incorrect error; -got +want: %s", diff)
 	}
 }
@@ -131,10 +133,12 @@ func TestClientServerRemove(t *testing.T) {
 	mgr.Err = wantErr
 
 	err := syncRemove(cli, wantID)
-	if diff := pretty.Diff(mgr.ID, wantID); diff != nil {
+	if diff := cmp.Diff(mgr.ID, wantID); diff != "" {
 		t.Errorf("incorrect ID; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(err, wantErr); diff != nil {
+	// Compare by error string; cmp.EquateErrors doesn't work since type
+	// information is lost on conversion to/from JSON in message hub.
+	if diff := cmp.Diff(err, wantErr, errStringCmp); diff != "" {
 		t.Errorf("incorrect error; -got +want: %s", diff)
 	}
 }
@@ -145,11 +149,11 @@ func TestClientServerLoaded(t *testing.T) {
 	cli := NewClient(hub)
 	NewServer(mgr, hub)
 
-	k0 := &LoadedKey{Object: js.Global.Get("Object").New()}
+	k0 := &LoadedKey{}
 	k0.Type = "type-0"
 	k0.SetBlob([]byte("blob-0"))
 	k0.Comment = "comment-0"
-	k1 := &LoadedKey{Object: js.Global.Get("Object").New()}
+	k1 := &LoadedKey{}
 	k1.Type = "type-1"
 	k1.SetBlob([]byte("blob-1"))
 	k1.Comment = "comment-1"
@@ -161,12 +165,12 @@ func TestClientServerLoaded(t *testing.T) {
 	mgr.Err = wantErr
 
 	loaded, err := syncLoaded(cli)
-	// Compare using reflect.DeepEqual since pretty.Diff fails to
-	// terminate on this input.
-	if !reflect.DeepEqual(loaded, wantLoadedKeys) {
-		t.Errorf("incorrect loaded keys; got %s, want %s", loaded, wantLoadedKeys)
+	if diff := cmp.Diff(loaded, wantLoadedKeys, loadedKeyCmp); diff != "" {
+		t.Errorf("incorrect loaded keys; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(err, wantErr); diff != nil {
+	// Compare by error string; cmp.EquateErrors doesn't work since type
+	// information is lost on conversion to/from JSON in message hub.
+	if diff := cmp.Diff(err, wantErr, errStringCmp); diff != "" {
 		t.Errorf("incorrect error; -got +want: %s", diff)
 	}
 }
@@ -184,13 +188,15 @@ func TestClientServerLoad(t *testing.T) {
 	mgr.Err = wantErr
 
 	err := syncLoad(cli, wantID, wantPassphrase)
-	if diff := pretty.Diff(mgr.ID, wantID); diff != nil {
+	if diff := cmp.Diff(mgr.ID, wantID); diff != "" {
 		t.Errorf("incorrect ID; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(mgr.Passphrase, wantPassphrase); diff != nil {
+	if diff := cmp.Diff(mgr.Passphrase, wantPassphrase); diff != "" {
 		t.Errorf("incorrect passphrase; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(err, wantErr); diff != nil {
+	// Compare by error string; cmp.EquateErrors doesn't work since type
+	// information is lost on conversion to/from JSON in message hub.
+	if diff := cmp.Diff(err, wantErr, errStringCmp); diff != "" {
 		t.Errorf("incorrect error; -got +want: %s", diff)
 	}
 }
@@ -201,7 +207,7 @@ func TestClientServerUnload(t *testing.T) {
 	cli := NewClient(hub)
 	NewServer(mgr, hub)
 
-	wantKey := &LoadedKey{Object: js.Global.Get("Object").New()}
+	wantKey := &LoadedKey{}
 	wantKey.Type = "type-0"
 	wantKey.SetBlob([]byte("blob-0"))
 	wantKey.Comment = "comment1"
@@ -210,12 +216,12 @@ func TestClientServerUnload(t *testing.T) {
 	mgr.Err = wantErr
 
 	err := syncUnload(cli, wantKey)
-	// Compare using reflect.DeepEqual since pretty.Diff causes test to fail
-	// without any output.
-	if !reflect.DeepEqual(mgr.Key, wantKey) {
-		t.Errorf("incorrect key; got %s, want %s", mgr.Key, wantKey)
+	if diff := cmp.Diff(mgr.Key, wantKey, loadedKeyCmp); diff != "" {
+		t.Errorf("incorrect key; -got +want: %s", diff)
 	}
-	if diff := pretty.Diff(err, wantErr); diff != nil {
+	// Compare by error string; cmp.EquateErrors doesn't work since type
+	// information is lost on conversion to/from JSON in message hub.
+	if diff := cmp.Diff(err, wantErr, errStringCmp); diff != "" {
 		t.Errorf("incorrect error; -got +want: %s", diff)
 	}
 }
