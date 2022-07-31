@@ -262,7 +262,7 @@ func (m *manager) readKeys(callback func(keys []*storedKey, err error)) {
 
 			var sk storedKey
 			if err := vert.ValueOf(v).AssignTo(&sk); err != nil {
-				dom.LogError(fmt.Sprintf("failed to parse key %s; dropping", k))
+				dom.LogError("failed to parse key %s; dropping", k)
 				continue
 			}
 

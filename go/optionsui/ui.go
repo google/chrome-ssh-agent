@@ -56,6 +56,7 @@ type UI struct {
 	errorText        js.Value
 	keysData         js.Value
 	keys             []*displayedKey
+	keysUpdated      bool
 }
 
 // New returns a new UI instance that manages keys using the supplied manager.
@@ -97,6 +98,7 @@ func (u *UI) setError(err error) {
 	u.dom.RemoveChildren(u.errorText)
 
 	if err != nil {
+		dom.LogError("UI.setError(): %v", err)
 		u.dom.AppendChild(u.errorText, u.dom.NewText(err.Error()), nil)
 	}
 }
@@ -469,6 +471,7 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 // updateKeys queries the manager for configured and loaded keys, then triggers
 // UI updates to reflect the current state.
 func (u *UI) updateKeys() {
+	dom.LogDebug("UI.updateKeys()")
 	u.mgr.Configured(func(configured []*keys.ConfiguredKey, err error) {
 		if err != nil {
 			u.setError(fmt.Errorf("failed to get configured keys: %v", err))
@@ -484,6 +487,7 @@ func (u *UI) updateKeys() {
 			u.setError(nil)
 			u.keys = mergeKeys(configured, loaded)
 			u.updateDisplayedKeys()
+			u.keysUpdated = true
 		})
 	})
 }
@@ -519,6 +523,15 @@ func poll(done func() bool) {
 // fail.
 func (u *UI) EndToEndTest() []error {
 	var errs []error
+
+	dom.Log("Waiting for initial keys to be updated")
+	poll(func() bool {
+		return u.keysUpdated
+	})
+	if !u.keysUpdated {
+		errs = append(errs, fmt.Errorf("init: wait for keys to be updated"))
+		return errs // Remaining tests have hard dependency on initialization.
+	}
 
 	dom.Log("Generate random name to use for key")
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))

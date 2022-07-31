@@ -3,9 +3,9 @@ package test
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"os"
-	"io"
 	"strconv"
 	"testing"
 	"time"
@@ -117,7 +117,7 @@ func TestWebApp(t *testing.T) {
 	}
 	service, err := selenium.NewChromeDriverService(chromeDriverPath, port, opts...)
 	if err != nil {
-		defer dumpLog(t, "SeleniumOutput", &selOut)  // Selenium failed to initialize; show debug info.
+		defer dumpLog(t, "SeleniumOutput", &selOut) // Selenium failed to initialize; show debug info.
 		t.Fatalf("failed to start Selenium service: %v", err)
 	}
 	defer service.Stop()
@@ -147,7 +147,7 @@ func TestWebApp(t *testing.T) {
 	t.Log("Starting WebDriver")
 	wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", port))
 	if err != nil {
-		defer dumpLog(t, "SeleniumOutput", &selOut)  // Selenium failed to initialize; show debug info.
+		defer dumpLog(t, "SeleniumOutput", &selOut) // Selenium failed to initialize; show debug info.
 		t.Fatalf("Failed to start webdriver: %v", err)
 	}
 	defer wd.Quit()
@@ -163,12 +163,6 @@ func TestWebApp(t *testing.T) {
 	if err = wd.WaitWithTimeout(currentURLIs(path.String()), 10*time.Second); err != nil {
 		t.Fatalf("Failed to complete navigation to page: %v", err)
 	}
-
-	src, err := wd.PageSource()
-	if err != nil {
-		t.Fatalf("Failed to retrieve page source: %v", err)
-	}
-	t.Logf("Page source:\n%s", src)
 
 	t.Log("Waiting for results")
 	if err = wd.WaitWithTimeout(elementExists("failureCount"), 10*time.Second); err != nil {

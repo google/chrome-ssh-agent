@@ -18,6 +18,7 @@
 package dom
 
 import (
+	"fmt"
 	"syscall/js"
 )
 
@@ -172,13 +173,18 @@ func (d *DOM) RemoveEventListeners(o js.Value) js.Value {
 }
 
 // Log logs general information to the Javascript Console.
-func Log(objs ...interface{}) {
-	Console.Call("log", objs...)
+func Log(format string, objs ...interface{}) {
+	Console.Call("log", fmt.Sprintf(format, objs...))
 }
 
 // LogError logs an error to the Javascript Console.
-func LogError(objs ...interface{}) {
-	Console.Call("error", objs...)
+func LogError(format string, objs ...interface{}) {
+	Console.Call("error", fmt.Sprintf(format, objs...))
+}
+
+// LogDebug logs a debug message to the Javascript Console.
+func LogDebug(format string, objs ...interface{}) {
+	Console.Call("debug", fmt.Sprintf(format, objs...))
 }
 
 // ExpandArgs unpacks function arguments to target values.
