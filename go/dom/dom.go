@@ -19,6 +19,7 @@ package dom
 
 import (
 	"fmt"
+	"time"
 	"syscall/js"
 )
 
@@ -81,9 +82,8 @@ func (d *DOM) OnClick(o js.Value, callback func(evt Event)) {
 	o.Call("addEventListener", "click", cb)
 }
 
-// OnDOMContentLoaded registers a callback to be invoked when the DOM has
-// finished loading.
-func (d *DOM) OnDOMContentLoaded(callback func()) {
+// SetTimeout registers a callback to be invoked when the timeout has expired.
+func SetTimeout(timeout time.Duration, callback func()) {
 	var cb js.Func
 	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		defer cb.Release() // One-time callback; release when done.
@@ -91,9 +91,22 @@ func (d *DOM) OnDOMContentLoaded(callback func()) {
 		return nil
 	})
 
+	js.Global().Call("setTimeout", cb, timeout.Milliseconds())
+}
+
+// OnDOMContentLoaded registers a callback to be invoked when the DOM has
+// finished loading.
+func (d *DOM) OnDOMContentLoaded(callback func()) {
 	if d.doc.Get("readyState").String() != "loading" {
-		js.Global().Call("setTimeout", cb, 0)  // Event already fired. Invoke callback directly.
+		SetTimeout(0, callback)  // Event already fired. Invoke callback directly.
 	}
+
+	var cb js.Func
+	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		defer cb.Release() // One-time callback; release when done.
+		callback()
+		return nil
+	})
 
 	d.doc.Call("addEventListener", "DOMContentLoaded", cb)
 }
