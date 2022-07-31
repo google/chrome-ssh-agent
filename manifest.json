@@ -9,6 +9,7 @@
   "background": {
     "service_worker": "html/background.js"
   },
+  "options_page": "html/options.html",
   "options_ui": {
     "page": "html/options.html"
   },
