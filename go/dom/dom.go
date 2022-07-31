@@ -84,16 +84,17 @@ func (d *DOM) OnClick(o js.Value, callback func(evt Event)) {
 // OnDOMContentLoaded registers a callback to be invoked when the DOM has
 // finished loading.
 func (d *DOM) OnDOMContentLoaded(callback func()) {
-	if d.doc.Get("readyState").String() != "loading" {
-		callback() // Event already fired. Invoke callback directly.
-	}
-
 	var cb js.Func
 	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		defer cb.Release() // One-time callback; release when done.
 		callback()
 		return nil
 	})
+
+	if d.doc.Get("readyState").String() != "loading" {
+		js.Global().Call("setTimeout", cb, 0)  // Event already fired. Invoke callback directly.
+	}
+
 	d.doc.Call("addEventListener", "DOMContentLoaded", cb)
 }
 
