@@ -1,9 +1,11 @@
 package test
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"os"
+	"io"
 	"strconv"
 	"testing"
 	"time"
@@ -95,18 +97,27 @@ func unusedPort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
+func dumpLog(t *testing.T, name string, r io.Reader) {
+	t.Logf("Dumping log: %s", name)
+	if _, err := io.Copy(os.Stderr, r); err != nil {
+		t.Errorf("Failed to dump log %s: %v", name, err)
+	}
+}
+
 func TestWebApp(t *testing.T) {
 	port, err := unusedPort()
 	if err != nil {
 		t.Fatalf("failed to identify unused port: %v", err)
 	}
 
+	var selOut bytes.Buffer
 	opts := []selenium.ServiceOption{
 		selenium.StartFrameBuffer(),
-		selenium.Output(os.Stderr),
+		selenium.Output(&selOut),
 	}
 	service, err := selenium.NewChromeDriverService(chromeDriverPath, port, opts...)
 	if err != nil {
+		defer dumpLog(t, "SeleniumOutput", &selOut)  // Selenium failed to initialize; show debug info.
 		t.Fatalf("failed to start Selenium service: %v", err)
 	}
 	defer service.Stop()
@@ -133,16 +144,10 @@ func TestWebApp(t *testing.T) {
 	}
 	caps.AddChrome(chromeCaps)
 
-	// Extension data is present in the ChromeDriver log. We need to bound
-	// the size of a line present in the log.
-	var extensionDataSize int
-	for _, e := range chromeCaps.Extensions {
-		extensionDataSize += len(e)
-	}
-
 	t.Log("Starting WebDriver")
 	wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", port))
 	if err != nil {
+		defer dumpLog(t, "SeleniumOutput", &selOut)  // Selenium failed to initialize; show debug info.
 		t.Fatalf("Failed to start webdriver: %v", err)
 	}
 	defer wd.Quit()
