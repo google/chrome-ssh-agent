@@ -81,17 +81,13 @@ func (d *DOM) OnClick(o js.Value, callback func(evt Event)) {
 	o.Call("addEventListener", "click", cb)
 }
 
-// DoDOMContentLoaded simulates the DOMContentLoaded event. Any callback
-// registered by OnDOMContentLoaded() will be invoked.
-func (d *DOM) DoDOMContentLoaded() {
-	event := d.doc.Call("createEvent", "Event")
-	event.Call("initEvent", "DOMContentLoaded", true, true)
-	d.doc.Call("dispatchEvent", event)
-}
-
 // OnDOMContentLoaded registers a callback to be invoked when the DOM has
 // finished loading.
 func (d *DOM) OnDOMContentLoaded(callback func()) {
+	if d.doc.Get("readyState").String() != "loading" {
+		callback() // Event already fired. Invoke callback directly.
+	}
+
 	var cb js.Func
 	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		defer cb.Release() // One-time callback; release when done.

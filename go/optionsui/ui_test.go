@@ -57,9 +57,6 @@ func newHarness() *testHarness {
 	dom := dom.New(dt.NewDocForTesting(string(OptionsHTMLData)))
 	ui := New(cli, dom)
 
-	// In our test, DOMContentLoaded is not called automatically. Do it here.
-	dom.DoDOMContentLoaded()
-
 	return &testHarness{
 		storage:   storage,
 		messaging: msg,

@@ -19,6 +19,7 @@ package dom
 import (
 	"syscall/js"
 	"testing"
+	"time"
 
 	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
 	"github.com/google/go-cmp/cmp"
@@ -85,6 +86,21 @@ func TestClick(t *testing.T) {
 	d.DoClick(d.GetElement("btn"))
 	if !clicked {
 		t.Errorf("clicked callback not invoked")
+	}
+}
+
+func TestDOMContentLoaded(t *testing.T) {
+	d := New(dt.NewDocForTesting(`
+		<p>Some Text</p>
+	`))
+
+	loaded := make(chan struct{}, 1)
+	d.OnDOMContentLoaded(func() { loaded <- struct{}{} })
+	select {
+	case <-loaded:
+		return
+	case <-time.After(5 * time.Second):
+		t.Errorf("OnDOMContentLoaded not invoked")
 	}
 }
 
