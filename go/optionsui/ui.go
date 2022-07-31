@@ -85,7 +85,7 @@ func New(mgr keys.Manager, domObj *dom.DOM) *UI {
 	}
 
 	// Populate keys on initial display
-	result.dom.OnDOMContentLoaded(result.updateKeys)
+	result.dom.OnDOMContentLoaded(result.tryInitKeys)
 	// Configure new key on click
 	result.dom.OnClick(result.addButton, result.add)
 	return result
@@ -466,6 +466,15 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 	})
 
 	return result
+}
+
+func (u *UI) tryInitKeys() {
+	u.updateKeys()
+	if u.keysUpdated {
+		return
+	}
+
+	dom.SetTimeout(1 * time.Second, u.tryInitKeys)
 }
 
 // updateKeys queries the manager for configured and loaded keys, then triggers
