@@ -3,20 +3,11 @@ load("@io_bazel_rules_go//go/private:providers.bzl", "GoLibrary", "GoPath", "GoA
 load("@io_bazel_rules_go//go:def.bzl", "go_path")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
-
-def _nodejs_inputs(ctx):
-    toolchain = ctx.toolchains["@rules_nodejs//nodejs:toolchain_type"].nodeinfo
-    return toolchain.tool_files
-
-
-def _nodejs_node_path(ctx):
-    toolchain = ctx.toolchains["@rules_nodejs//nodejs:toolchain_type"].nodeinfo
-    return toolchain.target_tool_path
-
-
 def _go_wasm_test_impl(ctx):
     go = go_context(ctx)
-    node_path = _nodejs_node_path(ctx)
+    node_info = ctx.toolchains["@rules_nodejs//nodejs:toolchain_type"].nodeinfo
+    node_path = node_info.target_tool_path
+    node_inputs = node_info.tool_files
 
     runner = ctx.actions.declare_file(ctx.label.name + '_runner.sh')
     ctx.actions.write(
@@ -47,7 +38,7 @@ def _go_wasm_test_impl(ctx):
     runfiles = ctx.runfiles(files=(
         go.sdk.headers
         + go.sdk.srcs
-        + _nodejs_inputs(ctx)
+        + node_inputs
         + ctx.files.node_deps
         + [ctx.executable.run_wasm]
 	+ [go.go] + go.sdk.tools
