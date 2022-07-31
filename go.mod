@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/ScaleFT/sshkeys v0.0.0-20200327173127-6142f742bca5
-	github.com/bazelbuild/rules_webtesting v0.2.1-0.20210910170740-6b2ef24cfe95
 	github.com/google/go-cmp v0.5.6
 	// https://github.com/tebeka/selenium/commit/e617f9870cec59a6f6e234017e45d36ef0444a04 required to support CRX3 format
 	github.com/tebeka/selenium v0.9.10-0.20211105214847-e9100b7f5ac1
@@ -12,7 +11,10 @@ require (
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 )
 
-require github.com/norunners/vert v0.0.0-20211229045251-b4c39e2856da
+require (
+	github.com/bazelbuild/rules_go v0.34.0
+	github.com/norunners/vert v0.0.0-20211229045251-b4c39e2856da
+)
 
 require (
 	github.com/blang/semver v3.5.1+incompatible // indirect

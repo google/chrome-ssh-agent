@@ -8,12 +8,12 @@ load(
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "16e9fca53ed6bd4ff4ad76facc9b7b651a89db1689a2877d6fd7b82aa824e366",
-    urls = ["https://github.com/bazelbuild/rules_go/releases/download/v0.34.0/rules_go-v0.34.0.zip"],
     patch_args = ["-p1"],
     patches = [
         "//:rules_go-wasm.patch",
     ],
+    sha256 = "16e9fca53ed6bd4ff4ad76facc9b7b651a89db1689a2877d6fd7b82aa824e366",
+    urls = ["https://github.com/bazelbuild/rules_go/releases/download/v0.34.0/rules_go-v0.34.0.zip"],
 )
 
 http_archive(
@@ -55,13 +55,56 @@ http_archive(
     urls = ["https://github.com/bazelbuild/rules_webtesting/releases/download/0.3.5/rules_webtesting.tar.gz"],
 )
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
 http_archive(
     name = "com_google_protobuf",
     sha256 = "d0f5f605d0d656007ce6c8b5a82df3037e1d8fe8b121ed42e536f569dec16113",
     strip_prefix = "protobuf-3.14.0",
     urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.14.0.tar.gz"],
+)
+
+# Instructions, courtesy of rules_webtesting.
+#
+# To update Chromium, do the following:
+# Step 1: Go to https://omahaproxy.appspot.com/
+# Step 2: Look for branch_base_position of current stable releases
+# Step 3: Go to https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Linux_x64/ etc to verify presence of that branch release for that platform.
+#         If no results, delete the last digit to broaden your search til you find a result.
+# Step 4: Verify both Chromium and ChromeDriver are released at that version.
+# Step 5: Update the URL to the new release.
+http_archive(
+    name = "chromedriver",
+    build_file_content =
+        """
+genrule(
+    name = "chromedriver",
+    srcs = [":chromedriver_linux64/chromedriver"],
+    outs = ["chromedriver.bin"],
+    cmd = "ln $(location //:chromedriver_linux64/chromedriver) $@",
+    visibility = ["//visibility:public"],
+)
+""",
+    sha256 = "30c27c17133bf3622f0716e1bc70017dc338a6920ea1b1f3eb15f407150b927c",
+    # File within archive: chromedriver_linux64/chromedriver
+    # 103.0.5060.134
+    urls = ["https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1002910/chromedriver_linux64.zip"],
+)
+
+http_archive(
+    name = "chromium",
+    build_file_content =
+        """
+genrule(
+    name = "chromium",
+    srcs = [":chrome-linux/chrome"],
+    outs = ["chromium.bin"],
+    cmd = "ln $(location //:chrome-linux/chrome) $@",
+    visibility = ["//visibility:public"],
+)
+""",
+    sha256 = "53899aaf90d9b9768dbc54beb869a314bdc8f4d04c2ef7bab2cb480581cfa197",
+    # File within archive: chrome-linux/chrome
+    # 103.0.5060.134
+    urls = ["https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1002910/chrome-linux.zip"],
 )
 
 # Go build support.
@@ -128,43 +171,6 @@ bazel_skylib_workspace()
 load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
 
 rules_pkg_dependencies()
-
-# Browser-based testing rules
-load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
-
-web_test_repositories()
-
-load("@io_bazel_rules_webtesting//web/versioned:browsers-0.3.3.bzl", "browser_repositories")
-load("@io_bazel_rules_webtesting//web:web.bzl", "platform_archive")
-
-browser_repositories(chromium = True)
-
-platform_archive(
-    name = "chromedriver_wasm",
-    licenses = ["reciprocal"],  # BSD 3-clause, ICU, MPL 1.1, libpng (BSD/MIT-like), Academic Free License v. 2.0, BSD 2-clause, MIT
-    named_files = {
-        "CHROMEDRIVER": "chromedriver_linux64/chromedriver",
-    },
-    sha256 = "30c27c17133bf3622f0716e1bc70017dc338a6920ea1b1f3eb15f407150b927c",
-    urls = ["https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1002910/chromedriver_linux64.zip"],
-)
-
-platform_archive(
-    name = "chromium_wasm",
-    licenses = ["notice"],  # BSD 3-clause (maybe more?)
-    named_files = {
-        "CHROMIUM": "chrome-linux/chrome",
-    },
-    # 103.0.5060.134
-    sha256 = "53899aaf90d9b9768dbc54beb869a314bdc8f4d04c2ef7bab2cb480581cfa197",
-    urls = ["https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1002910/chrome-linux.zip"],
-)
-
-load("@io_bazel_rules_webtesting//web:go_repositories.bzl", "go_internal_repositories", "go_repositories")
-
-go_repositories()
-
-go_internal_repositories()
 
 # Proto support.  Required by github.com/mediabuyerbot/go-crx3, which is needed by Selenium browser-based testing.
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")

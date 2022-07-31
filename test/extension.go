@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"archive/zip"
-	"bytes"
 	"net/url"
 	"path/filepath"
 )
@@ -26,18 +25,18 @@ func makeExtensionUrl(relPath string, queryString string) *url.URL {
 
 type cleanupFunc func()
 
-func unzipExtension() (string, cleanupFunc, error) {
+func unzipExtension(path string) (string, cleanupFunc, error) {
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return "", nil, fmt.Errorf("Failed to create temp directory: %v", err)
 	}
 
-	zipData := bytes.NewReader(ExtensionData)
-	rdr, err := zip.NewReader(zipData, zipData.Size())
+	rdr, err := zip.OpenReader(path)
 	if err != nil {
 		defer os.RemoveAll(dir)
 		return "", nil, fmt.Errorf("Failed to open extension file: %v", err)
 	}
+	defer rdr.Close()
 
 	for _, f := range rdr.File {
 		filePath := filepath.Join(dir, f.Name)

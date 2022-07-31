@@ -1,46 +1,32 @@
 package test
 
 import (
-	"bufio"
 	"fmt"
-	"io"
+	"net"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
-	"github.com/bazelbuild/rules_webtesting/go/webtest"
+	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
 	slog "github.com/tebeka/selenium/log"
 )
 
-const (
-	wslCapabilitiesKey     = "google:wslConfig"
-	wslCapabilitiesArgsKey = "args"
-)
-
-type wslCapabilities map[string]interface{}
-
-func addChromeDriverArgs(caps selenium.Capabilities, args ...string) error {
-	if _, ok := caps[wslCapabilitiesKey]; !ok {
-		caps[wslCapabilitiesKey] = wslCapabilities{}
+func mustRunfile(path string) string {
+	path, err := bazel.Runfile(path)
+	if err != nil {
+		panic(fmt.Errorf("failed to find runfile %s: %v", path, err))
 	}
-	m, ok := caps[wslCapabilitiesKey].(wslCapabilities)
-	if !ok {
-		return fmt.Errorf("incorrect type for %s; got %T", wslCapabilitiesKey, caps[wslCapabilitiesKey])
-	}
-
-	if _, ok = m[wslCapabilitiesArgsKey]; !ok {
-		m[wslCapabilitiesArgsKey] = []string{}
-	}
-	prevArgs, ok := m[wslCapabilitiesArgsKey].([]string)
-	if !ok {
-		return fmt.Errorf("incorrect type for %s; got %T", wslCapabilitiesArgsKey, m[wslCapabilitiesArgsKey])
-	}
-	m[wslCapabilitiesArgsKey] = append(prevArgs, args...)
-	return nil
+	return path
 }
+
+var (
+	chromeDriverPath = mustRunfile("chromedriver.bin")
+	chromePath       = mustRunfile("chromium.bin")
+	extensionPath    = mustRunfile("chrome-ssh-agent.zip")
+)
 
 func getElementText(wd selenium.WebDriver, id string) (string, error) {
 	el, err := wd.FindElement(selenium.ByID, id)
@@ -94,42 +80,55 @@ func dumpSeleniumLogs(t *testing.T, wd selenium.WebDriver) {
 	}
 }
 
-func dumpLogFile(t *testing.T, typ string, r io.Reader, maxTokenLength int) {
-	t.Logf("Dumping log %s", typ)
-	scanner := bufio.NewScanner(r)
-	scanner.Buffer([]byte{}, maxTokenLength)
-	for scanner.Scan() {
-		t.Logf("%s: %s", typ, scanner.Text())
+func unusedPort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
 	}
-	if err := scanner.Err(); err != nil {
-		t.Errorf("Failed to dump %s logs from file: %v", typ, err)
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
 	}
+	defer l.Close()
+
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 func TestWebApp(t *testing.T) {
+	port, err := unusedPort()
+	if err != nil {
+		t.Fatalf("failed to identify unused port: %v", err)
+	}
+
+	opts := []selenium.ServiceOption{
+		selenium.StartFrameBuffer(),
+		selenium.Output(os.Stderr),
+	}
+	service, err := selenium.NewChromeDriverService(chromeDriverPath, port, opts...)
+	if err != nil {
+		t.Fatalf("failed to start Selenium service: %v", err)
+	}
+	defer service.Stop()
+
 	caps := selenium.Capabilities{}
 	caps.AddLogging(logLevels)
 
-	t.Log("Configuring ChromeDriver log")
-	driverLog, err := os.CreateTemp("", "")
-	if err != nil {
-		t.Fatalf("failed to create Chromedriver log temp file: %v", err)
-	}
-	defer os.Remove(driverLog.Name())
-	if err = addChromeDriverArgs(caps, fmt.Sprintf("--log-path=%s", driverLog.Name())); err != nil {
-		t.Fatalf("failed to add chrome driver args: %v", err)
-	}
-
 	t.Log("Preparing extension")
-	extensionPath, extensionCleanup, err := unzipExtension()
+	extPath, extCleanup, err := unzipExtension(extensionPath)
 	if err != nil {
 		t.Fatalf("Failed to unzip extension: %v", err)
 	}
-	defer extensionCleanup()
+	defer extCleanup()
 
 	t.Log("Configuring extension in Chrome")
-	chromeCaps := chrome.Capabilities{}
-	if err = chromeCaps.AddUnpackedExtension(extensionPath); err != nil {
+	chromeCaps := chrome.Capabilities{
+		Path: chromePath,
+		Args: []string{
+			"--no-sandbox",
+		},
+	}
+	if err = chromeCaps.AddUnpackedExtension(extPath); err != nil {
 		t.Fatalf("failed to add extension: %v", err)
 	}
 	caps.AddChrome(chromeCaps)
@@ -142,9 +141,8 @@ func TestWebApp(t *testing.T) {
 	}
 
 	t.Log("Starting WebDriver")
-	wd, err := webtest.NewWebDriverSession(caps)
+	wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", port))
 	if err != nil {
-		dumpLogFile(t, "ChromeDriverLog", driverLog, int(float64(extensionDataSize)*1.1))
 		t.Fatalf("Failed to start webdriver: %v", err)
 	}
 	defer wd.Quit()
@@ -157,7 +155,7 @@ func TestWebApp(t *testing.T) {
 	}
 
 	t.Log("Waiting for navigation")
-	if err = wd.WaitWithTimeoutAndInterval(currentURLIs(path.String()), 10*time.Second, 1*time.Second); err != nil {
+	if err = wd.WaitWithTimeout(currentURLIs(path.String()), 10*time.Second); err != nil {
 		t.Fatalf("Failed to complete navigation to page: %v", err)
 	}
 
@@ -168,10 +166,10 @@ func TestWebApp(t *testing.T) {
 	t.Logf("Page source:\n%s", src)
 
 	t.Log("Waiting for results")
-	if err = wd.WaitWithTimeoutAndInterval(elementExists("failureCount"), 10*time.Second, 1*time.Second); err != nil {
+	if err = wd.WaitWithTimeout(elementExists("failureCount"), 10*time.Second); err != nil {
 		t.Fatalf("failed to wait for failure count: %v", err)
 	}
-	if err = wd.WaitWithTimeoutAndInterval(elementExists("failures"), 10*time.Second, 1*time.Second); err != nil {
+	if err = wd.WaitWithTimeout(elementExists("failures"), 10*time.Second); err != nil {
 		t.Fatalf("failed to wait for failures: %v", err)
 	}
 
