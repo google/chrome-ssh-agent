@@ -120,6 +120,11 @@ func (s *Storage) Get(callback func(data map[string]js.Value, err error)) {
 //
 // See remove() in https://developer.chrome.com/apps/storage#type-StorageArea.
 func (s *Storage) Delete(keys []string, callback func(err error)) {
+	if len(keys) <= 0 {
+		callback(nil) // Nothing to do.
+		return
+	}
+
 	var cb js.Func
 	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		defer cb.Release() // One-time callback; release when done.

@@ -52,14 +52,17 @@ func New(chrome js.Value) *C {
 	}
 }
 
-// SyncStorage returns a Storage object that can be used to to store
+// SyncStorage returns a PersistentStore object that can be used to to store
 // persistent data that is synchronized with Chrome Sync.
 //
 // See https://developer.chrome.com/apps/storage#property-sync.
-func (c *C) SyncStorage() *Storage {
-	return &Storage{
-		chrome: c,
-		o:      c.syncStorage,
+func (c *C) SyncStorage() PersistentStore {
+	return &BigStorage{
+		maxItemBytes: c.syncStorage.Get("QUOTA_BYTES_PER_ITEM").Int(),
+		s: &Storage{
+			chrome: c,
+			o:      c.syncStorage,
+		},
 	}
 }
 
