@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/google/go-cmp/cmp"
@@ -44,7 +45,7 @@ var (
 	storageDeleteErr = errors.New("Storage.Delete() failed")
 )
 
-func newTestManager(agent agent.Agent, storage PersistentStore, keys []*initialKey) (Manager, error) {
+func newTestManager(agent agent.Agent, storage chrome.PersistentStore, keys []*initialKey) (Manager, error) {
 	mgr := NewManager(agent, storage)
 	for _, k := range keys {
 		if err := syncAdd(mgr, k.Name, k.PEMPrivateKey); err != nil {

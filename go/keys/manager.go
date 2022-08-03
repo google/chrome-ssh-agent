@@ -31,6 +31,7 @@ import (
 	"syscall/js"
 
 	"github.com/ScaleFT/sshkeys"
+	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/norunners/vert"
 	"github.com/youmark/pkcs8"
@@ -140,24 +141,9 @@ type Manager interface {
 	Unload(key *LoadedKey, callback func(err error))
 }
 
-// PersistentStore provides access to underlying storage.  See chrome.Storage
-// for details on the methods; using this interface allows for alternate
-// implementations during testing.
-type PersistentStore interface {
-	// Set stores new data. See chrome.Storage.Set() for details.
-	Set(data map[string]js.Value, callback func(err error))
-
-	// Get gets data from storage. See chrome.Storage.Get() for details.
-	Get(callback func(data map[string]js.Value, err error))
-
-	// Delete deletes data from storage. See chrome.Storage.Delete() for
-	// details.
-	Delete(keys []string, callback func(err error))
-}
-
 // NewManager returns a Manager implementation that can manage keys in the
 // supplied agent, and store configured keys in the supplied storage.
-func NewManager(agt agent.Agent, storage PersistentStore) Manager {
+func NewManager(agt agent.Agent, storage chrome.PersistentStore) Manager {
 	return &manager{
 		agent:   agt,
 		storage: storage,
@@ -167,7 +153,7 @@ func NewManager(agt agent.Agent, storage PersistentStore) Manager {
 // manager is an implementation of Manager.
 type manager struct {
 	agent   agent.Agent
-	storage PersistentStore
+	storage chrome.PersistentStore
 }
 
 // storedKey is the raw object stored in persistent storage for a configured

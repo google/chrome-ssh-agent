@@ -19,8 +19,8 @@ package dom
 
 import (
 	"fmt"
-	"time"
 	"syscall/js"
+	"time"
 )
 
 var (
@@ -31,6 +31,12 @@ var (
 
 	// Console is the default 'console' object for the browser.
 	Console = js.Global().Get("console")
+
+	// Object refers to Javascript's Object class.
+	Object = js.Global().Get("Object")
+
+	// JSON refers to Javascript's JSON class.
+	JSON = js.Global().Get("JSON")
 )
 
 // Event provides an API for interacting with events.
@@ -98,7 +104,7 @@ func SetTimeout(timeout time.Duration, callback func()) {
 // finished loading.
 func (d *DOM) OnDOMContentLoaded(callback func()) {
 	if d.doc.Get("readyState").String() != "loading" {
-		SetTimeout(0, callback)  // Event already fired. Invoke callback directly.
+		SetTimeout(0, callback) // Event already fired. Invoke callback directly.
 	}
 
 	var cb js.Func
@@ -214,4 +220,34 @@ func SingleArg(args []js.Value) js.Value {
 	var val js.Value
 	ExpandArgs(args, &val)
 	return val
+}
+
+// ObjectKeys returns the keys for a given object.
+func ObjectKeys(val js.Value) ([]string, error) {
+	if val.Type() != js.TypeObject {
+		return nil, fmt.Errorf("Object required; got type %s", val.Type())
+	}
+
+	var res []string
+	keys := Object.Call("keys", val)
+	for i := 0; i < keys.Length(); i++ {
+		res = append(res, keys.Index(i).String())
+	}
+	return res, nil
+}
+
+// ToJSON converts the supplied value to a JSON string.
+func ToJSON(val js.Value) string {
+	return JSON.Call("stringify", val).String()
+}
+
+// FromJSON converts the supplied JSON string to a Javascript value.
+func FromJSON(s string) js.Value {
+	defer func() {
+		if r := recover(); r != nil {
+			LogError("Failed to parse JSON string; returning default. Error: %v", r)
+		}
+	}()
+
+	return JSON.Call("parse", s)
 }

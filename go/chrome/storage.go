@@ -24,16 +24,31 @@ import (
 	"github.com/norunners/vert"
 )
 
+// PersistentStore provides access to underlying storage.  See chrome.Storage
+// for details on the methods; using this interface allows for alternate
+// implementations during testing.
+type PersistentStore interface {
+	// Set stores new data. See chrome.Storage.Set() for details.
+	Set(data map[string]js.Value, callback func(err error))
+
+	// Get gets data from storage. See chrome.Storage.Get() for details.
+	Get(callback func(data map[string]js.Value, err error))
+
+	// Delete deletes data from storage. See chrome.Storage.Delete() for
+	// details.
+	Delete(keys []string, callback func(err error))
+}
+
 // Storage supports storing and retrieving data using Chrome's Storage API.
+//
+// Storage implements the PersistentStore interface.
 type Storage struct {
 	chrome *C
 	o      js.Value
 }
 
-var object = js.Global().Get("Object")
-
 func dataToValue(data map[string]js.Value) js.Value {
-	res := object.New()
+	res := dom.Object.New()
 	for k, v := range data {
 		res.Set(k, v)
 	}
@@ -41,14 +56,13 @@ func dataToValue(data map[string]js.Value) js.Value {
 }
 
 func valueToData(val js.Value) (map[string]js.Value, error) {
-	if val.Type() != js.TypeObject {
-		return nil, fmt.Errorf("failed to read data: got unexpected type %s", val.Type())
+	keys, err := dom.ObjectKeys(val)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read data: %v", err)
 	}
 
 	data := map[string]js.Value{}
-	keys := object.Call("keys", val)
-	for i := 0; i < keys.Length(); i++ {
-		k := keys.Index(i).String()
+	for _, k := range keys {
 		data[k] = val.Get(k)
 	}
 	return data, nil

@@ -59,11 +59,11 @@ func New(p js.Value) io.ReadWriter {
 		outWriter: ow,
 	}
 
-	ap.p.Get("onDisconnect").Call("addListener", js.FuncOf(func (this js.Value, args []js.Value) interface {} {
+	ap.p.Get("onDisconnect").Call("addListener", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		ap.OnDisconnect()
 		return nil
 	}))
-	ap.p.Get("onMessage").Call("addListener", js.FuncOf(func (this js.Value, args []js.Value) interface {} {
+	ap.p.Get("onMessage").Call("addListener", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		ap.OnMessage(dom.SingleArg(args))
 		return nil
 	}))

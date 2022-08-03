@@ -474,7 +474,7 @@ func (u *UI) tryInitKeys() {
 		return
 	}
 
-	dom.SetTimeout(1 * time.Second, u.tryInitKeys)
+	dom.SetTimeout(1*time.Second, u.tryInitKeys)
 }
 
 // updateKeys queries the manager for configured and loaded keys, then triggers

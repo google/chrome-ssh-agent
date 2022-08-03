@@ -11,6 +11,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//go/dom:dom",
+	"//go/chrome:chrome",
         "@com_github_scaleft_sshkeys//:sshkeys",
         "@com_github_youmark_pkcs8//:pkcs8",
         "@org_golang_x_crypto//ssh",
