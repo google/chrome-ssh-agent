@@ -1,1 +1,6 @@
 * Consistently release js.Func objects. Search for invocations of js.FuncOf().
+* Implement a mutex around BigStorage to prevent cleaning up chunks that may be referenced.
+  This is now possible since Delete() is no longer an atomic operation; it deletes keys,
+  then cleans up dangling chunks. However, dangling chunks may be newly-referenced if
+  Set() is invoked at the same time as Delete().  This is unlikely given that this is only
+  done in the Options UI, but we should more systematically prevent this.
