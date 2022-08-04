@@ -90,7 +90,11 @@ func (b *BigStorage) maxChunkSize() int {
 
 func (b *BigStorage) canStore(key string, valJSON string) bool {
 	// Values are stored as strings after converting to JSON.
-	return len(key)+len(valJSON) <= b.maxItemBytes
+	// When stored as JSON, Chrome may escape some additional characters.
+	// See:
+	//   https://chromium.googlesource.com/chromium/chromium/+/707a0ab1f8777bda5aef8aadf6553b4b10f157b2/base/json/string_escape.cc#53
+	// Therefore, we give ourselves a significant margin for safety.
+	return len(key)+(len(valJSON)*2) <= b.maxItemBytes
 }
 
 // makeChunkKey returns the key at which this chunk should be stored.
@@ -107,7 +111,8 @@ func isChunkKey(key string) bool {
 
 // See PersistentStore.Set().
 func (b *BigStorage) Set(data map[string]js.Value, callback func(err error)) {
-	maxChunkSize := b.maxChunkSize()
+	maxEncodedChunkSize := b.maxChunkSize()
+	maxDecodedChunkSize := base64.StdEncoding.DecodedLen(maxEncodedChunkSize)
 
 	chunked := map[string]js.Value{}
 	for k, v := range data {
@@ -118,17 +123,26 @@ func (b *BigStorage) Set(data map[string]js.Value, callback func(err error)) {
 			continue
 		}
 
-		// Value too large. Break into chunks.
+		// Value too large. Break into chunks. There are two caveats:
+		// - The JSON string may contain UTF-8 characters, meaning it
+		//   we have to be careful about splitting in the middle of a
+		//   single character (which occupies 2 bytes).
+		// - When stored, Chrome may escape some additional characters
+		//   and occupy more space than we compute.  See:
+		//     https://chromium.googlesource.com/chromium/chromium/+/707a0ab1f8777bda5aef8aadf6553b4b10f157b2/base/json/string_escape.cc#53
+		// To avoid this miscalculations in chunk sizes, we split into
+		// chunks such that each chunk, when encoded as base64, fits
+		// within the required chunk size.
 		manifest := newBigValueManifest()
-		for i := 0; i < len(json); i += maxChunkSize {
-			extent := i + maxChunkSize
+		for i := 0; i < len(json); i += maxDecodedChunkSize {
+			extent := i + maxDecodedChunkSize
 			if extent > len(json) {
 				extent = len(json)
 			}
 
 			// Key is the hash of the contents. This is a simple way
 			// to avoid overwriting data.
-			chunk := json[i:extent]
+			chunk := base64.StdEncoding.EncodeToString([]byte(json[i:extent]))
 			chunkKey := makeChunkKey(chunk)
 
 			// Add to manifest and data we will store.
@@ -169,7 +183,13 @@ func (b *BigStorage) Get(callback func(data map[string]js.Value, err error)) {
 						callback(nil, fmt.Errorf("failed to read data; chunk key %s missing", chunkKey))
 						return
 					}
-					json.WriteString(chunkVal.String())
+					dec, err := base64.StdEncoding.DecodeString(chunkVal.String())
+					if err != nil {
+						callback(nil, fmt.Errorf("failed to read data; base64 decode failed: %v", err))
+						return
+					}
+
+					json.WriteString(string(dec))
 				}
 
 				unchunked[k] = dom.FromJSON(json.String())

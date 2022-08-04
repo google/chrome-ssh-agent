@@ -38,6 +38,34 @@ func syncGet(s PersistentStore) (map[string]js.Value, error) {
 	return <-datac, <-errc
 }
 
+func isManifest(v js.Value) bool {
+	var manifest bigValueManifest
+	if err := vert.ValueOf(v).AssignTo(&manifest); err == nil && manifest.Valid() {
+		return true
+	}
+	return false
+}
+
+func syncGetEntryType(s PersistentStore) (map[string]string, error) {
+	data, err := syncGet(s)
+	if err != nil {
+		return nil, err
+	}
+
+	res := map[string]string{}
+	for k, v := range data {
+		switch {
+		case isChunkKey(k):
+			res[k] = "chunk"
+		case isManifest(v):
+			res[k] = "manifest"
+		default:
+			res[k] = "simple"
+		}
+	}
+	return res, nil
+}
+
 func syncGetJSON(s PersistentStore) (map[string]string, error) {
 	data, err := syncGet(s)
 	if err != nil {
@@ -71,9 +99,9 @@ func TestSetAndGet(t *testing.T) {
 				"myObject": vert.ValueOf(&myStruct{IntField: 2}).JSValue(),
 			},
 			wantRaw: map[string]string{
-				"myNumber": "2",
-				"myString": `"foo"`,
-				"myObject": `{"intField":2,"stringField":""}`,
+				"myNumber": "simple",
+				"myString": "simple",
+				"myObject": "simple",
 			},
 			want: map[string]string{
 				"myNumber": "2",
@@ -92,46 +120,17 @@ func TestSetAndGet(t *testing.T) {
 				}).JSValue(),
 			},
 			wantRaw: map[string]string{
-				"myString": `{"magic":"3cc36853-b864-4122-beaa-516aa24448f6","chunkKeys":["chunk-3cc36853-b864-4122-beaa-516aa24448f6:mdOE4dkIRwUUzG+lTF/Dy6yCD+029OEszXU6Gs7+OEU=","chunk-3cc36853-b864-4122-beaa-516aa24448f6:sK1Oa0GM/mf2Zaph9VLSf2U52eDriz2oDJ1BTuVnzXM="]}`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:mdOE4dkIRwUUzG+lTF/Dy6yCD+029OEszXU6Gs7+OEU=": `"\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:sK1Oa0GM/mf2Zaph9VLSf2U52eDriz2oDJ1BTuVnzXM=": `"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""`,
-
-				"myObject": `{"magic":"3cc36853-b864-4122-beaa-516aa24448f6","chunkKeys":["chunk-3cc36853-b864-4122-beaa-516aa24448f6:c7laRY8+hWoO+ZkG92GtBxBRt4nqTPCPO9Aa23Ozy4k=","chunk-3cc36853-b864-4122-beaa-516aa24448f6:Y3T3MgiFRHOCf29qP0Ox9T6qO4LCHBptaaIRCyp5uq0=","chunk-3cc36853-b864-4122-beaa-516aa24448f6:sXOAMv6Adtolok1EtQD38vtrlA0yX/Px1sEEvGW215w="]}`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:c7laRY8+hWoO+ZkG92GtBxBRt4nqTPCPO9Aa23Ozy4k=": `"{\"intField\":2000000,\"stringField\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:Y3T3MgiFRHOCf29qP0Ox9T6qO4LCHBptaaIRCyp5uq0=": `"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:sXOAMv6Adtolok1EtQD38vtrlA0yX/Px1sEEvGW215w=": `"aaaaaaaaaaaaa\"}"`,
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:BhCOaZDxAkcxzFGDBPBetTErqvNiknYfwvV7xu90ARM=": "chunk",
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:Fru0sIiU1np0QdrjNzVcQQnL4/go9+Bhsa0jum0KFbU=": "chunk",
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:G6T7G7fdARNR9OSgrLFctjhsP2mKdz4GS9bvK8F21ek=": "chunk",
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:Q1/qr0+WtjHWwzblCloPdGhtv2Ovcx5jlmZcW/XJH0E=": "chunk",
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:lHZRIv7UAumQRGrzQCQplvRz6iS71g6jnTlZwEhQQcs=": "chunk",
+				"myObject": "manifest",
+				"myString": "manifest",
 			},
 			want: map[string]string{
 				"myString": fmt.Sprintf(`"%s"`, strings.Repeat("a", 200)),
 				"myObject": fmt.Sprintf(`{"intField":2000000,"stringField":"%s"}`, strings.Repeat("a", 200)),
-			},
-		},
-		{
-			description:  "Boundary condition: value with max item size stored as simple value",
-			maxItemBytes: 200,
-			set: map[string]js.Value{
-				"key": js.ValueOf(strings.Repeat("a", 195)), // Key (3) + value (195) + surrounding quotes (2) = 200
-			},
-			wantRaw: map[string]string{
-				"key": fmt.Sprintf(`"%s"`, strings.Repeat("a", 195)), // 200 bytes total, including quotes
-			},
-			want: map[string]string{
-				"key": fmt.Sprintf(`"%s"`, strings.Repeat("a", 195)),
-			},
-		},
-		{
-			description:  "Boundary condition: value just over maxitem size stored as big value",
-			maxItemBytes: 200,
-			set: map[string]js.Value{
-				"key": js.ValueOf(strings.Repeat("a", 196)), // Key (3) + value (196) + surrounding quotes (2) = 201
-			},
-			wantRaw: map[string]string{
-				"key": `{"magic":"3cc36853-b864-4122-beaa-516aa24448f6","chunkKeys":["chunk-3cc36853-b864-4122-beaa-516aa24448f6:mdOE4dkIRwUUzG+lTF/Dy6yCD+029OEszXU6Gs7+OEU=","chunk-3cc36853-b864-4122-beaa-516aa24448f6:HMz5p8STpbk1PdZVs8dvNuy7s4RBmAknToTexlTdkaE="]}`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:mdOE4dkIRwUUzG+lTF/Dy6yCD+029OEszXU6Gs7+OEU=": `"\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:HMz5p8STpbk1PdZVs8dvNuy7s4RBmAknToTexlTdkaE=": `"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""`,
-			},
-			want: map[string]string{
-				"key": fmt.Sprintf(`"%s"`, strings.Repeat("a", 196)),
 			},
 		},
 	}
@@ -152,7 +151,7 @@ func TestSetAndGet(t *testing.T) {
 					t.Fatalf("set failed: %v", err)
 				}
 
-				gotRaw, err := syncGetJSON(b.s)
+				gotRaw, err := syncGetEntryType(b.s)
 				if err != nil {
 					t.Fatalf("get failed for underlying storage: %v", err)
 				}
@@ -193,7 +192,7 @@ func TestDelete(t *testing.T) {
 				"myObject",
 			},
 			wantRaw: map[string]string{
-				"myString": `"foo"`,
+				"myString": "simple",
 			},
 			want: map[string]string{
 				"myString": `"foo"`,
@@ -213,9 +212,10 @@ func TestDelete(t *testing.T) {
 				"myObject",
 			},
 			wantRaw: map[string]string{
-				"myString": `{"magic":"3cc36853-b864-4122-beaa-516aa24448f6","chunkKeys":["chunk-3cc36853-b864-4122-beaa-516aa24448f6:mdOE4dkIRwUUzG+lTF/Dy6yCD+029OEszXU6Gs7+OEU=","chunk-3cc36853-b864-4122-beaa-516aa24448f6:sK1Oa0GM/mf2Zaph9VLSf2U52eDriz2oDJ1BTuVnzXM="]}`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:mdOE4dkIRwUUzG+lTF/Dy6yCD+029OEszXU6Gs7+OEU=": `"\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:sK1Oa0GM/mf2Zaph9VLSf2U52eDriz2oDJ1BTuVnzXM=": `"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""`,
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:Fru0sIiU1np0QdrjNzVcQQnL4/go9+Bhsa0jum0KFbU=": "chunk",
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:G6T7G7fdARNR9OSgrLFctjhsP2mKdz4GS9bvK8F21ek=": "chunk",
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:lHZRIv7UAumQRGrzQCQplvRz6iS71g6jnTlZwEhQQcs=": "chunk",
+				"myString": "manifest",
 			},
 			want: map[string]string{
 				"myString": fmt.Sprintf(`"%s"`, strings.Repeat("a", 200)),
@@ -232,9 +232,10 @@ func TestDelete(t *testing.T) {
 				"yourString",
 			},
 			wantRaw: map[string]string{
-				"myString": `{"magic":"3cc36853-b864-4122-beaa-516aa24448f6","chunkKeys":["chunk-3cc36853-b864-4122-beaa-516aa24448f6:mdOE4dkIRwUUzG+lTF/Dy6yCD+029OEszXU6Gs7+OEU=","chunk-3cc36853-b864-4122-beaa-516aa24448f6:sK1Oa0GM/mf2Zaph9VLSf2U52eDriz2oDJ1BTuVnzXM="]}`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:mdOE4dkIRwUUzG+lTF/Dy6yCD+029OEszXU6Gs7+OEU=": `"\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`,
-				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:sK1Oa0GM/mf2Zaph9VLSf2U52eDriz2oDJ1BTuVnzXM=": `"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""`,
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:Fru0sIiU1np0QdrjNzVcQQnL4/go9+Bhsa0jum0KFbU=": "chunk",
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:G6T7G7fdARNR9OSgrLFctjhsP2mKdz4GS9bvK8F21ek=": "chunk",
+				"chunk-3cc36853-b864-4122-beaa-516aa24448f6:lHZRIv7UAumQRGrzQCQplvRz6iS71g6jnTlZwEhQQcs=": "chunk",
+				"myString": "manifest",
 			},
 			want: map[string]string{
 				"myString": fmt.Sprintf(`"%s"`, strings.Repeat("a", 200)),
@@ -263,7 +264,7 @@ func TestDelete(t *testing.T) {
 						t.Fatalf("delete failed: %v", err)
 					}
 
-					gotRaw, err := syncGetJSON(b.s)
+					gotRaw, err := syncGetEntryType(b.s)
 					if err != nil {
 						t.Fatalf("get failed for underlying storage: %v", err)
 					}

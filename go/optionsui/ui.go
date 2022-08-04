@@ -553,7 +553,8 @@ func (u *UI) EndToEndTest() []error {
 	dom.Log("Configure a new key")
 	u.dom.DoClick(u.addButton)
 	u.dom.SetValue(u.addName, keyName)
-	u.dom.SetValue(u.addKey, testdata.WithPassphrase.Private)
+	// Use the long key to exercise storage of large values in Chrome storage.
+	u.dom.SetValue(u.addKey, testdata.LongKeyWithPassphrase.Private)
 	u.dom.DoClick(u.addOk)
 
 	dom.Log("Validate configured keys; ensure new key is present")
@@ -569,7 +570,7 @@ func (u *UI) EndToEndTest() []error {
 
 	dom.Log("Load the new key")
 	u.dom.DoClick(u.dom.GetElement(buttonID(LoadButton, key.ID)))
-	u.dom.SetValue(u.passphraseInput, testdata.WithPassphrase.Passphrase)
+	u.dom.SetValue(u.passphraseInput, testdata.LongKeyWithPassphrase.Passphrase)
 	u.dom.DoClick(u.passphraseOk)
 
 	dom.Log("Validate loaded keys; ensure new key is loaded")
@@ -581,10 +582,10 @@ func (u *UI) EndToEndTest() []error {
 		if diff := cmp.Diff(key.Loaded, true); diff != "" {
 			errs = append(errs, fmt.Errorf("after load: incorrect loaded state: %s", diff))
 		}
-		if diff := cmp.Diff(key.Type, testdata.WithPassphrase.Type); diff != "" {
+		if diff := cmp.Diff(key.Type, testdata.LongKeyWithPassphrase.Type); diff != "" {
 			errs = append(errs, fmt.Errorf("after load: incorrect type: %s", diff))
 		}
-		if diff := cmp.Diff(key.Blob, testdata.WithPassphrase.Blob); diff != "" {
+		if diff := cmp.Diff(key.Blob, testdata.LongKeyWithPassphrase.Blob); diff != "" {
 			errs = append(errs, fmt.Errorf("after load: incorrect blob: %s", diff))
 		}
 	} else if key == nil {
