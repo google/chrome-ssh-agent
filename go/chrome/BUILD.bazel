@@ -7,6 +7,7 @@ go_library(
         "chrome.go",
         "storage.go",
         "bigstorage.go",
+        "typedstorage.go",
     ],
     importpath = "github.com/google/chrome-ssh-agent/go/chrome",
     visibility = ["//visibility:public"],
@@ -21,6 +22,7 @@ go_library(
     srcs = [
         "storage_test.go",
         "bigstorage_test.go",
+        "typedstorage_test.go",
     ],
     embed = [":chrome"],
     importpath = "github.com/google/chrome-ssh-agent/go/chrome",

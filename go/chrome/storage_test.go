@@ -38,6 +38,13 @@ type myStruct struct {
 	StringField string `js:"stringField"`
 }
 
+func myStructLess(a *myStruct, b *myStruct) bool {
+	if a.IntField != b.IntField {
+		return a.IntField < b.IntField
+	}
+	return a.StringField < b.StringField
+}
+
 func TestDataEncodeAndDecode(t *testing.T) {
 	testcases := []struct {
 		description string

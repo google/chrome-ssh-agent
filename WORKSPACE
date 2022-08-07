@@ -114,7 +114,7 @@ go_rules_dependencies()
 
 go_register_toolchains(
     nogo = "@//:chrome_ssh_agent_nogo",
-    version = "1.17",
+    version = "1.18",
 )
 
 load("@io_bazel_rules_go//extras:embed_data_deps.bzl", "go_embed_data_dependencies")
