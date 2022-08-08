@@ -27,7 +27,7 @@ function die() {
 
 # Read current version from manifest.
 readonly MANIFEST=${PWD}/manifest.json
-readonly VERSION=$(cat "${MANIFEST}" | python -c "import sys, json; print json.load(sys.stdin)['version']")
+readonly VERSION=$(cat "${MANIFEST}" | python3 -c "import sys, json; print json.load(sys.stdin)['version']")
 readonly TAG=v${VERSION}
 
 # Ensure the tag doesn't already exist.  This could happen if someone forgot to
