@@ -1,5 +1,3 @@
-* Handle transient connection errors when background service worker is not started. We should
-  not log an error in this case. We should only do this if error is persistent.
 * Consistently release js.Func objects. Search for invocations of js.FuncOf().
 * Implement a mutex around BigStorage to prevent cleaning up chunks that may be referenced.
   This is now possible since Delete() is no longer an atomic operation; it deletes keys,
