@@ -163,8 +163,9 @@ type storedKey struct {
 	PEMPrivateKey string `js:"pemPrivateKey"`
 }
 
-// PKCS8 determines if the private key is a PKCS#8 formatted key.
-func (s *storedKey) PKCS8() bool {
+// EncryptedPKCS8 determines if the private key is an encrypted PKCS#8 formatted
+// key.
+func (s *storedKey) EncryptedPKCS8() bool {
 	block, _ := pem.Decode([]byte(s.PEMPrivateKey))
 	if block == nil {
 		// Attempt to handle this gracefully and guess that it isn't
@@ -175,7 +176,7 @@ func (s *storedKey) PKCS8() bool {
 
 	// Types used for PKCS#8 keys:
 	// https://github.com/kjur/jsrsasign/wiki/Tutorial-for-PKCS5-and-PKCS8-PEM-private-key-formats-differences
-	return block.Type == "ENCRYPTED PRIVATE KEY" || block.Type == "PRIVATE KEY"
+	return block.Type == "ENCRYPTED PRIVATE KEY"
 }
 
 // Encrypted determines if the private key is encrypted. The Proc-Type header
@@ -348,7 +349,7 @@ func (m *DefaultManager) LoadFromSession(callback func(err error)) {
 func (m *DefaultManager) addToAgent(id ID, passphrase string, key *storedKey, callback func(err error)) {
 	var err error
 	var priv interface{}
-	if key.PKCS8() {
+	if key.EncryptedPKCS8() {
 		// Crypto libraries don't yet support encrypted PKCS#8 keys:
 		//   https://github.com/golang/go/issues/8860
 		var block *pem.Block
