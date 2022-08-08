@@ -1,0 +1,11 @@
+load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary")
+
+nodejs_binary(
+    name = "publish",
+    data = [
+        "//:chrome-ssh-agent.zip",
+        "@npm//chrome-webstore-upload",
+        "@npm//@bazel/runfiles",
+    ],
+    entry_point = ":publish.mjs",
+)
