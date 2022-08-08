@@ -35,12 +35,12 @@ import (
 	"github.com/norunners/vert"
 )
 
-type agentPort struct {
+type AgentPort struct {
 	p         js.Value
-	inReader  *io.PipeReader
-	inWriter  *io.PipeWriter
-	outReader *io.PipeReader
-	outWriter *io.PipeWriter
+	inReader  *io.PipeReader // client -> agent pipe: agent read from incoming messages
+	inWriter  *io.PipeWriter // client -> agent pipe: write to agent
+	outReader *io.PipeReader // agent -> client pipe: read from agent
+	outWriter *io.PipeWriter // agent -> client pipe: agent write to outgoing messages
 }
 
 // New returns a io.ReaderWriter that converts from the Chrome Secure Shell
@@ -48,10 +48,11 @@ type agentPort struct {
 //
 // p is a Chrome Port object to which the Chrome Secure Shell Extension
 // has connected.
-func New(p js.Value) io.ReadWriter {
+func New(p js.Value) *AgentPort {
+	dom.LogDebug("AgentPort.New")
 	ir, iw := io.Pipe()
 	or, ow := io.Pipe()
-	ap := &agentPort{
+	ap := &AgentPort{
 		p:         p,
 		inReader:  ir,
 		inWriter:  iw,
@@ -59,51 +60,50 @@ func New(p js.Value) io.ReadWriter {
 		outWriter: ow,
 	}
 
-	ap.p.Get("onDisconnect").Call("addListener", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		ap.OnDisconnect()
-		return nil
-	}))
-	ap.p.Get("onMessage").Call("addListener", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		ap.OnMessage(dom.SingleArg(args))
-		return nil
-	}))
-
+	dom.LogDebug("AgentPort.New: Initiating SendMessages loop")
 	go ap.SendMessages()
 
 	return ap
 }
 
-func (ap *agentPort) OnDisconnect() {
+func (ap *AgentPort) OnDisconnect() {
+	dom.LogDebug("AgentPort.OnDisconnect: closing input writer")
 	ap.inWriter.Close()
+	dom.LogDebug("AgentPort.OnDisconnect: closing output writer")
+	ap.outWriter.Close()
 }
 
 type message struct {
 	Data []int `js:"data"`
 }
 
-func (ap *agentPort) OnMessage(msg js.Value) {
+func (ap *AgentPort) OnMessage(msg js.Value) {
+	dom.LogDebug("AgentPort.OnMessage: parsing message from client to agent")
 	var parsed message
 	if err := vert.ValueOf(msg).AssignTo(&parsed); err != nil {
-		dom.Log("Failed to parse message %s: %s", msg, err)
+		dom.LogError("Failed to parse message to agent: %v; message=%s", err, msg)
 		ap.p.Call("disconnect")
 		return
 	}
 
+	dom.LogDebug("AgentPort.OnMessage: converting to bytestream")
 	framed := make([]byte, 4+len(parsed.Data))
 	binary.BigEndian.PutUint32(framed, uint32(len(parsed.Data)))
-
 	for i, raw := range parsed.Data {
 		framed[i+4] = byte(raw)
 	}
 
+	dom.LogDebug("AgentPort.OnMessage: writing to agent")
 	_, err := ap.inWriter.Write(framed)
 	if err != nil {
-		dom.Log("Error writing to pipe: %v", err)
+		dom.LogError("Error writing to pipe: %v", err)
 		ap.p.Call("disconnect")
 	}
 }
 
-func (ap *agentPort) Read(p []byte) (n int, err error) {
+func (ap *AgentPort) Read(p []byte) (n int, err error) {
+	dom.LogDebug("AgentPort.Read: agent reading from client")
+	defer dom.LogDebug("AgentPort.Read: read finished")
 	return ap.inReader.Read(p)
 }
 
@@ -111,35 +111,81 @@ var (
 	array = js.Global().Get("Array")
 )
 
-func (ap *agentPort) SendMessages() {
+func (ap *AgentPort) SendMessages() {
+	dom.LogDebug("AgentPort.SendMessages: starting loop")
+	defer dom.LogDebug("AgentPort.SendMessages: finished loop")
 	for {
+		dom.LogDebug("AgentPort.SendMessages: reading message length from agent to client")
 		l := make([]byte, 4)
 		_, err := io.ReadFull(ap.outReader, l)
 		if err != nil {
-			dom.Log("Error reading from pipe: %v", err)
+			dom.Log("AgentPort.SendMessages: Error reading from pipe: %v", err)
 			ap.outReader.Close()
 			return
 		}
 		length := binary.BigEndian.Uint32(l)
 
+		dom.LogDebug("AgentPort.SendMessages: reading message from agent to client")
 		data := make([]byte, length)
 		_, err = io.ReadFull(ap.outReader, data)
 		if err != nil {
-			dom.Log("Error reading from pipe: %v", err)
+			dom.Log("AgentPort.SendMessages: Error reading from pipe: %v", err)
 			ap.outReader.Close()
 			return
 		}
 
+		dom.LogDebug("AgentPort.SendMessages: encoding message from agent to client")
 		var encoded message
 		encoded.Data = make([]int, len(data))
 		for i, b := range data {
 			encoded.Data[i] = int(b)
 		}
 
+		dom.LogDebug("AgentPort.SendMessages: sending message to client")
 		ap.p.Call("postMessage", vert.ValueOf(encoded).JSValue())
 	}
 }
 
-func (ap *agentPort) Write(p []byte) (n int, err error) {
+func (ap *AgentPort) Write(p []byte) (n int, err error) {
+	dom.LogDebug("AgentPort.Write: agent writing to client")
+	defer dom.LogDebug("AgentPort.Write: write finished")
 	return ap.outWriter.Write(p)
+}
+
+type portRef struct {
+	p js.Value
+}
+
+// AgentPorts is a mapping of chrome.runtime.Port objects to the corresponding
+// connection (AgentPort) with our Agent.
+type AgentPorts map[*portRef]*AgentPort
+
+// Lookup returns the AgentPort corresponding to the supplied Port value. A Port
+// value is considered equal if it refers to the exact same Port as was
+// originally supplied. This works because the Chrome runtime appears to
+// maintain a unique Port value for each port, and just pass around a reference
+// to it.  Thus, we use js.Value.Equal() to compare ports; two references to the
+// same object are equal iff they are equal in the '===' sense in Javascript.
+func (a AgentPorts) Lookup(port js.Value) *AgentPort {
+	for p, ap := range a {
+		if p.p.Equal(port) {
+			return ap
+		}
+	}
+	return nil
+}
+
+// Delete removes the AgentPort corresponding to the supplied Port.
+func (a AgentPorts) Delete(port js.Value) {
+	for p := range a {
+		if p.p.Equal(port) {
+			delete(a, p)
+			return
+		}
+	}
+}
+
+// Add adds an AgentPort corresponding to the supplied Port.
+func (a AgentPorts) Add(port js.Value, ap *AgentPort) {
+	a[&portRef{p: port}] = ap
 }

@@ -45,6 +45,10 @@ var (
 		})
 		return true // Dummy value.
 	}()
+
+	// Keep a set of ports that are open for communicating between
+	// clients and agents.
+	ports = agentport.AgentPorts{}
 )
 
 func onMessage(this js.Value, args []js.Value) interface{} {
@@ -58,8 +62,53 @@ func onMessage(this js.Value, args []js.Value) interface{} {
 
 func onConnectExternal(this js.Value, args []js.Value) interface{} {
 	port := dom.SingleArg(args)
-	dom.Log("Starting agent for new port")
-	go agent.ServeAgent(agt, agentport.New(port))
+	if ports.Lookup(port) != nil {
+		dom.LogError("onConnectExternal: port already in use; ignoring")
+		return nil
+	}
+
+	dom.LogDebug("onConnectExternal: connecting new port")
+	ap := agentport.New(port)
+	ports.Add(port, ap)
+
+	dom.LogDebug("onConnectExternal: serving in background")
+	go func() {
+		dom.LogDebug("ServeAgent: starting for new port")
+		defer dom.LogDebug("ServeAgent: finished")
+		if err := agent.ServeAgent(agt, ap); err != nil {
+			dom.LogDebug("ServeAgent: finished with error: %v", err)
+		}
+	}()
+	return nil
+}
+
+func onConnectionMessage(this js.Value, args []js.Value) interface{} {
+	var port, msg js.Value
+	dom.ExpandArgs(args, &port, &msg)
+
+	ap := ports.Lookup(port)
+	if ap == nil {
+		dom.LogError("onConnectionMessage: connection for port not found; ignoring")
+		return nil
+	}
+
+	dom.LogDebug("onConnectionMessage: forwarding message")
+	ap.OnMessage(msg)
+	return nil
+}
+
+func onConnectionDisconnect(this js.Value, args []js.Value) interface{} {
+	port := dom.SingleArg(args)
+
+	ap := ports.Lookup(port)
+	if ap == nil {
+		dom.LogError("onConnectionDisconnect: connection for port not found; ignoring")
+		return nil
+	}
+
+	dom.LogDebug("onConnectionDisconnect: disconnecting")
+	ap.OnDisconnect()
+	ports.Delete(port)
 	return nil
 }
 
@@ -69,7 +118,9 @@ func main() {
 
 	js.Global().Set("handleOnMessage", js.FuncOf(onMessage))
 	js.Global().Set("handleOnConnectExternal", js.FuncOf(onConnectExternal))
+	js.Global().Set("handleConnectionMessage", js.FuncOf(onConnectionMessage))
+	js.Global().Set("handleConnectionDisconnect", js.FuncOf(onConnectionDisconnect))
 
 	done := make(chan struct{}, 0)
-	<-done // Do not terminate.
+	<-done // Do not terminate immediately.
 }

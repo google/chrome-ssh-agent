@@ -16,13 +16,17 @@ wasmResult.then((result) => {
 // and then forward them into Go.
 console.debug('Installing event handlers');
 
-async function onMessageReceived(message, sender, sendResponse) {
-	console.debug('onMessage: waiting for WASM');
+async function resolveFunc(func) {
+	console.debug(`resolveFunc ${func}: waiting for WASM`);
 	await wasmResult;
-	console.debug('onMessage: waiting for event hook');
-	while (!handleOnMessage) { await null; }  // Wait until defined.
-	console.debug('onMessage: forwarding event');
-	handleOnMessage(message, sender, sendResponse);
+	while (!this[func]) { await null; }  // Wait until defined.
+	console.debug(`resolveFunc ${func}: available`);
+	return this[func];
+}
+
+async function onMessageReceived(message, sender, sendResponse) {
+	f = await resolveFunc('handleOnMessage');
+	f(message, sender, sendResponse);
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -30,12 +34,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	return true;  // sendResponse invoked asynchronously.
 });
 
-chrome.runtime.onConnectExternal.addListener(async (port) => {
-	console.debug('onConnectExternal: waiting for WASM');
-	await wasmResult;
-	console.debug('onConnectExternal: waiting for event hook');
-	while (!handleOnConnectExternal) { await null; }  // Wait until defined.
-	console.debug('onConnectExternal: forwarding event');
-	handleOnConnectExternal(port);
-});
+async function onConnectExternal(port) {
+	f = await resolveFunc('handleOnConnectExternal');
+	f(port);
+}
 
+async function onConnectionMessage(port, msg) {
+	f = await resolveFunc('handleConnectionMessage');
+	f(port, msg);
+}
+
+async function onConnectionDisconnect(port) {
+	f = await resolveFunc('handleConnectionDisconnect');
+	f(port);
+}
+
+chrome.runtime.onConnectExternal.addListener((port) => {
+	// The OnConnectExternal handler must be synchronous in order to
+	// guarantee that installed event handlers are in place before the other
+	// side of the connection starts sending messages.  Without this, we can
+	// miss events.
+	onConnectExternal(port);
+	port.onMessage.addListener((msg) => onConnectionMessage(port, msg));
+	port.onDisconnect.addListener((p) => onConnectionDisconnect(p));
+});

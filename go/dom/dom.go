@@ -190,17 +190,17 @@ func (d *DOM) RemoveEventListeners(o js.Value) js.Value {
 
 // Log logs general information to the Javascript Console.
 func Log(format string, objs ...interface{}) {
-	Console.Call("log", fmt.Sprintf(format, objs...))
+	Console.Call("log", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
 }
 
 // LogError logs an error to the Javascript Console.
 func LogError(format string, objs ...interface{}) {
-	Console.Call("error", fmt.Sprintf(format, objs...))
+	Console.Call("error", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
 }
 
 // LogDebug logs a debug message to the Javascript Console.
 func LogDebug(format string, objs ...interface{}) {
-	Console.Call("debug", fmt.Sprintf(format, objs...))
+	Console.Call("debug", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
 }
 
 // ExpandArgs unpacks function arguments to target values.
