@@ -35,10 +35,8 @@ readonly TAG=v${VERSION}
 test -z $(git tag | grep --line-regexp "${TAG}") \
   || die "Version ${VERSION} already exists"
 
-# Update all vendor packages and ensure everything still builds
-# and tests pass.
-govendor fetch +vendor
-make
+# Ensure all tests pass.
+bazel test ...
 
 # Commit everything. This should include the change to manifest.json and any
 # updated vendored packages.
