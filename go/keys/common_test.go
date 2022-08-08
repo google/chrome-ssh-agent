@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -134,11 +135,36 @@ func loadedKeyBlobs(keys []*LoadedKey) []string {
 	return result
 }
 
+func loadedKeyIDs(keys []*LoadedKey) []ID {
+	var res []ID
+	for _, k := range keys {
+		res = append(res, k.ID())
+	}
+	return res
+}
+
+func sessionKeyIDs(sessionKeys *chrome.TypedStore[sessionKey]) ([]ID, error) {
+	keysc := make(chan []*sessionKey, 1)
+	errc := make(chan error, 1)
+	sessionKeys.ReadAll(func(keys []*sessionKey, err error) {
+		keysc <- keys
+		errc <- err
+	})
+	keys := <-keysc
+	err := <-errc
+
+	var res []ID
+	for _, k := range keys {
+		res = append(res, ID(k.ID))
+	}
+	return res, err
+}
+
 var (
 	// Custom Comparer for LoadedKey type.  'blob' is an unexported
 	// field, so we explicitly compare it.
 	loadedKeyCmp = cmp.Comparer(func(a, b *LoadedKey) bool {
-		return cmp.Equal(a.Type, b.Type, cmpopts.IgnoreUnexported(LoadedKey{})) &&
+		return cmp.Equal(a, b, cmpopts.IgnoreUnexported(LoadedKey{})) &&
 			cmp.Equal(a.Blob(), b.Blob())
 	})
 
@@ -147,5 +173,10 @@ var (
 	// should document why cmpopts.EquateErrors does not suffice.
 	errStringCmp = cmp.Comparer(func(a, b error) bool {
 		return a.Error() == b.Error()
+	})
+
+	// Option for order-independent slices of IDs
+	idSlice = cmpopts.SortSlices(func(a, b ID) bool {
+		return a < b
 	})
 )

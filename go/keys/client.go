@@ -25,27 +25,18 @@ import (
 	"github.com/norunners/vert"
 )
 
-// MessageReceiver defines methods sufficient to receive messages and send
-// responses.
-type MessageReceiver interface {
-	OnMessage(callback func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool)
-}
-
 // Server exposes a Manager instance via a messaging API so that a shared
 // instance can be invoked from a different page.
 type Server struct {
 	mgr Manager
-	msg MessageReceiver
 }
 
 // NewServer returns a new Server that manages keys using the
 // supplied Manager.
-func NewServer(mgr Manager, msg MessageReceiver) *Server {
+func NewServer(mgr Manager) *Server {
 	result := &Server{
 		mgr: mgr,
-		msg: msg,
 	}
-	result.msg.OnMessage(result.onMessage)
 	return result
 }
 
@@ -64,6 +55,7 @@ const (
 	msgTypeLoadRsp
 	msgTypeUnload
 	msgTypeUnloadRsp
+	msgTypeErrorRsp
 )
 
 // msgHeader are the common fields included in every message.
@@ -133,6 +125,11 @@ type rspUnload struct {
 	Err  string `js:"err"`
 }
 
+type rspError struct {
+	Type int    `js:"type"`
+	Err  string `js:"err"`
+}
+
 // makeErr converts a string to an error. Empty string returns nil (i.e., no
 // error).
 func makeErr(s string) error {
@@ -151,22 +148,42 @@ func makeErrStr(err error) string {
 	return err.Error()
 }
 
-// onMessage is the callback invoked when a message is received. It determines
+// sendErrorResponse sends a generic error response to the client. This is used
+// in case a more specific error is not possible.
+func (s *Server) sendErrorResponse(err error, sendResponse func(js.Value)) {
+	dom.LogError("Server.sendErrorResponse: %v", err)
+	rsp := rspError{
+		Type: msgTypeErrorRsp,
+		Err:  makeErrStr(err),
+	}
+	sendResponse(vert.ValueOf(rsp).JSValue())
+}
+
+// OnMessage is the callback invoked when a message is received. It determines
 // the type of request received, invokes the appropriate method on the
 // underlying manager instance, and then sends a response with the result.
-func (s *Server) onMessage(headerObj js.Value, sender js.Value, sendResponse func(js.Value)) bool {
+//
+// This method is guaranteed to invoke sendReponse (aside from unexpected
+// panics). Context for why this important:
+//
+//   The caller is expected to be handling an OnMessage event from the browser,
+//   and it returns 'true' to the browser to indicate that the event will be
+//   handled asynchronously and the port must not yet be closed. Invoking
+//   sendResponse is the signal to the browser to close the port and free
+//   resources.
+func (s *Server) OnMessage(headerObj js.Value, sender js.Value, sendResponse func(js.Value)) {
 	var header msgHeader
 	if err := vert.ValueOf(headerObj).AssignTo(&header); err != nil {
-		dom.LogError("failed to parse message header: %v", err)
-		return false
+		s.sendErrorResponse(fmt.Errorf("failed to parse message header: %v", err), sendResponse)
+		return
 	}
 
-	dom.LogDebug("Server.onMessage(type = %d)", header.Type)
+	dom.LogDebug("Server.OnMessage(type = %d)", header.Type)
 	switch header.Type {
 	case msgTypeConfigured:
-		dom.LogDebug("Server.onMessage(Configured req)")
+		dom.LogDebug("Server.OnMessage(Configured req)")
 		s.mgr.Configured(func(keys []*ConfiguredKey, err error) {
-			dom.LogDebug("Server.onMessage(Configured rsp): %d keys, err=%v", len(keys), err)
+			dom.LogDebug("Server.OnMessage(Configured rsp): %d keys, err=%v", len(keys), err)
 			rsp := rspConfigured{
 				Type: msgTypeConfiguredRsp,
 				Keys: keys,
@@ -174,10 +191,11 @@ func (s *Server) onMessage(headerObj js.Value, sender js.Value, sendResponse fun
 			}
 			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
+		return
 	case msgTypeLoaded:
-		dom.LogDebug("Server.onMessage(Loaded req)")
+		dom.LogDebug("Server.OnMessage(Loaded req)")
 		s.mgr.Loaded(func(keys []*LoadedKey, err error) {
-			dom.LogDebug("Server.onMessage(Loaded rsp): %d keys, err=%v", len(keys), err)
+			dom.LogDebug("Server.OnMessage(Loaded rsp): %d keys, err=%v", len(keys), err)
 			rsp := rspLoaded{
 				Type: msgTypeLoadedRsp,
 				Keys: keys,
@@ -185,71 +203,75 @@ func (s *Server) onMessage(headerObj js.Value, sender js.Value, sendResponse fun
 			}
 			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
+		return
 	case msgTypeAdd:
 		var m msgAdd
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			dom.LogError("failed to parse Add message: %v", err)
-			return false
+			s.sendErrorResponse(fmt.Errorf("failed to parse Add message: %v", err), sendResponse)
+			return
 		}
-		dom.LogDebug("Server.onMessage(Add req): name=%s", m.Name)
+		dom.LogDebug("Server.OnMessage(Add req): name=%s", m.Name)
 		s.mgr.Add(m.Name, m.PEMPrivateKey, func(err error) {
 			rsp := rspAdd{
 				Type: msgTypeAddRsp,
 				Err:  makeErrStr(err),
 			}
-			dom.LogDebug("Server.onMessage(Add rsp): err=%v", err)
+			dom.LogDebug("Server.OnMessage(Add rsp): err=%v", err)
 			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
+		return
 	case msgTypeRemove:
 		var m msgRemove
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			dom.LogError("failed to parse Remove message: %v", err)
-			return false
+			s.sendErrorResponse(fmt.Errorf("failed to parse Remove message: %v", err), sendResponse)
+			return
 		}
-		dom.LogDebug("Server.onMessage(Remove req): id=%s", m.ID)
+		dom.LogDebug("Server.OnMessage(Remove req): id=%s", m.ID)
 		s.mgr.Remove(ID(m.ID), func(err error) {
 			rsp := rspRemove{
 				Type: msgTypeRemoveRsp,
 				Err:  makeErrStr(err),
 			}
-			dom.LogDebug("Server.onMessage(Remove rsp): err=%v", err)
+			dom.LogDebug("Server.OnMessage(Remove rsp): err=%v", err)
 			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
+		return
 	case msgTypeLoad:
 		var m msgLoad
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			dom.LogError("failed to parse Load message: %v", err)
-			return false
+			s.sendErrorResponse(fmt.Errorf("failed to parse Load message: %v", err), sendResponse)
+			return
 		}
-		dom.LogDebug("Server.onMessage(Load req): id=%s", m.ID)
+		dom.LogDebug("Server.OnMessage(Load req): id=%s", m.ID)
 		s.mgr.Load(ID(m.ID), m.Passphrase, func(err error) {
 			rsp := rspLoad{
 				Type: msgTypeLoadRsp,
 				Err:  makeErrStr(err),
 			}
-			dom.LogDebug("Server.onMessage(Load rsp): err=%v", err)
+			dom.LogDebug("Server.OnMessage(Load rsp): err=%v", err)
 			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
+		return
 	case msgTypeUnload:
 		var m msgUnload
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			dom.LogError("failed to parse Unload message: %v", err)
-			return false
+			s.sendErrorResponse(fmt.Errorf("failed to parse Unload message: %v", err), sendResponse)
+			return
 		}
-		dom.LogDebug("Server.onMessage(Unload req): id=%s", m.Key.ID())
+		dom.LogDebug("Server.OnMessage(Unload req): id=%s", m.Key.ID())
 		s.mgr.Unload(m.Key, func(err error) {
 			rsp := rspUnload{
 				Type: msgTypeUnloadRsp,
 				Err:  makeErrStr(err),
 			}
-			dom.LogDebug("Server.onMessage(Unload rsp): err=%v", err)
+			dom.LogDebug("Server.OnMessage(Unload rsp): err=%v", err)
 			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
+		return
 	default:
-		dom.LogError("received invalid message type: %d", header.Type)
-		return false
+		s.sendErrorResponse(fmt.Errorf("received invalid message type: %d", header.Type), sendResponse)
+		return
 	}
-	return true
 }
 
 // MessageSender defines methods sufficient to send messages.

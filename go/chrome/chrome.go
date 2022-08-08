@@ -30,6 +30,8 @@ type C struct {
 	chrome js.Value
 	// runtime is a reference to 'chrome.runtime'.
 	runtime js.Value
+	// sessionStorage is a reference to 'chrome.storage.session'.
+	sessionStorage js.Value
 	// syncStorage is a reference to 'chrome.storage.sync'.
 	syncStorage js.Value
 	// extensionID is the unique ID allocated to our extension.
@@ -45,10 +47,22 @@ func New(chrome js.Value) *C {
 	}
 
 	return &C{
-		chrome:      chrome,
-		runtime:     chrome.Get("runtime"),
-		syncStorage: chrome.Get("storage").Get("sync"),
-		extensionID: chrome.Get("runtime").Get("id").String(),
+		chrome:         chrome,
+		runtime:        chrome.Get("runtime"),
+		sessionStorage: chrome.Get("storage").Get("session"),
+		syncStorage:    chrome.Get("storage").Get("sync"),
+		extensionID:    chrome.Get("runtime").Get("id").String(),
+	}
+}
+
+// SessionStorage returns a PersistentStore object that can be used to to store
+// data in memory. Data persists across Service Worker restarts.
+//
+// See https://developer.chrome.com/apps/storage#property-session.
+func (c *C) SessionStorage() PersistentStore {
+	return &Storage{
+		chrome: c,
+		o:      c.sessionStorage,
 	}
 }
 
@@ -64,21 +78,6 @@ func (c *C) SyncStorage() PersistentStore {
 			o:      c.syncStorage,
 		},
 	}
-}
-
-// OnMessage installs a callback that will be invoked when the extension
-// receives a message.
-//
-// See https://developer.chrome.com/apps/runtime#event-onMessage.
-func (c *C) OnMessage(callback func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool) {
-	cb := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		var header, sender, sendResponse js.Value
-		dom.ExpandArgs(args, &header, &sender, &sendResponse)
-		return callback(header, sender, func(rsp js.Value) {
-			sendResponse.Invoke(rsp)
-		})
-	})
-	c.runtime.Get("onMessage").Call("addListener", cb)
 }
 
 // SendMessage sends a message within our extension. While the underlying

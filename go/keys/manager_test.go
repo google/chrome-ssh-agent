@@ -45,8 +45,8 @@ var (
 	storageDeleteErr = errors.New("Storage.Delete() failed")
 )
 
-func newTestManager(agent agent.Agent, storage chrome.PersistentStore, keys []*initialKey) (Manager, error) {
-	mgr := NewManager(agent, storage)
+func newTestManager(agent agent.Agent, syncStorage, sessionStorage chrome.PersistentStore, keys []*initialKey) (*DefaultManager, error) {
+	mgr := NewManager(agent, syncStorage, sessionStorage)
 	for _, k := range keys {
 		if err := syncAdd(mgr, k.Name, k.PEMPrivateKey); err != nil {
 			return nil, err
@@ -126,16 +126,17 @@ func TestAdd(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
-			storage := fakes.NewMemStorage()
-			mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+			syncStorage := fakes.NewMemStorage()
+			sessionStorage := fakes.NewMemStorage()
+			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
 			}
 
 			// Add the key.
 			func() {
-				storage.SetError(tc.storageErr)
-				defer storage.SetError(fakes.Errs{})
+				syncStorage.SetError(tc.storageErr)
+				defer syncStorage.SetError(fakes.Errs{})
 
 				ferr := syncAdd(mgr, tc.name, tc.pemPrivateKey)
 				if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
@@ -223,8 +224,9 @@ func TestRemove(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
-			storage := fakes.NewMemStorage()
-			mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+			syncStorage := fakes.NewMemStorage()
+			sessionStorage := fakes.NewMemStorage()
+			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
 			}
@@ -237,8 +239,8 @@ func TestRemove(t *testing.T) {
 
 			// Remove the key
 			func() {
-				storage.SetError(tc.storageErr)
-				defer storage.SetError(fakes.Errs{})
+				syncStorage.SetError(tc.storageErr)
+				defer syncStorage.SetError(fakes.Errs{})
 
 				ferr := syncRemove(mgr, id)
 				if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
@@ -303,16 +305,17 @@ func TestConfigured(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 
-			storage := fakes.NewMemStorage()
-			mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+			syncStorage := fakes.NewMemStorage()
+			sessionStorage := fakes.NewMemStorage()
+			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
 			}
 
 			// Enumerate the keys.
 			func() {
-				storage.SetError(tc.storageErr)
-				defer storage.SetError(fakes.Errs{})
+				syncStorage.SetError(tc.storageErr)
+				defer syncStorage.SetError(fakes.Errs{})
 
 				configured, err := syncConfigured(mgr)
 				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
@@ -494,8 +497,9 @@ func TestLoadAndLoaded(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 
-			storage := fakes.NewMemStorage()
-			mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+			syncStorage := fakes.NewMemStorage()
+			sessionStorage := fakes.NewMemStorage()
+			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
 			}
@@ -508,8 +512,8 @@ func TestLoadAndLoaded(t *testing.T) {
 
 			// Load the key
 			func() {
-				storage.SetError(tc.storageErr)
-				defer storage.SetError(fakes.Errs{})
+				syncStorage.SetError(tc.storageErr)
+				defer syncStorage.SetError(fakes.Errs{})
 
 				ferr := syncLoad(mgr, id, tc.passphrase)
 				if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
@@ -525,6 +529,15 @@ func TestLoadAndLoaded(t *testing.T) {
 			blobs := loadedKeyBlobs(loaded)
 			if diff := cmp.Diff(blobs, tc.wantLoaded); diff != "" {
 				t.Errorf("incorrect loaded keys; -got +want: %s", diff)
+			}
+
+			// Ensure correct keys stored in session
+			gotSessionKeys, err := sessionKeyIDs(mgr.sessionKeys)
+			if err != nil {
+				t.Errorf("failed to get session keys: %v", err)
+			}
+			if diff := cmp.Diff(gotSessionKeys, loadedKeyIDs(loaded), idSlice); diff != "" {
+				t.Errorf("incorrect session keys; -got +want: %s", diff)
 			}
 		})
 	}
@@ -576,7 +589,7 @@ func TestUnload(t *testing.T) {
 			wantLoaded: []string{
 				testdata.WithPassphrase.Blob,
 			},
-			wantErr: errUnloadFailed,
+			wantErr: errAgentUnloadFailed,
 		},
 	}
 
@@ -584,8 +597,9 @@ func TestUnload(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 
-			storage := fakes.NewMemStorage()
-			mgr, err := newTestManager(agent.NewKeyring(), storage, tc.initial)
+			syncStorage := fakes.NewMemStorage()
+			sessionStorage := fakes.NewMemStorage()
+			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
 			}
@@ -605,6 +619,15 @@ func TestUnload(t *testing.T) {
 			if diff := cmp.Diff(blobs, tc.wantLoaded); diff != "" {
 				t.Errorf("incorrect loaded keys; -got +want: %s", diff)
 			}
+
+			// Ensure correct keys stored in session
+			gotSessionKeys, err := sessionKeyIDs(mgr.sessionKeys)
+			if err != nil {
+				t.Errorf("failed to get session keys: %v", err)
+			}
+			if diff := cmp.Diff(gotSessionKeys, loadedKeyIDs(loaded), idSlice); diff != "" {
+				t.Errorf("incorrect session keys; -got +want: %s", diff)
+			}
 		})
 	}
 }
@@ -612,9 +635,10 @@ func TestUnload(t *testing.T) {
 func TestGetID(t *testing.T) {
 	// Create a manager with one configured key.  We load the key and
 	// ensure we can correctly extract the ID.
-	storage := fakes.NewMemStorage()
+	syncStorage := fakes.NewMemStorage()
+	sessionStorage := fakes.NewMemStorage()
 	agt := agent.NewKeyring()
-	mgr, err := newTestManager(agt, storage, []*initialKey{
+	mgr, err := newTestManager(agt, syncStorage, sessionStorage, []*initialKey{
 		{
 			Name:          "good-key",
 			PEMPrivateKey: testdata.WithPassphrase.Private,
@@ -665,4 +689,78 @@ func TestGetID(t *testing.T) {
 	if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID, InvalidID}); diff != "" {
 		t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
 	}
+}
+
+func TestLoadFromSession(t *testing.T) {
+	// Storage peresists across multiple manager instances
+	syncStorage := fakes.NewMemStorage()
+	sessionStorage := fakes.NewMemStorage()
+
+	// First manager instance configures and loads a key.
+	var wantID ID
+	func() {
+		agt := agent.NewKeyring()
+		mgr, err := newTestManager(agt, syncStorage, sessionStorage, []*initialKey{
+			{
+				Name:          "good-key",
+				PEMPrivateKey: testdata.WithPassphrase.Private,
+			},
+		})
+		if err != nil {
+			t.Fatalf("failed to initialize manager: %v", err)
+		}
+
+		// Locate the ID corresponding to the key we configured.
+		wantID, err = findKey(mgr, InvalidID, "good-key")
+		if err != nil {
+			t.Errorf("failed to find ID for good-key: %v", err)
+		}
+
+		// Load the key.
+		if err = syncLoad(mgr, wantID, testdata.WithPassphrase.Passphrase); err != nil {
+			t.Errorf("failed to load key: %v", err)
+		}
+
+		// Ensure key is loaded.
+		loaded, err := syncLoaded(mgr)
+		if err != nil {
+			t.Errorf("failed to enumerate loaded keys: %v", err)
+		}
+		if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != "" {
+			t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
+		}
+	}()
+
+	// Second manager instance loads keys from storage. We expect the
+	// loaded key to be loaded into the agent.
+	func() {
+		agt := agent.NewKeyring()
+		mgr, err := newTestManager(agt, syncStorage, sessionStorage, []*initialKey{
+			{
+				Name:          "good-key",
+				PEMPrivateKey: testdata.WithPassphrase.Private,
+			},
+		})
+		if err != nil {
+			t.Fatalf("failed to initialize manager: %v", err)
+		}
+
+		// Restore keys from session.
+		errc := make(chan error, 1)
+		mgr.LoadFromSession(func(err error) {
+			errc <- err
+		})
+		if err := <-errc; err != nil {
+			t.Fatalf("failed to load keys from session: %v", err)
+		}
+
+		// Ensure key is loaded.
+		loaded, err := syncLoaded(mgr)
+		if err != nil {
+			t.Errorf("failed to enumerate loaded keys: %v", err)
+		}
+		if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != "" {
+			t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
+		}
+	}()
 }

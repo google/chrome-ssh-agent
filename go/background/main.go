@@ -26,25 +26,50 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
+var (
+	// Create a keyring with loaded keys.
+	agt = agent.NewKeyring()
+
+	// Create a wrapper that can update the loaded keys. Exposed the
+	// wrapper so it can be used by other pages in the extension.
+	chr = chrome.New(js.Null())
+	mgr = keys.NewManager(agt, chr.SyncStorage(), chr.SessionStorage())
+	svr = keys.NewServer(mgr)
+
+	// Reload any keys for the session into the agent.
+	_ = func() bool {
+		mgr.LoadFromSession(func(err error) {
+			if err != nil {
+				dom.LogError("failed to load keys into agent: %v", err)
+			}
+		})
+		return true // Dummy value.
+	}()
+)
+
+func onMessage(this js.Value, args []js.Value) interface{} {
+	var message, sender, sendResponse js.Value
+	dom.ExpandArgs(args, &message, &sender, &sendResponse)
+	svr.OnMessage(message, sender, func(rsp js.Value) {
+		sendResponse.Invoke(rsp)
+	})
+	return nil
+}
+
+func onConnectExternal(this js.Value, args []js.Value) interface{} {
+	port := dom.SingleArg(args)
+	dom.Log("Starting agent for new port")
+	go agent.ServeAgent(agt, agentport.New(port))
+	return nil
+}
+
 func main() {
 	dom.Log("Starting background worker")
 	defer dom.Log("Exiting background worker")
 
+	js.Global().Set("handleOnMessage", js.FuncOf(onMessage))
+	js.Global().Set("handleOnConnectExternal", js.FuncOf(onConnectExternal))
+
 	done := make(chan struct{}, 0)
-
-	// Create a keyring with loaded keys.
-	a := agent.NewKeyring()
-
-	// Create a wrapper that can update the loaded keys. Exposed the
-	// wrapper so it can be used by other pages in the extension.
-	c := chrome.New(js.Null())
-	mgr := keys.NewManager(a, c.SyncStorage())
-	keys.NewServer(mgr, c)
-
-	c.OnConnectExternal(func(port js.Value) {
-		dom.Log("Starting agent for new port")
-		go agent.ServeAgent(a, agentport.New(port))
-	})
-
 	<-done // Do not terminate.
 }

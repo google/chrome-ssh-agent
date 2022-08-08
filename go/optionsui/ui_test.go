@@ -29,14 +29,18 @@ import (
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 var (
 	validID = keys.ID("1")
+
+	// Don't bother with Comment field, since it may contain a
+	// randomly-generated ID.
+	displayedKeyCmp = cmpopts.IgnoreFields(displayedKey{}, "Comment")
 )
 
 type testHarness struct {
-	storage   *fakes.MemStorage
 	messaging *fakes.MessageHub
 	agent     agent.Agent
 	manager   keys.Manager
@@ -47,18 +51,19 @@ type testHarness struct {
 }
 
 func newHarness() *testHarness {
-	storage := fakes.NewMemStorage()
+	syncStorage := fakes.NewMemStorage()
+	sessionStorage := fakes.NewMemStorage()
 	msg := fakes.NewMessageHub()
 
 	agt := agent.NewKeyring()
-	mgr := keys.NewManager(agt, storage)
-	srv := keys.NewServer(mgr, msg)
+	mgr := keys.NewManager(agt, syncStorage, sessionStorage)
+	srv := keys.NewServer(mgr)
+	msg.AddReceiver(srv)
 	cli := keys.NewClient(msg)
 	dom := dom.New(dt.NewDocForTesting(string(OptionsHTMLData)))
 	ui := New(cli, dom)
 
 	return &testHarness{
-		storage:   storage,
 		messaging: msg,
 		agent:     agt,
 		manager:   mgr,
@@ -384,7 +389,7 @@ func TestUserActions(t *testing.T) {
 					Blob:   testdata.WithPassphrase.Blob,
 				},
 			},
-			wantErr: "failed to unload key: key unload failed: agent: key not found",
+			wantErr: "failed to unload key: key unload from agent failed: agent: key not found",
 		},
 		{
 			description: "display non-configured keys",
@@ -448,16 +453,18 @@ func TestUserActions(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		h := newHarness()
-		tc.sequence(h)
+		t.Run(tc.description, func(t *testing.T) {
+			h := newHarness()
+			tc.sequence(h)
 
-		displayed := equalizeIds(h.UI.displayedKeys())
-		if diff := cmp.Diff(displayed, tc.wantDisplayed); diff != "" {
-			t.Errorf("%s: incorrect displayed keys; -got +want: %s", tc.description, diff)
-		}
-		err := h.dom.TextContent(h.UI.errorText)
-		if diff := cmp.Diff(err, tc.wantErr); diff != "" {
-			t.Errorf("%s: incorrect error; -got +want: %s", tc.description, diff)
-		}
+			displayed := equalizeIds(h.UI.displayedKeys())
+			if diff := cmp.Diff(displayed, tc.wantDisplayed, displayedKeyCmp); diff != "" {
+				t.Errorf("%s: incorrect displayed keys; -got +want: %s", tc.description, diff)
+			}
+			err := h.dom.TextContent(h.UI.errorText)
+			if diff := cmp.Diff(err, tc.wantErr); diff != "" {
+				t.Errorf("%s: incorrect error; -got +want: %s", tc.description, diff)
+			}
+		})
 	}
 }

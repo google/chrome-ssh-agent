@@ -85,7 +85,8 @@ func New(mgr keys.Manager, domObj *dom.DOM) *UI {
 	}
 
 	// Populate keys on initial display
-	result.dom.OnDOMContentLoaded(result.tryInitKeys)
+	// result.dom.OnDOMContentLoaded(result.tryInitKeys)
+	result.dom.OnDOMContentLoaded(result.updateKeys)
 	// Configure new key on click
 	result.dom.OnClick(result.addButton, result.add)
 	return result
@@ -268,6 +269,8 @@ type displayedKey struct {
 	Type string
 	// Blob is the public key material for the key.
 	Blob string
+	// Comment is the comment attached to the key in the agent
+	Comment string
 }
 
 func (d *displayedKey) LoadedKey() (*keys.LoadedKey, error) {
@@ -276,7 +279,10 @@ func (d *displayedKey) LoadedKey() (*keys.LoadedKey, error) {
 		return nil, fmt.Errorf("failed to decode blob: %v", err)
 	}
 
-	l := &keys.LoadedKey{Type: d.Type}
+	l := &keys.LoadedKey{
+		Type:    d.Type,
+		Comment: d.Comment,
+	}
 	l.SetBlob(blob)
 	return l, nil
 }
@@ -414,9 +420,10 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 	for _, l := range loaded {
 		// Gather basic fields we get for any loaded key.
 		dk := &displayedKey{
-			Loaded: true,
-			Type:   l.Type,
-			Blob:   base64.StdEncoding.EncodeToString(l.Blob()),
+			Loaded:  true,
+			Type:    l.Type,
+			Blob:    base64.StdEncoding.EncodeToString(l.Blob()),
+			Comment: l.Comment,
 		}
 		// Attempt to figure out if this is a key we loaded. If so, fill
 		// in some additional information.  It is possible that a key with
@@ -470,17 +477,18 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 
 func (u *UI) tryInitKeys() {
 	u.updateKeys()
-	if u.keysUpdated {
-		return
-	}
+	/*
+		if u.keysUpdated {
+			return
+		}
 
-	dom.SetTimeout(1*time.Second, u.tryInitKeys)
+		dom.SetTimeout(1*time.Second, u.tryInitKeys)
+	*/
 }
 
 // updateKeys queries the manager for configured and loaded keys, then triggers
 // UI updates to reflect the current state.
 func (u *UI) updateKeys() {
-	dom.LogDebug("UI.updateKeys()")
 	u.mgr.Configured(func(configured []*keys.ConfiguredKey, err error) {
 		if err != nil {
 			u.setError(fmt.Errorf("failed to get configured keys: %v", err))
@@ -533,14 +541,16 @@ func poll(done func() bool) {
 func (u *UI) EndToEndTest() []error {
 	var errs []error
 
-	dom.Log("Waiting for initial keys to be updated")
-	poll(func() bool {
-		return u.keysUpdated
-	})
-	if !u.keysUpdated {
-		errs = append(errs, fmt.Errorf("init: wait for keys to be updated"))
-		return errs // Remaining tests have hard dependency on initialization.
-	}
+	/*
+		dom.Log("Waiting for initial keys to be updated")
+		poll(func() bool {
+			return u.keysUpdated
+		})
+		if !u.keysUpdated {
+			errs = append(errs, fmt.Errorf("init: wait for keys to be updated"))
+			return errs // Remaining tests have hard dependency on initialization.
+		}
+	*/
 
 	dom.Log("Generate random name to use for key")
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))

@@ -69,7 +69,8 @@ func TestClientServerConfigured(t *testing.T) {
 	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
-	NewServer(mgr, hub)
+	srv := NewServer(mgr)
+	hub.AddReceiver(srv)
 
 	k0 := &ConfiguredKey{}
 	k0.ID = "id-0"
@@ -99,7 +100,8 @@ func TestClientServerAdd(t *testing.T) {
 	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
-	NewServer(mgr, hub)
+	srv := NewServer(mgr)
+	hub.AddReceiver(srv)
 
 	wantName := "some-name"
 	wantPrivateKey := "private-key"
@@ -125,7 +127,8 @@ func TestClientServerRemove(t *testing.T) {
 	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
-	NewServer(mgr, hub)
+	srv := NewServer(mgr)
+	hub.AddReceiver(srv)
 
 	wantID := ID("id-0")
 	wantErr := errors.New("failed")
@@ -147,7 +150,8 @@ func TestClientServerLoaded(t *testing.T) {
 	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
-	NewServer(mgr, hub)
+	srv := NewServer(mgr)
+	hub.AddReceiver(srv)
 
 	k0 := &LoadedKey{}
 	k0.Type = "type-0"
@@ -179,7 +183,8 @@ func TestClientServerLoad(t *testing.T) {
 	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
-	NewServer(mgr, hub)
+	srv := NewServer(mgr)
+	hub.AddReceiver(srv)
 
 	wantID := ID("id-0")
 	wantPassphrase := "secret"
@@ -205,7 +210,8 @@ func TestClientServerUnload(t *testing.T) {
 	hub := fakes.NewMessageHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
-	NewServer(mgr, hub)
+	srv := NewServer(mgr)
+	hub.AddReceiver(srv)
 
 	wantKey := &LoadedKey{}
 	wantKey.Type = "type-0"

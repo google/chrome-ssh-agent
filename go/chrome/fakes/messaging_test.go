@@ -24,28 +24,37 @@ import (
 	"github.com/norunners/vert"
 )
 
+type intReceiver struct{}
+
+func (i *intReceiver) OnMessage(header js.Value, sender js.Value, sendResponse func(js.Value)) {
+	if header.Type() == js.TypeNumber && header.Int() == 42 {
+		sendResponse(js.ValueOf("int"))
+	}
+}
+
+type stringReceiver struct{}
+
+func (s *stringReceiver) OnMessage(header js.Value, sender js.Value, sendResponse func(js.Value)) {
+	if header.Type() == js.TypeString && header.String() == "foo" {
+		sendResponse(js.ValueOf("string"))
+	}
+}
+
+type mapReceiver struct{}
+
+func (m *mapReceiver) OnMessage(header js.Value, sender js.Value, sendResponse func(js.Value)) {
+	if header.Type() == js.TypeObject && !header.Get("some-key").IsUndefined() {
+		sendResponse(js.ValueOf("map"))
+	}
+}
+
 func TestMessagePassing(t *testing.T) {
 	hub := NewMessageHub()
 
 	// Add handlers that respond to different values.
-	hub.OnMessage(func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool {
-		if header.Type() == js.TypeNumber && header.Int() == 42 {
-			sendResponse(js.ValueOf("int"))
-		}
-		return true
-	})
-	hub.OnMessage(func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool {
-		if header.Type() == js.TypeString && header.String() == "foo" {
-			sendResponse(js.ValueOf("string"))
-		}
-		return true
-	})
-	hub.OnMessage(func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool {
-		if header.Type() == js.TypeObject && !header.Get("some-key").IsUndefined() {
-			sendResponse(js.ValueOf("map"))
-		}
-		return true
-	})
+	hub.AddReceiver(&intReceiver{})
+	hub.AddReceiver(&stringReceiver{})
+	hub.AddReceiver(&mapReceiver{})
 
 	// Send messages of the various types.
 	var intRsp, strRsp, mapRsp js.Value

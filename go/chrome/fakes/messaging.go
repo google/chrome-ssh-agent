@@ -20,9 +20,15 @@ import (
 	"syscall/js"
 )
 
+// MessageReceiver defines methods sufficient to receive messages and send
+// responses.
+type MessageReceiver interface {
+	OnMessage(header js.Value, sender js.Value, sendResponse func(js.Value))
+}
+
 // MessageHub is a fake implementation of Chrome's messaging APIs.
 type MessageHub struct {
-	handlers []func(js.Value, js.Value, func(js.Value)) bool
+	receivers []MessageReceiver
 }
 
 // NewMessageHub returns a fake implementation of Chrome's messaging APIs.
@@ -30,15 +36,15 @@ func NewMessageHub() *MessageHub {
 	return &MessageHub{}
 }
 
-// OnMessage is a fake implementation of chrome.C.OnMessage.
-func (m *MessageHub) OnMessage(callback func(header js.Value, sender js.Value, sendResponse func(js.Value)) bool) {
-	m.handlers = append(m.handlers, callback)
+// AddReceiver adds a receiver to which messages should be delivered.
+func (m *MessageHub) AddReceiver(r MessageReceiver) {
+	m.receivers = append(m.receivers, r)
 }
 
 // SendMessage is a fake implementation of chrome.C.SendMessage.
 func (m *MessageHub) SendMessage(msg js.Value, callback func(rsp js.Value)) {
-	for _, h := range m.handlers {
-		h(msg, js.Null(), func(rsp js.Value) {
+	for _, r := range m.receivers {
+		r.OnMessage(msg, js.Null(), func(rsp js.Value) {
 			callback(rsp)
 		})
 	}

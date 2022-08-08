@@ -136,7 +136,7 @@ func (ap *agentPort) SendMessages() {
 			encoded.Data[i] = int(b)
 		}
 
-		ap.p.Call("postMessage", vert.ValueOf(encoded))
+		ap.p.Call("postMessage", vert.ValueOf(encoded).JSValue())
 	}
 }
 
