@@ -132,12 +132,7 @@ def go_dependencies():
         sum = "h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=",
         version = "v1.1.1",
     )
-    go_repository(
-        name = "com_github_dchest_bcrypt_pbkdf",
-        importpath = "github.com/dchest/bcrypt_pbkdf",
-        sum = "h1:saTgr5tMLFnmy/yg3qDTft4rE5DY2uJ/cCxCe3q0XTU=",
-        version = "v0.0.0-20150205184540-83f37f9c154a",
-    )
+
     go_repository(
         name = "com_github_dgrijalva_jwt_go",
         importpath = "github.com/dgrijalva/jwt-go",
@@ -414,12 +409,12 @@ def go_dependencies():
     go_repository(
         name = "com_github_norunners_vert",
         importpath = "github.com/norunners/vert",
-        sum = "h1:wowEKpELVGcI7utqSzrCbdbSfq4BSfY1wLeQsW6R/as=",
-        version = "v0.0.0-20211229045251-b4c39e2856da",
         patch_args = ["-p1"],
         patches = [
             "//:norunners-vert-go1.18.patch",
         ],
+        sum = "h1:wowEKpELVGcI7utqSzrCbdbSfq4BSfY1wLeQsW6R/as=",
+        version = "v0.0.0-20211229045251-b4c39e2856da",
     )
 
     go_repository(
@@ -497,13 +492,6 @@ def go_dependencies():
     )
 
     go_repository(
-        name = "com_github_scaleft_sshkeys",
-        importpath = "github.com/ScaleFT/sshkeys",
-        sum = "h1:VauE2GcJNZFun2Och6tIT2zJZK1v6jxALQDA9BIji/E=",
-        version = "v0.0.0-20200327173127-6142f742bca5",
-    )
-
-    go_repository(
         name = "com_github_shurcool_sanitized_anchor_name",
         importpath = "github.com/shurcooL/sanitized_anchor_name",
         sum = "h1:PdmoCO6wvbs+7yrJyMORt4/BmY5IYyJwS/kOiWx8mHo=",
@@ -576,8 +564,8 @@ def go_dependencies():
     go_repository(
         name = "com_github_stretchr_testify",
         importpath = "github.com/stretchr/testify",
-        sum = "h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=",
-        version = "v1.7.0",
+        sum = "h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H4=",
+        version = "v1.5.1",
     )
     go_repository(
         name = "com_github_tebeka_selenium",
@@ -648,12 +636,7 @@ def go_dependencies():
         sum = "h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=",
         version = "v2.2.2",
     )
-    go_repository(
-        name = "in_gopkg_yaml_v3",
-        importpath = "gopkg.in/yaml.v3",
-        sum = "h1:h8qDotaEPuJATrMmW04NCwg7v22aHH28wwpauUhK9Oo=",
-        version = "v3.0.0-20210107192922-496545a6307b",
-    )
+
     go_repository(
         name = "io_etcd_go_bbolt",
         importpath = "go.etcd.io/bbolt",
