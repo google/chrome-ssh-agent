@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/chrome-ssh-agent/tools"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
@@ -126,7 +127,7 @@ func TestWebApp(t *testing.T) {
 	caps.AddLogging(logLevels)
 
 	t.Log("Preparing extension")
-	extPath, extCleanup, err := unzipExtension(extensionPath)
+	extPath, extCleanup, err := tools.UnzipTemp(extensionPath)
 	if err != nil {
 		t.Fatalf("Failed to unzip extension: %v", err)
 	}
