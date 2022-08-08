@@ -44,7 +44,7 @@ try {
   console.log('Publishing extension');
   const publishResult = await store.publish(publishTarget);
   const publishErrors = new Set(publishResult.status);
-  publish.delete('OK');
+  publishErrors.delete('OK');
   if (publishErrors.size > 0) {
     throw `Publish failed with errors:\n${publishResult.statusDetail.join('\n')}`;
   }
