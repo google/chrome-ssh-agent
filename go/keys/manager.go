@@ -210,9 +210,14 @@ func (s *storedKey) Encrypted() bool {
 
 // sessionKey is the raw object stored in session storage for a key that has
 // been loaded into the agent.
+//
+// Just as the key is stored in-memory in an SSH agent, we store it decrypted
+// here.  We may be suspended/unloaded at arbitrary points by the browser, and
+// we need to resume without re-prompting the user for their passphrase each
+// time.
 type sessionKey struct {
 	ID         string `js:"id"`
-	Passphrase string `js:"passphrase"`
+	PrivateKey string `js:"privateKey"`
 }
 
 const (
@@ -298,55 +303,42 @@ func (m *DefaultManager) Loaded(callback func(keys []*LoadedKey, err error)) {
 }
 
 var (
-	errKeyNotFound  = errors.New("key not found")
-	errDecodeFailed = errors.New("key decode failed")
-	errParseFailed  = errors.New("key parse failed")
+	errKeyNotFound   = errors.New("key not found")
+	errDecodeFailed  = errors.New("key decode failed")
+	errParseFailed   = errors.New("key parse failed")
+	errMarshalFailed = errors.New("key marshalling failed")
 )
 
 // LoadFromSession loads all keys for the current session into the agent.
 func (m *DefaultManager) LoadFromSession(callback func(err error)) {
-	// Read all the stored keys. We need these to load session keys
-	// into the agent.
-	m.storedKeys.ReadAll(func(storedKeys []*storedKey, err error) {
+	// Read session keys. We'll load these into the agent.
+	m.sessionKeys.ReadAll(func(sessionKeys []*sessionKey, err error) {
 		if err != nil {
-			callback(fmt.Errorf("failed to read stored keys: %w", err))
+			callback(fmt.Errorf("failed to read session keys: %w", err))
 			return
 		}
 
-		// Index stored keys by ID for faster lookup.
-		storedKeysByID := map[string]*storedKey{}
-		for _, k := range storedKeys {
-			storedKeysByID[k.ID] = k
-		}
-
-		// Read session keys. We'll load these into the agent.
-		m.sessionKeys.ReadAll(func(sessionKeys []*sessionKey, err error) {
-			if err != nil {
-				callback(fmt.Errorf("failed to read session keys: %w", err))
-				return
-			}
-
-			// Attempt to load each into the agent.
-			for _, k := range sessionKeys {
-				sk, present := storedKeysByID[k.ID]
-				if !present {
-					dom.LogError("failed to locate session key ID %s in persistent storage; skipping", k.ID)
-					continue
+		// Attempt to load each into the agent.
+		for _, k := range sessionKeys {
+			m.addToAgent(ID(k.ID), decryptedKey(k.PrivateKey), func(err error) {
+				if err != nil {
+					dom.LogError("failed to load session key ID %s into agent: %v; skipping", k.ID, err)
+					return
 				}
-
-				m.addToAgent(ID(k.ID), k.Passphrase, sk, func(err error) {
-					if err != nil {
-						dom.LogError("failed to load session key ID %s into agent: %v; skipping", k.ID, err)
-						return
-					}
-				})
-			}
-			callback(nil)
-		})
+			})
+		}
+		callback(nil)
 	})
 }
 
-func (m *DefaultManager) addToAgent(id ID, passphrase string, key *storedKey, callback func(err error)) {
+type decryptedKey string
+
+const (
+	pkcs8BlockType = "PRIVATE KEY"
+)
+
+func decryptKey(key *storedKey, passphrase string) (decryptedKey, error) {
+	// Decode and decrypt the key.
 	var err error
 	var priv interface{}
 	if key.EncryptedPKCS8() {
@@ -355,8 +347,7 @@ func (m *DefaultManager) addToAgent(id ID, passphrase string, key *storedKey, ca
 		var block *pem.Block
 		block, _ = pem.Decode([]byte(key.PEMPrivateKey))
 		if block == nil {
-			callback(fmt.Errorf("%w: failed to decode encrypted private key", errDecodeFailed))
-			return
+			return "", fmt.Errorf("%w: failed to decode encrypted private key", errDecodeFailed)
 		}
 		if passphrase != "" {
 			priv, err = pkcs8.ParsePKCS8PrivateKey(block.Bytes, []byte(passphrase))
@@ -370,12 +361,33 @@ func (m *DefaultManager) addToAgent(id ID, passphrase string, key *storedKey, ca
 	}
 	// Forward incorrect password errors on directly.
 	if err != nil && errors.Is(err, x509.IncorrectPasswordError) {
-		callback(fmt.Errorf("failed to parse private key: %w", err))
-		return
+		return "", fmt.Errorf("failed to parse private key: %w", err)
 	}
 	// Wrap all other non-specific errors.
 	if err != nil {
-		callback(fmt.Errorf("%w: %v", errParseFailed, err))
+		return "", fmt.Errorf("%w: %v", errParseFailed, err)
+	}
+
+	// Marshal to PKCS#8 format.
+	buf, err := x509.MarshalPKCS8PrivateKey(priv)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", errMarshalFailed, err)
+	}
+
+	return decryptedKey(pem.EncodeToMemory(&pem.Block{
+		Type:  pkcs8BlockType,
+		Bytes: buf,
+	})), nil
+}
+
+func parseDecryptedKey(pemPrivateKey decryptedKey) (interface{}, error) {
+	return ssh.ParseRawPrivateKey([]byte(pemPrivateKey))
+}
+
+func (m *DefaultManager) addToAgent(id ID, key decryptedKey, callback func(err error)) {
+	priv, err := parseDecryptedKey(key)
+	if err != nil {
+		callback(err)
 		return
 	}
 
@@ -405,7 +417,13 @@ func (m *DefaultManager) Load(id ID, passphrase string, callback func(err error)
 				return
 			}
 
-			m.addToAgent(id, passphrase, key, func(err error) {
+			decrypted, err := decryptKey(key, passphrase)
+			if err != nil {
+				callback(fmt.Errorf("failed to decrypt key: %w", err))
+				return
+			}
+
+			m.addToAgent(id, decrypted, func(err error) {
 				if err != nil {
 					callback(err)
 					return
@@ -413,7 +431,7 @@ func (m *DefaultManager) Load(id ID, passphrase string, callback func(err error)
 
 				sk := &sessionKey{
 					ID:         string(id),
-					Passphrase: passphrase,
+					PrivateKey: string(decrypted),
 				}
 				m.sessionKeys.Write(sk, func(err error) {
 					if err != nil {

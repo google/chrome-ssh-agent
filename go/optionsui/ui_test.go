@@ -316,7 +316,7 @@ func TestUserActions(t *testing.T) {
 					Encrypted: true,
 				},
 			},
-			wantErr: "failed to load key: failed to parse private key: x509: decryption password incorrect",
+			wantErr: "failed to load key: failed to decrypt key: failed to parse private key: x509: decryption password incorrect",
 		},
 		{
 			description: "load unencrypted key",
