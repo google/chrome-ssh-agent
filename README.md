@@ -1,3 +1,5 @@
+![test status](https://github.com/google/chrome-ssh-agent/actions/workflows/test.yml/badge.svg)
+
 # SSH Agent for Google Chrome™
 
 This is a bare-bones SSH agent extension for Google Chrome™.  It provides an
