@@ -25,7 +25,7 @@ async function resolveFunc(func) {
 }
 
 async function onMessageReceived(message, sender, sendResponse) {
-	f = await resolveFunc('handleOnMessage');
+	let f = await resolveFunc('handleOnMessage');
 	f(message, sender, sendResponse);
 }
 
@@ -35,17 +35,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function onConnectExternal(port) {
-	f = await resolveFunc('handleOnConnectExternal');
+	let f = await resolveFunc('handleOnConnectExternal');
 	f(port);
 }
 
 async function onConnectionMessage(port, msg) {
-	f = await resolveFunc('handleConnectionMessage');
+	let f = await resolveFunc('handleConnectionMessage');
 	f(port, msg);
 }
 
 async function onConnectionDisconnect(port) {
-	f = await resolveFunc('handleConnectionDisconnect');
+	let f = await resolveFunc('handleConnectionDisconnect');
 	f(port);
 }
 
