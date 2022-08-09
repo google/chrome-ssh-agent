@@ -1,0 +1,27 @@
+name: Publish
+
+on:
+  # New release tagged.
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.*'
+  # Manual trigger.
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: bazelbuild/setup-bazelisk@v2
+      - name: Build
+        run: bazel build ...
+      - name: Test
+        run: bazel test ...
+      - name: Publish
+        run: bazel run publish:publish
+        env:
+          EXTENSION_ID: eechpbnaifiimgajnomdipfaamobdfha
+          WEBSTORE_CLIENT_ID: ${{ secrets.WEBSTORE_CLIENT_ID }}
+          WEBSTORE_CLIENT_SECRET: ${{ secrets.WEBSTORE_CLIENT_SECRET }}
+          WEBSTORE_REFRESH_TOKEN: ${{ secrets.WEBSTORE_REFRESH_TOKEN }}
