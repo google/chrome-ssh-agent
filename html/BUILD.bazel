@@ -1,14 +1,6 @@
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
 
 filegroup(
-    name = "optionsui_htmlonly",
-    srcs = ["options.html"],
-    # HTML file only to embed into testing targets. Must not use outside tests,
-    # as this is an incomplete set of the UI data.
-    visibility = ["//go/optionsui:__subpackages__"],
-)
-
-filegroup(
     name = "optionsui",
     srcs = [
         "options.html",

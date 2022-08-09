@@ -102,10 +102,6 @@ go_register_toolchains(
     version = "1.18",
 )
 
-load("@io_bazel_rules_go//extras:embed_data_deps.bzl", "go_embed_data_dependencies")
-
-go_embed_data_dependencies()
-
 # Gazelle dependency management support
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
