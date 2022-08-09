@@ -7,8 +7,8 @@ go_library(
     importpath = "github.com/google/chrome-ssh-agent/go/optionsui",
     visibility = ["//visibility:public"],
     deps = [
-        "//go/dom:dom",
-        "//go/keys:keys",
+        "//go/dom",
+        "//go/keys",
         "//go/keys/testdata",
         "@com_github_google_go_cmp//cmp",
     ],
@@ -16,11 +16,10 @@ go_library(
 
 go_library(
     name = "optionsui_testlib",
-    srcs = [
-        "ui_test.go",
-    ],
+    testonly = True,
+    srcs = ["ui_test.go"],
     data = [
-	    "//html:optionsui",
+        "//html:optionsui",
     ],
     embed = [":optionsui"],
     importpath = "github.com/google/chrome-ssh-agent/go/optionsui",
@@ -30,19 +29,18 @@ go_library(
         "//go/dom/testing",
         "//go/keys",
         "//go/keys/testdata",
-        "@io_bazel_rules_go//go/tools/bazel",
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",
+        "@io_bazel_rules_go//go/tools/bazel",
         "@org_golang_x_crypto//ssh",
         "@org_golang_x_crypto//ssh/agent",
     ],
-    testonly = True,
 )
 
 go_wasm_test(
     name = "optionsui_test",
-    testlib = ":optionsui_testlib",
     node_deps = [
         "@npm//jsdom",
     ],
+    testlib = ":optionsui_testlib",
 )

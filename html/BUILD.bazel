@@ -3,11 +3,11 @@ load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
 filegroup(
     name = "optionsui",
     srcs = [
+        "background.js",
         "options.html",
         "options.js",
-        "background.js",
         "style.css",
-	"@go_sdk//:misc/wasm/wasm_exec.js",
+        "@go_sdk//:misc/wasm/wasm_exec.js",
     ],
     visibility = ["//visibility:public"],
 )

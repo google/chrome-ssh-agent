@@ -10,17 +10,18 @@ go_library(
     importpath = "github.com/google/chrome-ssh-agent/go/keys",
     visibility = ["//visibility:public"],
     deps = [
-        "//go/dom:dom",
-	"//go/chrome:chrome",
+        "//go/chrome",
+        "//go/dom",
+        "@com_github_norunners_vert//:vert",
         "@com_github_youmark_pkcs8//:pkcs8",
         "@org_golang_x_crypto//ssh",
         "@org_golang_x_crypto//ssh/agent",
-	"@com_github_norunners_vert//:vert",
     ],
 )
 
 go_library(
     name = "keys_testlib",
+    testonly = True,
     srcs = [
         "client_test.go",
         "common_test.go",
@@ -36,7 +37,6 @@ go_library(
         "@org_golang_x_crypto//ssh",
         "@org_golang_x_crypto//ssh/agent",
     ],
-    testonly = True,
 )
 
 go_wasm_test(

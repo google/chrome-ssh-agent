@@ -2,11 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "tools",
-    srcs = [
-        "unzip.go",
-    ],
+    srcs = ["unzip.go"],
     importpath = "github.com/google/chrome-ssh-agent/tools",
     visibility = ["//visibility:public"],
 )
-
-

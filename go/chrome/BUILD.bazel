@@ -4,35 +4,35 @@ load("//build_defs:wasm.bzl", "go_wasm_test")
 go_library(
     name = "chrome",
     srcs = [
+        "bigstorage.go",
         "chrome.go",
         "storage.go",
-        "bigstorage.go",
         "typedstorage.go",
     ],
     importpath = "github.com/google/chrome-ssh-agent/go/chrome",
     visibility = ["//visibility:public"],
     deps = [
-	    "//go/dom:dom",
-	"@com_github_norunners_vert//:vert",
+        "//go/dom",
+        "@com_github_norunners_vert//:vert",
     ],
 )
 
 go_library(
     name = "chrome_testlib",
+    testonly = True,
     srcs = [
-        "storage_test.go",
         "bigstorage_test.go",
+        "storage_test.go",
         "typedstorage_test.go",
     ],
     embed = [":chrome"],
     importpath = "github.com/google/chrome-ssh-agent/go/chrome",
     deps = [
-        "//go/chrome/fakes:fakes",
+        "//go/chrome/fakes",
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",
-	"@com_github_norunners_vert//:vert",
+        "@com_github_norunners_vert//:vert",
     ],
-    testonly = True,
 )
 
 go_wasm_test(

@@ -4,8 +4,8 @@ nodejs_binary(
     name = "publish",
     data = [
         "//:chrome-ssh-agent.zip",
-        "@npm//chrome-webstore-upload",
         "@npm//@bazel/runfiles",
+        "@npm//chrome-webstore-upload",
     ],
     entry_point = ":publish.mjs",
 )

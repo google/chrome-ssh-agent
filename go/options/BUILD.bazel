@@ -1,5 +1,5 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_binary")
-load("@rules_pkg//pkg:mappings.bzl", "pkg_files", "pkg_filegroup")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
 
 go_library(
     name = "options_lib",
@@ -8,9 +8,9 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//go/chrome",
-        "//go/dom:dom",
-        "//go/keys:keys",
-        "//go/optionsui:optionsui",
+        "//go/dom",
+        "//go/keys",
+        "//go/optionsui",
         "//go/testing",
     ],
 )
@@ -19,8 +19,9 @@ go_binary(
     name = "options",
     out = "options.wasm",
     embed = [":options_lib"],
-    goos = "js",
     goarch = "wasm",
+    goos = "js",
+    visibility = ["//visibility:private"],
 )
 
 pkg_files(

@@ -13,6 +13,7 @@ go_library(
 
 go_library(
     name = "fakes_testlib",
+    testonly = True,
     srcs = [
         "messaging_test.go",
         "storage_test.go",
@@ -22,9 +23,8 @@ go_library(
     deps = [
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",
-	"@com_github_norunners_vert//:vert",
+        "@com_github_norunners_vert//:vert",
     ],
-    testonly = True,
 )
 
 go_wasm_test(

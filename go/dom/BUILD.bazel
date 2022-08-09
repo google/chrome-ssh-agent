@@ -13,6 +13,7 @@ go_library(
 
 go_library(
     name = "dom_testlib",
+    testonly = True,
     srcs = [
         "dom_test.go",
         "url_test.go",
@@ -23,15 +24,13 @@ go_library(
         "//go/dom/testing",
         "@com_github_google_go_cmp//cmp",
     ],
-    testonly = True,
 )
 
 go_wasm_test(
     name = "dom_test",
-    testlib = ":dom_testlib",
     node_deps = [
         "@npm//jsdom",
         "@npm//url-search-params",
     ],
+    testlib = ":dom_testlib",
 )
-
