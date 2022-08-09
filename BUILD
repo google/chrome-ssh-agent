@@ -12,7 +12,10 @@ load("@rules_pkg//:pkg.bzl", "pkg_zip")
 # gazelle:resolve go github.com/google/chrome-ssh-agent/go/keys //go/keys
 # gazelle:resolve go github.com/google/chrome-ssh-agent/go/optionsui //go/optionsui
 
-gazelle(name = "gazelle")
+gazelle(
+    name = "gazelle",
+    command = "fix",
+)
 
 gazelle(
     name = "gazelle-update-repos",
