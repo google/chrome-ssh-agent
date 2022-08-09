@@ -441,6 +441,33 @@ func TestLoadAndLoaded(t *testing.T) {
 			},
 		},
 		{
+			description: "load ecdsa key",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.ECDSAWithPassphrase.Private,
+				},
+			},
+			byName:     "good-key",
+			passphrase: testdata.ECDSAWithPassphrase.Passphrase,
+			wantLoaded: []string{
+				testdata.ECDSAWithPassphrase.Blob,
+			},
+		},
+		{
+			description: "load ecdsa key without passphrase",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.ECDSAWithoutPassphrase.Private,
+				},
+			},
+			byName: "good-key",
+			wantLoaded: []string{
+				testdata.ECDSAWithoutPassphrase.Blob,
+			},
+		},
+		{
 			description: "fail on invalid private key",
 			initial: []*initialKey{
 				{
