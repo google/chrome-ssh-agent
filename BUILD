@@ -5,6 +5,15 @@ load("@rules_pkg//:pkg.bzl", "pkg_zip")
 # gazelle:prefix github.com/google/chrome-ssh-agent
 gazelle(name = "gazelle")
 
+gazelle(
+    name = "gazelle-update-repos",
+    args = [
+        "--prune=true",
+        "--from_file=go.mod",
+    ],
+    command = "update-repos",
+)
+
 # Enable nogo for source code analysis
 nogo(
     name = "chrome_ssh_agent_nogo",
