@@ -1,0 +1,21 @@
+name: Test
+
+on:
+  # Test on checkin.
+  push:
+  # Pull requests
+  pull_request:
+  # Nightly test.
+  schedule:
+    - cron: '0 9 * * *'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: bazelbuild/setup-bazelisk@v2
+      - name: Build
+        run: bazel build ...
+      - name: Test
+        run: bazel test ...
