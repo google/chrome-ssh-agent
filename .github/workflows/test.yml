@@ -8,6 +8,7 @@ on:
   # Nightly test.
   schedule:
     - cron: '0 9 * * *'
+  # Manual trigger.
   workflow_dispatch:
 
 jobs:
