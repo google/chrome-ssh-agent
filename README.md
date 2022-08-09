@@ -4,7 +4,7 @@
 
 This is a bare-bones SSH agent extension for Google Chrome™.  It provides an
 SSH agent implementation that can be used with the
-[Secure Shell Chrome extension](http://chrome.google.com/webstore/detail/secure-shell/pnhechapfaindjhompbnflcldabbghjo).
+[Secure Shell Chrome extension](https://chrome.google.com/webstore/detail/secure-shell/iodihamcpbpeioajjeobimgagajmlibd).
 
 # Getting Started
 
