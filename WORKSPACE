@@ -117,7 +117,7 @@ go_dependencies()
 
 gazelle_dependencies()
 
-# NodeJS support (required by GopherJS)
+# NodeJS support. Required for testing and publishing.
 load("@build_bazel_rules_nodejs//:repositories.bzl", "build_bazel_rules_nodejs_dependencies")
 
 build_bazel_rules_nodejs_dependencies()
