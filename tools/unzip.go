@@ -15,11 +15,12 @@
 package tools
 
 import (
+	"archive/zip"
 	"fmt"
 	"io"
 	"os"
-	"archive/zip"
 	"path/filepath"
+	"strings"
 )
 
 // CleanupFunc can be invoked to cleanup any temporary state.
@@ -42,9 +43,12 @@ func UnzipTemp(path string) (string, CleanupFunc, error) {
 	defer rdr.Close()
 
 	for _, f := range rdr.File {
-		filePath := filepath.Join(dir, f.Name)
-
 		err := func() error {
+			filePath := filepath.Join(dir, f.Name)
+			if strings.Contains(filePath, "..") {
+				return fmt.Errorf("Archive contained path referring to parent directory: %s", f.Name)
+			}
+
 			if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
 				return fmt.Errorf("Failed to create destination directory %s: %v", filepath.Dir(filePath), err)
 			}
