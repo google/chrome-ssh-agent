@@ -1,0 +1,26 @@
+name: Go Dependencies
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  go-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: bazelbuild/setup-bazelisk@v2
+      - uses: actions/setup-go@v3
+      - name: Update Go Modules
+        run: go mod tidy
+      - name: Update Bazel Repositories
+        run: bazel run :gazelle-update-repos
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: Update Go Dependencies
+          title: Update Go Dependencies
+          body: Auto-generated Go dependency updates.
+          branch: go-deps-auto-update
+          delete-branch: true
