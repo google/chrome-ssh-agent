@@ -95,18 +95,6 @@ func (c *C) SendMessage(msg js.Value, callback func(rsp js.Value)) {
 		}))
 }
 
-// OnConnectExternal installs a callback that will be invoked when an external
-// connection is received.
-//
-// See https://developer.chrome.com/apps/runtime#event-onConnectExternal.
-func (c *C) OnConnectExternal(callback func(port js.Value)) {
-	cb := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		callback(dom.SingleArg(args))
-		return nil
-	})
-	c.runtime.Get("onConnectExternal").Call("addListener", cb)
-}
-
 // Error returns the error (if any) from the last call. Returns nil if there
 // was no error.
 //
