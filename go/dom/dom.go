@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"syscall/js"
 	"time"
+	
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
 var (
@@ -90,13 +92,10 @@ func (d *DOM) OnClick(o js.Value, callback func(evt Event)) {
 
 // SetTimeout registers a callback to be invoked when the timeout has expired.
 func SetTimeout(timeout time.Duration, callback func()) {
-	var cb js.Func
-	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		defer cb.Release() // One-time callback; release when done.
+	cb := jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
 		callback()
 		return nil
 	})
-
 	js.Global().Call("setTimeout", cb, timeout.Milliseconds())
 }
 
@@ -107,14 +106,12 @@ func (d *DOM) OnDOMContentLoaded(callback func()) {
 		SetTimeout(0, callback) // Event already fired. Invoke callback directly.
 	}
 
-	var cb js.Func
-	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		defer cb.Release() // One-time callback; release when done.
-		callback()
-		return nil
-	})
-
-	d.doc.Call("addEventListener", "DOMContentLoaded", cb)
+	d.doc.Call(
+		"addEventListener", "DOMContentLoaded",
+		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
+			callback()
+			return nil
+		}))
 }
 
 // Value returns the value of an object as a string.

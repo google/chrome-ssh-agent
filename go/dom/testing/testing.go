@@ -19,6 +19,8 @@ package testing
 
 import (
 	"syscall/js"
+	
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
 var (
@@ -44,12 +46,11 @@ func NewDocForTesting(html string) js.Value {
 	// doc is returned. By default, jsdom loads doc asynchronously:
 	//   https://oliverjam.es/blog/frontend-testing-node-jsdom/#waiting-for-external-resources
 	c := make(chan js.Value)
-	var loaded js.Func
-	loaded = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		defer loaded.Release()
-		c <- dom.Get("window").Get("document")
-		return nil
-	})
-	dom.Get("window").Call("addEventListener", "load", loaded)
+	dom.Get("window").Call(
+		"addEventListener", "load",
+		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
+			c <- dom.Get("window").Get("document")
+			return nil
+		}))
 	return <-c
 }

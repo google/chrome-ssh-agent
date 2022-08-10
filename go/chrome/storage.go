@@ -21,6 +21,7 @@ import (
 	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/norunners/vert"
 )
 
@@ -74,17 +75,16 @@ func valueToData(val js.Value) (map[string]js.Value, error) {
 //
 // See set() in https://developer.chrome.com/apps/storage#type-StorageArea.
 func (s *Storage) Set(data map[string]js.Value, callback func(err error)) {
-	var cb js.Func
-	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		defer cb.Release() // One-time callback; release when done.
-		if err := s.chrome.Error(); err != nil {
-			callback(fmt.Errorf("failed to set data: %v", err))
+	s.o.Call(
+		"set", dataToValue(data),
+		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
+			if err := s.chrome.Error(); err != nil {
+				callback(fmt.Errorf("failed to set data: %v", err))
+				return nil
+			}
+			callback(nil)
 			return nil
-		}
-		callback(nil)
-		return nil
-	})
-	s.o.Call("set", dataToValue(data), cb)
+		}))
 }
 
 // Get reads all the data items currently stored.  The callback will be
@@ -94,24 +94,23 @@ func (s *Storage) Set(data map[string]js.Value, callback func(err error)) {
 //
 // See get() in https://developer.chrome.com/apps/storage#type-StorageArea.
 func (s *Storage) Get(callback func(data map[string]js.Value, err error)) {
-	var cb js.Func
-	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		defer cb.Release() // One-time callback; release when done.
-		if err := s.chrome.Error(); err != nil {
-			callback(nil, fmt.Errorf("failed to get data: %v", err))
-			return nil
-		}
+	s.o.Call(
+		"get", js.Null(),
+		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
+			if err := s.chrome.Error(); err != nil {
+				callback(nil, fmt.Errorf("failed to get data: %v", err))
+				return nil
+			}
 
-		data, err := valueToData(dom.SingleArg(args))
-		if err != nil {
-			callback(nil, fmt.Errorf("failed to parse data: %v", err))
-			return nil
-		}
+			data, err := valueToData(dom.SingleArg(args))
+			if err != nil {
+				callback(nil, fmt.Errorf("failed to parse data: %v", err))
+				return nil
+			}
 
-		callback(data, nil)
-		return nil
-	})
-	s.o.Call("get", js.Null(), cb)
+			callback(data, nil)
+			return nil
+		}))
 }
 
 // Delete removes the items from storage with the specified keys. If a key is
@@ -125,15 +124,14 @@ func (s *Storage) Delete(keys []string, callback func(err error)) {
 		return
 	}
 
-	var cb js.Func
-	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		defer cb.Release() // One-time callback; release when done.
-		if err := s.chrome.Error(); err != nil {
-			callback(fmt.Errorf("failed to delete data: %v", err))
+	s.o.Call(
+		"remove", vert.ValueOf(keys).JSValue(),
+		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
+			if err := s.chrome.Error(); err != nil {
+				callback(fmt.Errorf("failed to delete data: %v", err))
+				return nil
+			}
+			callback(nil)
 			return nil
-		}
-		callback(nil)
-		return nil
-	})
-	s.o.Call("remove", vert.ValueOf(keys).JSValue(), cb)
+		}))
 }

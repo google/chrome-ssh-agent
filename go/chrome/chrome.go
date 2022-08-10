@@ -22,6 +22,7 @@ import (
 	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
 // C provides access to Chrome's extension APIs.
@@ -86,13 +87,12 @@ func (c *C) SyncStorage() PersistentStore {
 //
 // See https://developer.chrome.com/apps/runtime#method-sendMessage.
 func (c *C) SendMessage(msg js.Value, callback func(rsp js.Value)) {
-	var cb js.Func
-	cb = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		defer cb.Release() // One-shot callback; release after invoked.
-		callback(dom.SingleArg(args))
-		return nil
-	})
-	c.runtime.Call("sendMessage", c.extensionID, msg, nil, cb)
+	c.runtime.Call(
+		"sendMessage", c.extensionID, msg, nil,
+		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
+			callback(dom.SingleArg(args))
+			return nil
+		}))
 }
 
 // OnConnectExternal installs a callback that will be invoked when an external

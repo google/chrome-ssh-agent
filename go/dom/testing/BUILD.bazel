@@ -6,4 +6,5 @@ go_library(
     srcs = ["testing.go"],
     importpath = "github.com/google/chrome-ssh-agent/go/dom/testing",
     visibility = ["//visibility:public"],
+    deps = ["//go/jsutil"],
 )
