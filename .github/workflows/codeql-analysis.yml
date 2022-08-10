@@ -11,9 +11,6 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     permissions:
-      actions: read
-      contents: read
-      pull-requests: read
       security-events: write
     strategy:
       fail-fast: false
@@ -27,6 +24,5 @@ jobs:
           languages: ${{ matrix.language }}
           # See https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
           queries: +security-extended,security-and-quality
-      - name: Build
-        run: bazel build ...
+      - run: bazel build ...
       - uses: github/codeql-action/analyze@v2
