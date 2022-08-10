@@ -28,5 +28,7 @@ jobs:
           commit-message: Update Go Dependencies
           title: Update Go Dependencies
           body: Auto-generated Go dependency updates.
+          labels: |
+            dependencies
           branch: go-deps-auto-update
           delete-branch: true
