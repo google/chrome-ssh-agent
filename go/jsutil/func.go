@@ -31,6 +31,21 @@ func OneTimeFuncOf(f func(this js.Value, args []js.Value) interface{}) js.Func {
 	return cb
 }
 
+// CleanupFunc is a function to be invoked to cleanup resources.
+type CleanupFunc func()
+
+// DefineFunc defines a new function and attaches it to the specified object.
+// The returned cleanup function must be invoked to detach the function and
+// release it.
+func DefineFunc(o js.Value, name string, f func(this js.Value, args []js.Value) interface{}) CleanupFunc {
+	fo := js.FuncOf(f)
+	o.Set(name, fo)
+	return func() {
+		o.Set(name, js.Undefined())
+		fo.Release()
+	}
+}
+
 // RepeatableFunc is a special type of function that is expected to be
 // repeatedly invoked.  Thus, invoking Release() is the caller's responsibility.
 type RepeatableFunc js.Func

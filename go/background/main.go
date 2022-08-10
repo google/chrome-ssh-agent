@@ -22,6 +22,7 @@ import (
 	"github.com/google/chrome-ssh-agent/go/agentport"
 	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -116,10 +117,14 @@ func main() {
 	dom.Log("Starting background worker")
 	defer dom.Log("Exiting background worker")
 
-	js.Global().Set("handleOnMessage", js.FuncOf(onMessage))
-	js.Global().Set("handleOnConnectExternal", js.FuncOf(onConnectExternal))
-	js.Global().Set("handleConnectionMessage", js.FuncOf(onConnectionMessage))
-	js.Global().Set("handleConnectionDisconnect", js.FuncOf(onConnectionDisconnect))
+	c1 := jsutil.DefineFunc(js.Global(), "handleOnMessage", onMessage)
+	defer c1()
+	c2 := jsutil.DefineFunc(js.Global(), "handleOnConnectExternal", onConnectExternal)
+	defer c2()
+	c3 := jsutil.DefineFunc(js.Global(), "handleConnectionMessage", onConnectionMessage)
+	defer c3()
+	c4 := jsutil.DefineFunc(js.Global(), "handleConnectionDisconnect", onConnectionDisconnect)
+	defer c4()
 
 	done := make(chan struct{}, 0)
 	<-done // Do not terminate immediately.
