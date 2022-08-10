@@ -411,7 +411,7 @@ def go_dependencies():
         importpath = "github.com/norunners/vert",
         patch_args = ["-p1"],
         patches = [
-            "//:norunners-vert-go1.18.patch",
+            "//:patches/norunners-vert-go1.18.patch",
         ],
         sum = "h1:wowEKpELVGcI7utqSzrCbdbSfq4BSfY1wLeQsW6R/as=",
         version = "v0.0.0-20211229045251-b4c39e2856da",

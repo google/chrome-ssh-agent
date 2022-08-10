@@ -10,7 +10,7 @@ http_archive(
     name = "io_bazel_rules_go",
     patch_args = ["-p1"],
     patches = [
-        "//:rules_go-wasm.patch",
+        "//:patches/rules_go-wasm.patch",
     ],
     sha256 = "16e9fca53ed6bd4ff4ad76facc9b7b651a89db1689a2877d6fd7b82aa824e366",
     urls = ["https://github.com/bazelbuild/rules_go/releases/download/v0.34.0/rules_go-v0.34.0.zip"],
