@@ -1,9 +1,9 @@
 {
   "name": "chrome-ssh-agent",
   "dependencies": {
-    "chrome-webstore-upload": "~1",
-    "@bazel/runfiles": "~5",
-    "jsdom": "~20",
-    "url-search-params": "~1"
+    "chrome-webstore-upload": "*",
+    "@bazel/runfiles": "*",
+    "jsdom": "*",
+    "url-search-params": "*"
   }
 }
