@@ -40,4 +40,3 @@ func MustReadRunfile(path string) []byte {
 	}
 	return buf
 }
-

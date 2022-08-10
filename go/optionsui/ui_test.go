@@ -27,8 +27,8 @@ import (
 	"github.com/google/chrome-ssh-agent/go/dom"
 	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
 	"github.com/google/chrome-ssh-agent/go/keys"
-	"github.com/google/chrome-ssh-agent/go/testutil"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
+	"github.com/google/chrome-ssh-agent/go/testutil"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
