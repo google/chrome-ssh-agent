@@ -28,7 +28,7 @@ jobs:
           files: |
             chrome-ssh-agent.zip
       - name: Publish to Webstore
-        run: bazel run publish:publish
+        run: bazel run release:publish
         env:
           EXTENSION_ID: eechpbnaifiimgajnomdipfaamobdfha
           WEBSTORE_CLIENT_ID: ${{ secrets.WEBSTORE_CLIENT_ID }}

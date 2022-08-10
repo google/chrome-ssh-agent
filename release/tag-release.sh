@@ -16,7 +16,7 @@
 
 # Usage:
 #  (1) Update version in manifest.json
-#  (2) Run release.sh
+#  (2) Run tag-release.sh
 
 cd $(dirname $0)/..
 
@@ -38,8 +38,7 @@ test -z $(git tag | grep --line-regexp "${TAG}") \
 # Ensure all tests pass.
 bazel test ...
 
-# Commit everything. This should include the change to manifest.json and any
-# updated vendored packages.
+# Commit everything. This should include the change to manifest.json.
 git add .
 git commit -m "Bump to version ${VERSION}"
 
