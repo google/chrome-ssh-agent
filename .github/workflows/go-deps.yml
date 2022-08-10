@@ -17,7 +17,7 @@ jobs:
       - name: Update Go Modules
         run: go mod tidy
       - name: Update Bazel Repositories
-        run: bazel run :gazelle-update-repos
+        run: bazel run //:gazelle-update-repos
       - name: Build
         run: bazel build ...
       - name: Test
