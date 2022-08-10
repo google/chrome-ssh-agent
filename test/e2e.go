@@ -10,25 +10,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/chrome-ssh-agent/tools"
-	"github.com/bazelbuild/rules_go/go/tools/bazel"
+	"github.com/google/chrome-ssh-agent/go/testutil"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
 	slog "github.com/tebeka/selenium/log"
 )
 
-func mustRunfile(path string) string {
-	path, err := bazel.Runfile(path)
-	if err != nil {
-		panic(fmt.Errorf("failed to find runfile %s: %v", path, err))
-	}
-	return path
-}
-
 var (
-	chromeDriverPath = mustRunfile("chromedriver.bin")
-	chromePath       = mustRunfile("chromium.bin")
-	extensionPath    = mustRunfile("chrome-ssh-agent.zip")
+	chromeDriverPath = testutil.MustRunfile("chromedriver.bin")
+	chromePath       = testutil.MustRunfile("chromium.bin")
+	extensionPath    = testutil.MustRunfile("chrome-ssh-agent.zip")
 )
 
 func getElementText(wd selenium.WebDriver, id string) (string, error) {
@@ -127,7 +118,7 @@ func TestWebApp(t *testing.T) {
 	caps.AddLogging(logLevels)
 
 	t.Log("Preparing extension")
-	extPath, extCleanup, err := tools.UnzipTemp(extensionPath)
+	extPath, extCleanup, err := testutil.UnzipTemp(extensionPath)
 	if err != nil {
 		t.Fatalf("Failed to unzip extension: %v", err)
 	}

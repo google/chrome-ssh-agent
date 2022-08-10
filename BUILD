@@ -11,6 +11,7 @@ load("@rules_pkg//:pkg.bzl", "pkg_zip")
 # gazelle:resolve go github.com/google/chrome-ssh-agent/go/dom //go/dom
 # gazelle:resolve go github.com/google/chrome-ssh-agent/go/keys //go/keys
 # gazelle:resolve go github.com/google/chrome-ssh-agent/go/optionsui //go/optionsui
+# gazelle:resolve go github.com/google/chrome-ssh-agent/go/testutil //go/testutil
 
 gazelle(
     name = "gazelle",

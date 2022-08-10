@@ -18,24 +18,19 @@ package optionsui
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 
-	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/google/chrome-ssh-agent/go/dom"
 	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
 	"github.com/google/chrome-ssh-agent/go/keys"
+	"github.com/google/chrome-ssh-agent/go/testutil"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-)
-
-const (
-	optionsHTMLPath = "html/options.html"
 )
 
 var (
@@ -45,17 +40,7 @@ var (
 	// randomly-generated ID.
 	displayedKeyCmp = cmpopts.IgnoreFields(displayedKey{}, "Comment")
 
-	optionsHTMLData = func(path string) string {
-		fullPath, err := bazel.Runfile(path)
-		if err != nil {
-			panic(fmt.Errorf("failed to find runfile %s: %v", path, err))
-		}
-		buf, err := os.ReadFile(fullPath)
-		if err != nil {
-			panic(fmt.Errorf("failed to read runfile %s: %v", fullPath, err))
-		}
-		return string(buf)
-	}(optionsHTMLPath)
+	optionsHTMLData = string(testutil.MustReadRunfile("html/options.html"))
 )
 
 type testHarness struct {

@@ -26,6 +26,7 @@ go_library(
     deps = [
         "//go/chrome/fakes",
         "//go/dom",
+        "//go/testutil",
         "//go/dom/testing",
         "//go/keys",
         "//go/keys/testdata",

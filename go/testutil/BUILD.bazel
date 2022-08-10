@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "testutil",
+    testonly = True,
+    srcs = [
+        "runfiles.go",
+        "unzip.go",
+    ],
+    importpath = "github.com/google/chrome-ssh-agent/go/testutil",
+    visibility = ["//visibility:public"],
+    deps = ["@io_bazel_rules_go//go/tools/bazel:go_default_library"],
+)
