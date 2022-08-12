@@ -34,6 +34,23 @@ func OneTimeFuncOf(f func(this js.Value, args []js.Value) interface{}) js.Func {
 // CleanupFunc is a function to be invoked to cleanup resources.
 type CleanupFunc func()
 
+// CleanupFuncs is a set of cleanup functions.
+type CleanupFuncs struct {
+	cf []CleanupFunc
+}
+
+// Add adds a cleanup func.
+func (c *CleanupFuncs) Add(f CleanupFunc) {
+	c.cf = append(c.cf, f)
+}
+
+// Do invokes all of the cleanup functions.
+func (c *CleanupFuncs) Do() {
+	for _, f := range c.cf {
+		f()
+	}
+}
+
 // DefineFunc defines a new function and attaches it to the specified object.
 // The returned cleanup function must be invoked to detach the function and
 // release it.
@@ -46,21 +63,14 @@ func DefineFunc(o js.Value, name string, f func(this js.Value, args []js.Value) 
 	}
 }
 
-// RepeatableFunc is a special type of function that is expected to be
-// repeatedly invoked.  Thus, invoking Release() is the caller's responsibility.
-type RepeatableFunc js.Func
-
-
-// RepeatableFuncOf returns a RepeatablFunc that can be invoked multiple times.
-// The caller is responsible for invoking Release() on the resulting func when
-// it is no longer needed.
-func RepeatableFuncOf(f func(this js.Value, args []js.Value) interface{}) RepeatableFunc {
-	return RepeatableFunc(js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		return f(this, args)
-	}))
-}
-
-// AsJSFunc returns the corresponding js.Func object.
-func (r RepeatableFunc) AsJSFunc() js.Func {
-	return js.Func(r)
+// AddEventListener adds a function that will be invoked on the specified event
+// for an object.  The returned cleanup function must be invoked to cleanup the
+// function.
+func AddEventListener(o js.Value, event string, f func(this js.Value, args []js.Value) interface{}) CleanupFunc {
+	fo := js.FuncOf(f)
+	o.Call("addEventListener", event, fo)
+	return func() {
+		o.Call("removeEventListener", event, fo)
+		fo.Release()
+	}
 }

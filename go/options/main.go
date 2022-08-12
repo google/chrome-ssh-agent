@@ -35,6 +35,7 @@ func main() {
 	mgr := keys.NewClient(c)
 	d := dom.New(dom.Doc)
 	ui := optionsui.New(mgr, d)
+	defer ui.Release()
 
 	qs := dom.NewURLSearchParams(dom.DefaultQueryString())
 	if qs.Has("test") {

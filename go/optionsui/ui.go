@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/google/go-cmp/cmp"
@@ -37,25 +38,29 @@ import (
 // UI implements the behavior underlying the user interface for the extension's
 // options.
 type UI struct {
-	mgr              keys.Manager
-	dom              *dom.DOM
-	passphraseDialog js.Value
-	passphraseInput  js.Value
-	passphraseOk     js.Value
-	passphraseCancel js.Value
-	addButton        js.Value
-	addDialog        js.Value
-	addName          js.Value
-	addKey           js.Value
-	addOk            js.Value
-	addCancel        js.Value
-	removeDialog     js.Value
-	removeName       js.Value
-	removeYes        js.Value
-	removeNo         js.Value
-	errorText        js.Value
-	keysData         js.Value
-	keys             []*displayedKey
+	mgr       keys.Manager
+	dom       *dom.DOM
+	addButton js.Value
+	errorText js.Value
+	keysData  js.Value
+	keys      []*displayedKey
+	cleanup   *jsutil.CleanupFuncs
+}
+
+type removeDialog struct {
+	*dom.Dialog
+
+	name js.Value
+	yes  js.Value
+	no   js.Value
+}
+
+type passphraseDialog struct {
+	*dom.Dialog
+
+	passphrase js.Value
+	ok         js.Value
+	cancel     js.Value
 }
 
 // New returns a new UI instance that manages keys using the supplied manager.
@@ -63,31 +68,27 @@ type UI struct {
 // UI is displayed.
 func New(mgr keys.Manager, domObj *dom.DOM) *UI {
 	result := &UI{
-		mgr:              mgr,
-		dom:              domObj,
-		passphraseDialog: domObj.GetElement("passphraseDialog"),
-		passphraseInput:  domObj.GetElement("passphrase"),
-		passphraseOk:     domObj.GetElement("passphraseOk"),
-		passphraseCancel: domObj.GetElement("passphraseCancel"),
-		addButton:        domObj.GetElement("add"),
-		addDialog:        domObj.GetElement("addDialog"),
-		addName:          domObj.GetElement("addName"),
-		addKey:           domObj.GetElement("addKey"),
-		addOk:            domObj.GetElement("addOk"),
-		addCancel:        domObj.GetElement("addCancel"),
-		removeDialog:     domObj.GetElement("removeDialog"),
-		removeName:       domObj.GetElement("removeName"),
-		removeYes:        domObj.GetElement("removeYes"),
-		removeNo:         domObj.GetElement("removeNo"),
-		errorText:        domObj.GetElement("errorMessage"),
-		keysData:         domObj.GetElement("keysData"),
+		mgr:       mgr,
+		dom:       domObj,
+		addButton: domObj.GetElement("add"),
+		errorText: domObj.GetElement("errorMessage"),
+		keysData:  domObj.GetElement("keysData"),
+		cleanup:   &jsutil.CleanupFuncs{},
 	}
 
+	// Add event handlers.
+	cf := result.cleanup
 	// Populate keys on initial display
-	result.dom.OnDOMContentLoaded(result.updateKeys)
+	cf.Add(result.dom.OnDOMContentLoaded(result.updateKeys))
 	// Configure new key on click
-	result.dom.OnClick(result.addButton, result.add)
+	cf.Add(result.dom.OnClick(result.addButton, result.add))
 	return result
+}
+
+// Release cleans up any resources when UI is no longer used.
+func (u *UI) Release() {
+	u.setKeys(nil)
+	u.cleanup.Do()
 }
 
 // setError updates the UI to display the supplied error. If the supplied error
@@ -106,10 +107,7 @@ func (u *UI) setError(err error) {
 // and the corresponding private key.  If the user continues, the key is
 // added to the manager.
 func (u *UI) add(evt dom.Event) {
-	u.promptAdd(func(name, privateKey string, ok bool) {
-		if !ok {
-			return
-		}
+	u.promptAdd(func(name, privateKey string) {
 		u.mgr.Add(name, privateKey, func(err error) {
 			if err != nil {
 				u.setError(fmt.Errorf("failed to add key: %v", err))
@@ -123,46 +121,48 @@ func (u *UI) add(evt dom.Event) {
 }
 
 // promptAdd displays a dialog prompting the user for a name and private key.
-// callback is invoked when the dialog is closed; the ok parameter indicates
-// if the user clicked OK.
-func (u *UI) promptAdd(callback func(name, privateKey string, ok bool)) {
-	u.dom.OnClick(u.addOk, func(evt dom.Event) {
-		n := u.dom.Value(u.addName)
-		k := u.dom.Value(u.addKey)
-		u.dom.SetValue(u.addName, "")
-		u.dom.SetValue(u.addKey, "")
-		u.addOk = u.dom.RemoveEventListeners(u.addOk)
-		u.addCancel = u.dom.RemoveEventListeners(u.addCancel)
-		u.dom.Close(u.addDialog)
-		callback(n, k, true)
-	})
-	u.dom.OnClick(u.addCancel, func(evt dom.Event) {
-		u.dom.SetValue(u.addName, "")
-		u.dom.SetValue(u.addKey, "")
-		u.addOk = u.dom.RemoveEventListeners(u.addOk)
-		u.addCancel = u.dom.RemoveEventListeners(u.addCancel)
-		u.dom.Close(u.addDialog)
-		callback("", "", false)
-	})
-	u.dom.ShowModal(u.addDialog)
+// callback is invoked when user clicks OK.
+func (u *UI) promptAdd(onOk func(name, privateKey string)) {
+	dialog := dom.NewDialog(u.dom.GetElement("addDialog"))
+	name := u.dom.GetElement("addName")
+	key := u.dom.GetElement("addKey")
+	ok := u.dom.GetElement("addOk")
+	cancel := u.dom.GetElement("addCancel")
+
+	var cleanup jsutil.CleanupFuncs
+	cleanup.Add(u.dom.OnClick(ok, func(evt dom.Event) {
+		onOk(u.dom.Value(name), u.dom.Value(key))
+		dialog.Close()
+	}))
+	cleanup.Add(u.dom.OnClick(cancel, func(evt dom.Event) {
+		dialog.Close()
+	}))
+	cleanup.Add(dialog.OnClose(func(evt dom.Event) {
+		u.dom.SetValue(name, "")
+		u.dom.SetValue(key, "")
+		cleanup.Do()
+	}))
+
+	dialog.ShowModal()
 }
+
 
 // load loads the key with the specified ID.  A dialog prompts the user for a
 // passphrase if the private key is encrypted.
-func (u *UI) load(id keys.ID, encrypted bool) {
-	prompt := u.promptPassphrase
-	if !encrypted {
-		// Use a dummy callback that doesn't actually prompt if no
-		// passphrase is required.
-		prompt = func(callback func(passphrase string, ok bool)) {
-			callback("", true)
-		}
+func (u *UI) load(id keys.ID) {
+	k := u.keyByID(id)
+	if k == nil {
+		u.setError(fmt.Errorf("failed to unload key ID %s: not found", id))
+		return
 	}
 
-	prompt(func(passphrase string, ok bool) {
-		if !ok {
-			return
-		}
+	prompt := u.promptPassphrase
+	if !k.Encrypted {
+		// No passphrase required; use a dummy callback.
+		prompt = func(onOk func(passphrase string)) { onOk("") }
+	}
+
+	prompt(func(passphrase string) {
 		u.mgr.Load(id, passphrase, func(err error) {
 			if err != nil {
 				u.setError(fmt.Errorf("failed to load key: %v", err))
@@ -175,32 +175,47 @@ func (u *UI) load(id keys.ID, encrypted bool) {
 }
 
 // promptPassphrase displays a dialog prompting the user for a passphrase.
-// callback is invoked when the dialog is closed; the ok parameter indicates
-// if the user clicked OK.
-func (u *UI) promptPassphrase(callback func(passphrase string, ok bool)) {
-	u.dom.OnClick(u.passphraseOk, func(evt dom.Event) {
-		p := u.dom.Value(u.passphraseInput)
-		u.dom.SetValue(u.passphraseInput, "")
-		u.passphraseOk = u.dom.RemoveEventListeners(u.passphraseOk)
-		u.passphraseCancel = u.dom.RemoveEventListeners(u.passphraseCancel)
-		u.dom.Close(u.passphraseDialog)
-		callback(p, true)
-	})
-	u.dom.OnClick(u.passphraseCancel, func(evt dom.Event) {
-		u.dom.SetValue(u.passphraseInput, "")
-		u.passphraseOk = u.dom.RemoveEventListeners(u.passphraseOk)
-		u.passphraseCancel = u.dom.RemoveEventListeners(u.passphraseCancel)
-		u.dom.Close(u.passphraseDialog)
-		callback("", false)
-	})
-	u.dom.ShowModal(u.passphraseDialog)
+// callback is invoked if user continues.
+func (u *UI) promptPassphrase(onOk func(passphrase string)) {
+	dialog := dom.NewDialog(u.dom.GetElement("passphraseDialog"))
+	passphrase := u.dom.GetElement("passphrase")
+	ok := u.dom.GetElement("passphraseOk")
+	cancel := u.dom.GetElement("passphraseCancel")
+
+	var cleanup jsutil.CleanupFuncs
+	cleanup.Add(u.dom.OnClick(ok, func(evt dom.Event) {
+		onOk(u.dom.Value(passphrase))
+		dialog.Close()
+	}))
+	cleanup.Add(u.dom.OnClick(cancel, func(evt dom.Event) {
+		dialog.Close()
+	}))
+	cleanup.Add(dialog.OnClose(func(evt dom.Event) {
+		u.dom.SetValue(passphrase, "")
+		cleanup.Do()
+	}))
+
+	dialog.ShowModal()
 }
 
+
 // unload unloads the specified key.
-func (u *UI) unload(key *keys.LoadedKey) {
-	u.mgr.Unload(key, func(err error) {
+func (u *UI) unload(id keys.ID) {
+	k := u.keyByID(id)
+	if k == nil {
+		u.setError(fmt.Errorf("failed to unload key ID %s: not found", id))
+		return
+	}
+
+	lk, err := k.LoadedKey()
+	if err != nil {
+		u.setError(fmt.Errorf("failed to unload key ID %s: failed to extract loaded key: %v", id, err))
+		return
+	}
+
+	u.mgr.Unload(lk, func(err error) {
 		if err != nil {
-			u.setError(fmt.Errorf("failed to unload key: %v", err))
+			u.setError(fmt.Errorf("failed to unload key ID %s: %v", id, err))
 			return
 		}
 		u.setError(nil)
@@ -209,39 +224,43 @@ func (u *UI) unload(key *keys.LoadedKey) {
 }
 
 // promptRemove displays a dialog prompting the user to confirm that a key
-// should be removed. callback is invoked when the dialog is closed; the yes
-// parameter indicates if the user clicked Yes.
-func (u *UI) promptRemove(name string, callback func(yes bool)) {
-	u.dom.RemoveChildren(u.removeName)
-	u.dom.AppendChild(u.removeName, u.dom.NewText(name), nil)
-	u.dom.OnClick(u.removeYes, func(evt dom.Event) {
-		u.dom.RemoveChildren(u.removeName)
-		u.removeYes = u.dom.RemoveEventListeners(u.removeYes)
-		u.removeNo = u.dom.RemoveEventListeners(u.removeNo)
-		u.dom.Close(u.removeDialog)
-		callback(true)
-	})
-	u.dom.OnClick(u.removeNo, func(evt dom.Event) {
-		u.dom.RemoveChildren(u.removeName)
-		u.removeYes = u.dom.RemoveEventListeners(u.removeYes)
-		u.removeNo = u.dom.RemoveEventListeners(u.removeNo)
-		u.dom.Close(u.removeDialog)
-		callback(false)
-	})
-	u.dom.ShowModal(u.removeDialog)
+// should be removed. callback is invoked if the key should be removed.
+func (u *UI) promptRemove(id keys.ID, onYes func()) {
+	k := u.keyByID(id)
+	if k == nil {
+		u.setError(fmt.Errorf("failed to remove key ID %s: not found", id))
+		return
+	}
+
+	dialog := dom.NewDialog(u.dom.GetElement("removeDialog"))
+	name := u.dom.GetElement("removeName")
+	yes := u.dom.GetElement("removeYes")
+	no := u.dom.GetElement("removeNo")
+	u.dom.AppendChild(name, u.dom.NewText(k.Name), nil)
+
+	var cleanup jsutil.CleanupFuncs
+	cleanup.Add(u.dom.OnClick(yes, func(evt dom.Event) {
+		onYes()
+		dialog.Close()
+	}))
+	cleanup.Add(u.dom.OnClick(no, func(evt dom.Event) {
+		dialog.Close()
+	}))
+	cleanup.Add(dialog.OnClose(func(evt dom.Event) {
+		u.dom.RemoveChildren(name)
+		cleanup.Do()
+	}))
+
+	dialog.ShowModal()
 }
 
 // remove removes the key with the specified ID.  A dialog prompts the user to
 // confirm that the key should be removed.
-func (u *UI) remove(id keys.ID, name string) {
-	u.promptRemove(name, func(yes bool) {
-		if !yes {
-			return
-		}
-
+func (u *UI) remove(id keys.ID) {
+	u.promptRemove(id, func() {
 		u.mgr.Remove(id, func(err error) {
 			if err != nil {
-				u.setError(fmt.Errorf("failed to remove key: %v", err))
+				u.setError(fmt.Errorf("failed to remove key ID %s: %v", id, err))
 				return
 			}
 
@@ -269,8 +288,12 @@ type displayedKey struct {
 	Blob string
 	// Comment is the comment attached to the key in the agent
 	Comment string
+	// cleanup keeps track of any cleanup required before removing this key
+	// from the UI.
+	cleanup jsutil.CleanupFuncs
 }
 
+// LoadedKey returns the corresponding LoadedKey.
 func (d *displayedKey) LoadedKey() (*keys.LoadedKey, error) {
 	blob, err := base64.StdEncoding.DecodeString(d.Blob)
 	if err != nil {
@@ -285,9 +308,31 @@ func (d *displayedKey) LoadedKey() (*keys.LoadedKey, error) {
 	return l, nil
 }
 
-// DisplayedKeys returns the keys currently displayed in the UI.
+// displayedKeys returns the keys currently displayed in the UI.
 func (u *UI) displayedKeys() []*displayedKey {
 	return u.keys
+}
+
+func (u *UI) keyByID(id keys.ID) *displayedKey {
+	if id == keys.InvalidID {
+		return nil
+	}
+
+	for _, k := range u.keys {
+		if k.ID == id {
+			return k
+		}
+	}
+	return nil
+}
+
+func (u *UI) keyByName(name string) *displayedKey {
+	for _, k := range u.keys {
+		if k.Name == name {
+			return k
+		}
+	}
+	return nil
 }
 
 // buttonKind is the type of button displayed for a key.
@@ -318,11 +363,17 @@ func buttonID(kind buttonKind, id keys.ID) string {
 	return fmt.Sprintf("%s-%s", s, id)
 }
 
-// updateDisplayedKeys refreshes the UI to reflect the keys that should be
+// setKeys refreshes the UI to reflect the keys that should be
 // displayed.
-func (u *UI) updateDisplayedKeys() {
+func (u *UI) setKeys(newKeys []*displayedKey) {
+	// Cleanup elements and resources for all previous keys.
 	u.dom.RemoveChildren(u.keysData)
+	for _, k := range u.keys {
+		k.cleanup.Do()
+	}
 
+	// Construct elements for new keys.
+	u.keys = newKeys
 	for _, k := range u.keys {
 		k := k
 		u.dom.AppendChild(u.keysData, u.dom.NewElement("tr"), func(row js.Value) {
@@ -349,14 +400,9 @@ func (u *UI) updateDisplayedKeys() {
 							btn.Set("type", "button")
 							btn.Set("id", buttonID(UnloadButton, k.ID))
 							u.dom.AppendChild(btn, u.dom.NewText("Unload"), nil)
-							u.dom.OnClick(btn, func(evt dom.Event) {
-								l, err := k.LoadedKey()
-								if err != nil {
-									u.setError(fmt.Errorf("Failed to get loaded key: %v", err))
-									return
-								}
-								u.unload(l)
-							})
+							k.cleanup.Add(u.dom.OnClick(btn, func(evt dom.Event) {
+								u.unload(k.ID)
+							}))
 						})
 					} else {
 						// Load button
@@ -364,9 +410,9 @@ func (u *UI) updateDisplayedKeys() {
 							btn.Set("type", "button")
 							btn.Set("id", buttonID(LoadButton, k.ID))
 							u.dom.AppendChild(btn, u.dom.NewText("Load"), nil)
-							u.dom.OnClick(btn, func(evt dom.Event) {
-								u.load(k.ID, k.Encrypted)
-							})
+							k.cleanup.Add(u.dom.OnClick(btn, func(evt dom.Event) {
+								u.load(k.ID)
+							}))
 						})
 					}
 
@@ -375,9 +421,9 @@ func (u *UI) updateDisplayedKeys() {
 						btn.Set("type", "button")
 						btn.Set("id", buttonID(RemoveButton, k.ID))
 						u.dom.AppendChild(btn, u.dom.NewText("Remove"), nil)
-						u.dom.OnClick(btn, func(evt dom.Event) {
-							u.remove(k.ID, k.Name)
-						})
+						k.cleanup.Add(u.dom.OnClick(btn, func(evt dom.Event) {
+							u.remove(k.ID)
+						}))
 					})
 				})
 			})
@@ -489,19 +535,9 @@ func (u *UI) updateKeys() {
 			}
 
 			u.setError(nil)
-			u.keys = mergeKeys(configured, loaded)
-			u.updateDisplayedKeys()
+			u.setKeys(mergeKeys(configured, loaded))
 		})
 	})
-}
-
-func lookupKey(disp []*displayedKey, name string) *displayedKey {
-	for _, k := range disp {
-		if k.Name == name {
-			return k
-		}
-	}
-	return nil
 }
 
 const (
@@ -525,6 +561,14 @@ func poll(done func() bool) {
 // No attempt is made to clean up from any intermediate state should the test
 // fail.
 func (u *UI) EndToEndTest() []error {
+	addButton := u.dom.GetElement("add")
+	addName := u.dom.GetElement("addName")
+	addKey := u.dom.GetElement("addKey")
+	addOk := u.dom.GetElement("addOk")
+	passphraseInput := u.dom.GetElement("passphraseInput")
+	passphraseOk := u.dom.GetElement("passphraseOk")
+	removeYes := u.dom.GetElement("removeYes")
+
 	var errs []error
 
 	dom.Log("Generate random name to use for key")
@@ -536,16 +580,16 @@ func (u *UI) EndToEndTest() []error {
 	keyName := fmt.Sprintf("e2e-test-key-%s", i.String())
 
 	dom.Log("Configure a new key")
-	u.dom.DoClick(u.addButton)
-	u.dom.SetValue(u.addName, keyName)
+	u.dom.DoClick(addButton)
+	u.dom.SetValue(addName, keyName)
 	// Use the long key to exercise storage of large values in Chrome storage.
-	u.dom.SetValue(u.addKey, testdata.LongKeyWithPassphrase.Private)
-	u.dom.DoClick(u.addOk)
+	u.dom.SetValue(addKey, testdata.LongKeyWithPassphrase.Private)
+	u.dom.DoClick(addOk)
 
 	dom.Log("Validate configured keys; ensure new key is present")
 	var key *displayedKey
 	poll(func() bool {
-		key = lookupKey(u.displayedKeys(), keyName)
+		key = u.keyByName(keyName)
 		return key != nil
 	})
 	if key == nil {
@@ -555,12 +599,12 @@ func (u *UI) EndToEndTest() []error {
 
 	dom.Log("Load the new key")
 	u.dom.DoClick(u.dom.GetElement(buttonID(LoadButton, key.ID)))
-	u.dom.SetValue(u.passphraseInput, testdata.LongKeyWithPassphrase.Passphrase)
-	u.dom.DoClick(u.passphraseOk)
+	u.dom.SetValue(passphraseInput, testdata.LongKeyWithPassphrase.Passphrase)
+	u.dom.DoClick(passphraseOk)
 
 	dom.Log("Validate loaded keys; ensure new key is loaded")
 	poll(func() bool {
-		key = lookupKey(u.displayedKeys(), keyName)
+		key = u.keyByName(keyName)
 		return key != nil && key.Loaded
 	})
 	if key != nil {
@@ -582,7 +626,7 @@ func (u *UI) EndToEndTest() []error {
 
 	dom.Log("Validate loaded keys; ensure key is unloaded")
 	poll(func() bool {
-		key = lookupKey(u.displayedKeys(), keyName)
+		key = u.keyByName(keyName)
 		return key != nil && !key.Loaded
 	})
 	if key != nil {
@@ -601,11 +645,11 @@ func (u *UI) EndToEndTest() []error {
 
 	dom.Log("Remove key")
 	u.dom.DoClick(u.dom.GetElement(buttonID(RemoveButton, key.ID)))
-	u.dom.DoClick(u.removeYes)
+	u.dom.DoClick(removeYes)
 
 	dom.Log("Validate configured keys; ensure key is removed")
 	poll(func() bool {
-		key = lookupKey(u.displayedKeys(), keyName)
+		key = u.keyByName(keyName)
 		return key == nil
 	})
 	if key != nil {

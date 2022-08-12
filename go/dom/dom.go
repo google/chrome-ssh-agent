@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"syscall/js"
 	"time"
-	
+
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
@@ -36,7 +36,7 @@ var (
 
 	// Object refers to Javascript's Object class.
 	Object = js.Global().Get("Object")
-
+	
 	// JSON refers to Javascript's JSON class.
 	JSON = js.Global().Get("JSON")
 )
@@ -82,12 +82,13 @@ func (d *DOM) DoClick(o js.Value) {
 
 // OnClick registers a callback to be invoked when the specified object is
 // clicked.
-func (d *DOM) OnClick(o js.Value, callback func(evt Event)) {
-	cb := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		callback(Event{Value: SingleArg(args)})
-		return nil
-	})
-	o.Call("addEventListener", "click", cb)
+func (d *DOM) OnClick(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
+	return jsutil.AddEventListener(
+		o, "click",
+		func(this js.Value, args []js.Value) interface{} {
+			callback(Event{Value: SingleArg(args)})
+			return nil
+		})
 }
 
 // SetTimeout registers a callback to be invoked when the timeout has expired.
@@ -101,17 +102,23 @@ func SetTimeout(timeout time.Duration, callback func()) {
 
 // OnDOMContentLoaded registers a callback to be invoked when the DOM has
 // finished loading.
-func (d *DOM) OnDOMContentLoaded(callback func()) {
+func (d *DOM) OnDOMContentLoaded(callback func()) jsutil.CleanupFunc {
 	if d.doc.Get("readyState").String() != "loading" {
 		SetTimeout(0, callback) // Event already fired. Invoke callback directly.
+		return func() {}
 	}
 
-	d.doc.Call(
-		"addEventListener", "DOMContentLoaded",
-		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
+	return jsutil.AddEventListener(
+		d.doc, "DOMContentLoaded",
+		func(this js.Value, args []js.Value) interface{} {
 			callback()
 			return nil
-		}))
+		})
+}
+
+// ID returns the element ID of an object as a string.
+func (d *DOM) ID(o js.Value) string {
+	return o.Get("id").String()
 }
 
 // Value returns the value of an object as a string.
@@ -154,35 +161,70 @@ func (d *DOM) GetElementsByTag(tag string) []js.Value {
 	return result
 }
 
-// ShowModal shows the specified dialog as a modal dialog.
-func (d *DOM) ShowModal(o js.Value) {
-	if o.Get("showModal").IsUndefined() {
+// Dialog represents an HTML dialog.
+type Dialog struct {
+	dialog js.Value
+
+	simOnClose js.Func
+}
+
+// NewDialog returns a dialog wrapping the specified element.
+func NewDialog(dialog js.Value) *Dialog {
+	return &Dialog{
+		dialog: dialog,
+	}
+}
+
+// ShowModal shows the dialog as a modal dialog.
+func (d *Dialog) ShowModal() {
+	if d.dialog.Get("showModal").IsUndefined() {
 		// jsdom (which is used in tests) does not support showModal.
 		Log("showModal() not found")
 		return
 	}
-	o.Call("showModal")
+	d.dialog.Call("showModal")
 }
 
-// Close closes the specified dialog.
-func (d *DOM) Close(o js.Value) {
-	if o.Get("close").IsUndefined() {
-		// jsdom (which is used in tests) does not support showModal.
+// Close closes the dialog.
+func (d *Dialog) Close() {
+	if d.dialog.Get("close").IsUndefined() {
+		// jsdom (which is used in tests) does not support close.
 		Log("close() not found")
+		// Simulate 'close' event; we need to ensure OnClose is triggered.
+		// Using Javascript's dispatchEvent(new Event('close')) doesn't
+		// work; it appears to send node.js into an infinite loop.
+		if !d.simOnClose.IsUndefined() {
+			d.simOnClose.Invoke()
+		}
 		return
 	}
 
-	o.Call("close")
+	d.dialog.Call("close")
 }
 
-// RemoveEventListeners removes all event listeners from an object and its
-// children.  This is accomplished by cloning the object, which has the side
-// effect of *not* cloning the event listeners.   The newly-created object is
-// returned.
-func (d *DOM) RemoveEventListeners(o js.Value) js.Value {
-	clone := o.Call("cloneNode", true)
-	o.Get("parentNode").Call("replaceChild", clone, o)
-	return clone
+// OnClose registers the specified callback to be invoked when the dialog is
+// closed. The returned function must be invoked to cleanup when it is no longer
+// needed.
+func (d *Dialog) OnClose(callback func(evt Event)) jsutil.CleanupFunc {
+	if d.dialog.Get("close").IsUndefined() {
+		// jsdom (which is used in tests) does not support close. Store
+		// the OnClose event for a subsequent invocation of Close().
+		if !d.simOnClose.IsUndefined() {
+			panic(fmt.Errorf("Multiple simulated OnClose handlers not supported"))
+		}
+		d.simOnClose = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+			callback(Event{Value: SingleArg(args)})
+			return nil
+		})
+		return d.simOnClose.Release
+	}
+
+	return jsutil.AddEventListener(
+		d.dialog, "close",
+		func(this js.Value, args []js.Value) interface{} {
+			callback(Event{Value: SingleArg(args)})
+			return nil
+		})
 }
 
 // Log logs general information to the Javascript Console.

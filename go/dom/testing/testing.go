@@ -19,7 +19,7 @@ package testing
 
 import (
 	"syscall/js"
-	
+
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
