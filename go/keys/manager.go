@@ -19,6 +19,7 @@
 package keys
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
@@ -366,6 +367,14 @@ func decryptKey(key *storedKey, passphrase string) (decryptedKey, error) {
 	// Wrap all other non-specific errors.
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", errParseFailed, err)
+	}
+
+	// Workaround for https://github.com/google/chrome-ssh-agent/issues/28.
+	// In the case of ed25519 keys, ssh.ParseRawPublicKey() will return a
+	// *ed25519.PrivateKey (pointer), but x509.MarshalPKCS8PrivateKey()
+	// expects a ed25519.PrivateKey (non-pointer).
+	if k, ok := priv.(*ed25519.PrivateKey); ok {
+		priv = *k
 	}
 
 	// Marshal to PKCS#8 format.

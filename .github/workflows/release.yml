@@ -25,8 +25,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
-            chrome-ssh-agent.zip
+            bazel-bin/chrome-ssh-agent.zip
       - name: Publish to Webstore
         run: bazel run release:publish
         env:

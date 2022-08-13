@@ -17,6 +17,7 @@
 package keys
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/base64"
 	"errors"
@@ -125,7 +126,6 @@ func TestAdd(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
 			syncStorage := fakes.NewMemStorage()
 			sessionStorage := fakes.NewMemStorage()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
@@ -223,7 +223,6 @@ func TestRemove(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
 			syncStorage := fakes.NewMemStorage()
 			sessionStorage := fakes.NewMemStorage()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
@@ -303,8 +302,6 @@ func TestConfigured(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
-
 			syncStorage := fakes.NewMemStorage()
 			sessionStorage := fakes.NewMemStorage()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
@@ -468,6 +465,33 @@ func TestLoadAndLoaded(t *testing.T) {
 			},
 		},
 		{
+			description: "load ed25519 key",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.ED25519WithPassphrase.Private,
+				},
+			},
+			byName:     "good-key",
+			passphrase: testdata.ED25519WithPassphrase.Passphrase,
+			wantLoaded: []string{
+				testdata.ED25519WithPassphrase.Blob,
+			},
+		},
+		{
+			description: "load ed25519 key without passphrase",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.ED25519WithoutPassphrase.Private,
+				},
+			},
+			byName: "good-key",
+			wantLoaded: []string{
+				testdata.ED25519WithoutPassphrase.Blob,
+			},
+		},
+		{
 			description: "fail on invalid private key",
 			initial: []*initialKey{
 				{
@@ -522,8 +546,6 @@ func TestLoadAndLoaded(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
-
 			syncStorage := fakes.NewMemStorage()
 			sessionStorage := fakes.NewMemStorage()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
@@ -622,13 +644,27 @@ func TestUnload(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
-
 			syncStorage := fakes.NewMemStorage()
 			sessionStorage := fakes.NewMemStorage()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
+			}
+
+			// Attempt to fill in the ID of the key we will try to unload.
+			loaded, err := syncLoaded(mgr)
+			if err != nil {
+				t.Errorf("failed to get initial keys: %v", err)
+			}
+			for _, l := range loaded {
+				if tc.unload.Type != l.Type {
+					continue
+				}
+				if bytes.Compare(tc.unload.Blob(), l.Blob()) != 0 {
+					continue
+				}
+				tc.unload.Comment = l.Comment
+				break
 			}
 
 			// Unload the key
@@ -638,7 +674,7 @@ func TestUnload(t *testing.T) {
 			}
 
 			// Ensure the correct keys are loaded at the end.
-			loaded, err := syncLoaded(mgr)
+			loaded, err = syncLoaded(mgr)
 			if err != nil {
 				t.Errorf("failed to get loaded keys: %v", err)
 			}
