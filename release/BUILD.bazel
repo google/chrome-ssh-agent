@@ -8,4 +8,6 @@ nodejs_binary(
         "@npm//chrome-webstore-upload",
     ],
     entry_point = ":publish.mjs",
+    # Workaround for https://github.com/bazelbuild/rules_nodejs/issues/3393.
+    templated_args = ["--node_options=--preserve-symlinks-main"],
 )
