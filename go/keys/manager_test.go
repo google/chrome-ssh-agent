@@ -125,7 +125,6 @@ func TestAdd(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
 			syncStorage := fakes.NewMemStorage()
 			sessionStorage := fakes.NewMemStorage()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
@@ -223,7 +222,6 @@ func TestRemove(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
 			syncStorage := fakes.NewMemStorage()
 			sessionStorage := fakes.NewMemStorage()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
@@ -303,8 +301,6 @@ func TestConfigured(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
-
 			syncStorage := fakes.NewMemStorage()
 			sessionStorage := fakes.NewMemStorage()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
@@ -468,6 +464,33 @@ func TestLoadAndLoaded(t *testing.T) {
 			},
 		},
 		{
+			description: "load ed25519 key",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.ED25519WithPassphrase.Private,
+				},
+			},
+			byName:     "good-key",
+			passphrase: testdata.ED25519WithPassphrase.Passphrase,
+			wantLoaded: []string{
+				testdata.ED25519WithPassphrase.Blob,
+			},
+		},
+		{
+			description: "load ed25519 key without passphrase",
+			initial: []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.ED25519WithoutPassphrase.Private,
+				},
+			},
+			byName: "good-key",
+			wantLoaded: []string{
+				testdata.ED25519WithoutPassphrase.Blob,
+			},
+		},
+		{
 			description: "fail on invalid private key",
 			initial: []*initialKey{
 				{
@@ -522,8 +545,6 @@ func TestLoadAndLoaded(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
-
 			syncStorage := fakes.NewMemStorage()
 			sessionStorage := fakes.NewMemStorage()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
@@ -622,8 +643,6 @@ func TestUnload(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
-
 			syncStorage := fakes.NewMemStorage()
 			sessionStorage := fakes.NewMemStorage()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
