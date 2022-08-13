@@ -19,6 +19,7 @@ package keys
 import (
 	"encoding/base64"
 	"fmt"
+	"sort"
 
 	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/go-cmp/cmp"
@@ -116,6 +117,7 @@ func configuredKeyNames(keys []*ConfiguredKey) []string {
 	for _, k := range keys {
 		result = append(result, k.Name)
 	}
+	sort.Strings(result)
 	return result
 }
 
