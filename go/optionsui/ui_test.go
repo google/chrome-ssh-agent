@@ -414,7 +414,7 @@ func TestUserActions(t *testing.T) {
 					Blob:   testdata.WithPassphrase.Blob,
 				},
 			},
-			wantErr: "failed to unload key ID bogus-id: not found",
+			wantErr: "failed to unload key ID bogus-id: key unload from agent failed: invalid id: bogus-id",
 		},
 		{
 			description: "display non-configured keys",

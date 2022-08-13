@@ -77,9 +77,9 @@ func syncLoaded(mgr Manager) ([]*LoadedKey, error) {
 	return result, err
 }
 
-func syncUnload(mgr Manager, key *LoadedKey) error {
+func syncUnload(mgr Manager, id ID) error {
 	errc := make(chan error, 1)
-	mgr.Unload(key, func(err error) {
+	mgr.Unload(id, func(err error) {
 		errc <- err
 		close(errc)
 	})

@@ -60,8 +60,8 @@ func (m *dummyManager) Load(id ID, passphrase string, callback func(err error)) 
 	callback(m.Err)
 }
 
-func (m *dummyManager) Unload(key *LoadedKey, callback func(err error)) {
-	m.Key = key
+func (m *dummyManager) Unload(id ID, callback func(err error)) {
+	m.ID = id
 	callback(m.Err)
 }
 
@@ -213,16 +213,13 @@ func TestClientServerUnload(t *testing.T) {
 	srv := NewServer(mgr)
 	hub.AddReceiver(srv)
 
-	wantKey := &LoadedKey{}
-	wantKey.Type = "type-0"
-	wantKey.SetBlob([]byte("blob-0"))
-	wantKey.Comment = "comment1"
+	wantID := ID("some-id")
 	wantErr := errors.New("failed")
 
 	mgr.Err = wantErr
 
-	err := syncUnload(cli, wantKey)
-	if diff := cmp.Diff(mgr.Key, wantKey, loadedKeyCmp); diff != "" {
+	err := syncUnload(cli, wantID)
+	if diff := cmp.Diff(mgr.ID, wantID); diff != "" {
 		t.Errorf("incorrect key; -got +want: %s", diff)
 	}
 	// Compare by error string; cmp.EquateErrors doesn't work since type

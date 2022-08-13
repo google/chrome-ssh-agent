@@ -148,7 +148,6 @@ func (u *UI) promptAdd(onOk func(name, privateKey string)) {
 	dialog.ShowModal()
 }
 
-
 // load loads the key with the specified ID.  A dialog prompts the user for a
 // passphrase if the private key is encrypted.
 func (u *UI) load(id keys.ID) {
@@ -201,22 +200,9 @@ func (u *UI) promptPassphrase(onOk func(passphrase string)) {
 	dialog.ShowModal()
 }
 
-
 // unload unloads the specified key.
 func (u *UI) unload(id keys.ID) {
-	k := u.keyByID(id)
-	if k == nil {
-		u.setError(fmt.Errorf("failed to unload key ID %s: not found", id))
-		return
-	}
-
-	lk, err := k.LoadedKey()
-	if err != nil {
-		u.setError(fmt.Errorf("failed to unload key ID %s: failed to extract loaded key: %v", id, err))
-		return
-	}
-
-	u.mgr.Unload(lk, func(err error) {
+	u.mgr.Unload(id, func(err error) {
 		if err != nil {
 			u.setError(fmt.Errorf("failed to unload key ID %s: %v", id, err))
 			return

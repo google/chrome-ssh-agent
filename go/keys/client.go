@@ -116,8 +116,8 @@ type rspLoad struct {
 }
 
 type msgUnload struct {
-	Type int        `js:"type"`
-	Key  *LoadedKey `js:"key"`
+	Type int    `js:"type"`
+	ID   string `js:"id"`
 }
 
 type rspUnload struct {
@@ -258,8 +258,8 @@ func (s *Server) OnMessage(headerObj js.Value, sender js.Value, sendResponse fun
 			s.sendErrorResponse(fmt.Errorf("failed to parse Unload message: %v", err), sendResponse)
 			return
 		}
-		dom.LogDebug("Server.OnMessage(Unload req): id=%s", m.Key.ID())
-		s.mgr.Unload(m.Key, func(err error) {
+		dom.LogDebug("Server.OnMessage(Unload req): id=%s", m.ID)
+		s.mgr.Unload(ID(m.ID), func(err error) {
 			rsp := rspUnload{
 				Type: msgTypeUnloadRsp,
 				Err:  makeErrStr(err),
@@ -396,11 +396,11 @@ func (c *client) Load(id ID, passphrase string, callback func(err error)) {
 }
 
 // Unload implements Manager.Unload.
-func (c *client) Unload(key *LoadedKey, callback func(err error)) {
+func (c *client) Unload(id ID, callback func(err error)) {
 	var msg msgUnload
 	msg.Type = msgTypeUnload
-	msg.Key = key
-	dom.LogDebug("Client.Unload(req): id=%s", msg.Key.ID())
+	msg.ID = string(id)
+	dom.LogDebug("Client.Unload(req): id=%s", msg.ID)
 	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
 		dom.LogDebug("Client.Unload(rsp)")
 		if err := c.msg.Error(); err != nil {

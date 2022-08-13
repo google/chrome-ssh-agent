@@ -136,7 +136,7 @@ type Manager interface {
 
 	// Unload unloads a key from the agent. callback is invoked when
 	// complete.
-	Unload(key *LoadedKey, callback func(err error))
+	Unload(id ID, callback func(err error))
 }
 
 // NewManager returns a Manager implementation that can manage keys in the
@@ -459,30 +459,48 @@ var (
 )
 
 // Unload implements Manager.Unload.
-func (m *DefaultManager) Unload(key *LoadedKey, callback func(err error)) {
-	pub := &agent.Key{
-		Format: key.Type,
-		Blob:   key.Blob(),
-	}
-	if err := m.agent.Remove(pub); err != nil {
-		callback(fmt.Errorf("%w: %v", errAgentUnloadFailed, err))
-		return
-	}
-
-	id := key.ID()
+func (m *DefaultManager) Unload(id ID, callback func(err error)) {
 	if id == InvalidID {
-		callback(fmt.Errorf("%w: invalid id", errStorageUnloadFailed))
+		callback(fmt.Errorf("%w: invalid id", errAgentUnloadFailed))
 		return
 	}
 
-	m.sessionKeys.Delete(
-		func(sk *sessionKey) bool { return ID(sk.ID) == id },
-		func(err error) {
-			if err != nil {
-				callback(fmt.Errorf("%w: %v", errStorageUnloadFailed, err))
-				return
-			}
+	m.Loaded(func(loaded []*LoadedKey, err error) {
+		if err != nil {
+			callback(fmt.Errorf("%w: failed to enumerate loaded keys: %v", errAgentUnloadFailed, id))
+			return
+		}
 
-			callback(nil)
-		})
+		var lk *LoadedKey
+		for _, l := range loaded {
+			if l.ID() == id {
+				lk = l
+				break
+			}
+		}
+		if lk == nil {
+			callback(fmt.Errorf("%w: invalid id: %s", errAgentUnloadFailed, id))
+			return
+		}
+
+		pub := &agent.Key{
+			Format: lk.Type,
+			Blob:   lk.Blob(),
+		}
+		if err := m.agent.Remove(pub); err != nil {
+			callback(fmt.Errorf("%w: %v", errAgentUnloadFailed, err))
+			return
+		}
+
+		m.sessionKeys.Delete(
+			func(sk *sessionKey) bool { return ID(sk.ID) == id },
+			func(err error) {
+				if err != nil {
+					callback(fmt.Errorf("%w: %v", errStorageUnloadFailed, err))
+					return
+				}
+
+				callback(nil)
+			})
+	})
 }

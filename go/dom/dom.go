@@ -36,7 +36,7 @@ var (
 
 	// Object refers to Javascript's Object class.
 	Object = js.Global().Get("Object")
-	
+
 	// JSON refers to Javascript's JSON class.
 	JSON = js.Global().Get("JSON")
 )

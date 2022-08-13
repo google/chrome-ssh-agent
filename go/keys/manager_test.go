@@ -17,7 +17,6 @@
 package keys
 
 import (
-	"bytes"
 	"crypto/x509"
 	"encoding/base64"
 	"errors"
@@ -607,7 +606,8 @@ func TestUnload(t *testing.T) {
 	testcases := []struct {
 		description string
 		initial     []*initialKey
-		unload      *LoadedKey
+		unloadID    ID
+		unloadName  string
 		wantLoaded  []string
 		wantErr     error
 	}{
@@ -621,7 +621,7 @@ func TestUnload(t *testing.T) {
 					Passphrase:    testdata.WithPassphrase.Passphrase,
 				},
 			},
-			unload:     makeLoadedKey(testdata.WithPassphrase.Type, testdata.WithPassphrase.Blob),
+			unloadName: "good-key",
 			wantLoaded: nil,
 		},
 		{
@@ -634,7 +634,7 @@ func TestUnload(t *testing.T) {
 					Passphrase:    testdata.WithPassphrase.Passphrase,
 				},
 			},
-			unload: makeLoadedKey("bogus-type", "AAAA"),
+			unloadID: ID("bogus-id"),
 			wantLoaded: []string{
 				testdata.WithPassphrase.Blob,
 			},
@@ -652,29 +652,22 @@ func TestUnload(t *testing.T) {
 			}
 
 			// Attempt to fill in the ID of the key we will try to unload.
-			loaded, err := syncLoaded(mgr)
-			if err != nil {
-				t.Errorf("failed to get initial keys: %v", err)
-			}
-			for _, l := range loaded {
-				if tc.unload.Type != l.Type {
-					continue
+			id := tc.unloadID
+			if id == InvalidID {
+				id, err = findKey(mgr, InvalidID, tc.unloadName)
+				if err != nil {
+					t.Fatalf("failed to get determine key ID to unload: %v", err)
 				}
-				if bytes.Compare(tc.unload.Blob(), l.Blob()) != 0 {
-					continue
-				}
-				tc.unload.Comment = l.Comment
-				break
 			}
 
 			// Unload the key
-			err = syncUnload(mgr, tc.unload)
+			err = syncUnload(mgr, id)
 			if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("incorrect error; -got +want: %s", diff)
 			}
 
 			// Ensure the correct keys are loaded at the end.
-			loaded, err = syncLoaded(mgr)
+			loaded, err := syncLoaded(mgr)
 			if err != nil {
 				t.Errorf("failed to get loaded keys: %v", err)
 			}
