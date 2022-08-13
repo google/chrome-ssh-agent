@@ -46,6 +46,12 @@ type Event struct {
 	js.Value
 }
 
+// PreventDefault prevents the default action for the event (e.g., submitting a
+// form).
+func (e *Event) PreventDefault() {
+	e.Call("preventDefault")
+}
+
 // DOM provides an API for interacting with the DOM for a Document.
 type DOM struct {
 	doc js.Value

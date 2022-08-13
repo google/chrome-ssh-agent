@@ -107,6 +107,7 @@ func (u *UI) setError(err error) {
 // and the corresponding private key.  If the user continues, the key is
 // added to the manager.
 func (u *UI) add(evt dom.Event) {
+	evt.PreventDefault()
 	u.promptAdd(func(name, privateKey string) {
 		u.mgr.Add(name, privateKey, func(err error) {
 			if err != nil {
@@ -131,6 +132,7 @@ func (u *UI) promptAdd(onOk func(name, privateKey string)) {
 
 	var cleanup jsutil.CleanupFuncs
 	cleanup.Add(u.dom.OnClick(ok, func(evt dom.Event) {
+		evt.PreventDefault()
 		onOk(u.dom.Value(name), u.dom.Value(key))
 		dialog.Close()
 	}))
@@ -184,6 +186,7 @@ func (u *UI) promptPassphrase(onOk func(passphrase string)) {
 
 	var cleanup jsutil.CleanupFuncs
 	cleanup.Add(u.dom.OnClick(ok, func(evt dom.Event) {
+		evt.PreventDefault()
 		onOk(u.dom.Value(passphrase))
 		dialog.Close()
 	}))
@@ -240,6 +243,7 @@ func (u *UI) promptRemove(id keys.ID, onYes func()) {
 
 	var cleanup jsutil.CleanupFuncs
 	cleanup.Add(u.dom.OnClick(yes, func(evt dom.Event) {
+		evt.PreventDefault()
 		onYes()
 		dialog.Close()
 	}))
