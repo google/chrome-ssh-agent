@@ -569,7 +569,7 @@ func (u *UI) EndToEndTest() []error {
 	addName := u.dom.GetElement("addName")
 	addKey := u.dom.GetElement("addKey")
 	addOk := u.dom.GetElement("addOk")
-	passphraseInput := u.dom.GetElement("passphraseInput")
+	passphraseInput := u.dom.GetElement("passphrase")
 	passphraseOk := u.dom.GetElement("passphraseOk")
 	removeYes := u.dom.GetElement("removeYes")
 
