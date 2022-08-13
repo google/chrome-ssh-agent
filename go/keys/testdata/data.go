@@ -439,7 +439,7 @@ p7TCnXwBYT0XmXNxjAfHa2SIshRoDYTjRSyT0UZqlAmDVd4Tr1IcSDJd1y1fjVklgiJYj3
 TCh+OKZM1zONJSNL1yj//vGjtszkS8qpQWY4+1W7mdIGwrzh0pMOZk+Nd3
 -----END OPENSSH PRIVATE KEY-----`,
 		Passphrase: "secret",
-		Blob: "AAAAC3NzaC1lZDI1NTE5AAAAIC2KZS2eoWzcwr5MrHC1d38xkIz73GDXUR4F1pk2ApUs",
-		Type: "ssh-ed25519",
+		Blob:       "AAAAC3NzaC1lZDI1NTE5AAAAIC2KZS2eoWzcwr5MrHC1d38xkIz73GDXUR4F1pk2ApUs",
+		Type:       "ssh-ed25519",
 	}
 )
