@@ -42,16 +42,10 @@ func (m *MessageHub) AddReceiver(r MessageReceiver) {
 }
 
 // SendMessage is a fake implementation of chrome.C.SendMessage.
-func (m *MessageHub) SendMessage(msg js.Value, callback func(rsp js.Value)) {
+func (m *MessageHub) SendMessage(msg js.Value, callback func(rsp js.Value, err error)) {
 	for _, r := range m.receivers {
 		r.OnMessage(msg, js.Null(), func(rsp js.Value) {
-			callback(rsp)
+			callback(rsp, nil)
 		})
 	}
-}
-
-// Error is a fake implementation of chrome.C.Error. This fake implementation
-// does not simulate errors, so Error() always returns nil.
-func (m *MessageHub) Error() error {
-	return nil
 }

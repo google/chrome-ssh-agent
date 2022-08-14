@@ -85,20 +85,24 @@ func (c *C) SyncStorage() PersistentStore {
 // expose functionality to send within the same extension.
 //
 // See https://developer.chrome.com/apps/runtime#method-sendMessage.
-func (c *C) SendMessage(msg js.Value, callback func(rsp js.Value)) {
+func (c *C) SendMessage(msg js.Value, callback func(rsp js.Value, err error)) {
 	c.runtime.Call(
 		"sendMessage", c.extensionID, msg, nil,
 		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
-			callback(jsutil.SingleArg(args))
+			if err := c.lastError(); err != nil {
+				callback(js.Undefined(), err)
+				return nil
+			}
+			callback(jsutil.SingleArg(args), nil)
 			return nil
 		}))
 }
 
-// Error returns the error (if any) from the last call. Returns nil if there
+// lastError returns the error (if any) from the last call. Returns nil if there
 // was no error.
 //
 // See https://developer.chrome.com/apps/runtime#property-lastError.
-func (c *C) Error() error {
+func (c *C) lastError() error {
 	if err := c.runtime.Get("lastError"); !err.IsNull() && !err.IsUndefined() {
 		return errors.New(err.Get("message").String())
 	}

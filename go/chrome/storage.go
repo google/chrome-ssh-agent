@@ -77,7 +77,7 @@ func (s *Storage) Set(data map[string]js.Value, callback func(err error)) {
 	s.o.Call(
 		"set", dataToValue(data),
 		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
-			if err := s.chrome.Error(); err != nil {
+			if err := s.chrome.lastError(); err != nil {
 				callback(fmt.Errorf("failed to set data: %v", err))
 				return nil
 			}
@@ -96,7 +96,7 @@ func (s *Storage) Get(callback func(data map[string]js.Value, err error)) {
 	s.o.Call(
 		"get", js.Null(),
 		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
-			if err := s.chrome.Error(); err != nil {
+			if err := s.chrome.lastError(); err != nil {
 				callback(nil, fmt.Errorf("failed to get data: %v", err))
 				return nil
 			}
@@ -126,7 +126,7 @@ func (s *Storage) Delete(keys []string, callback func(err error)) {
 	s.o.Call(
 		"remove", vert.ValueOf(keys).JSValue(),
 		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
-			if err := s.chrome.Error(); err != nil {
+			if err := s.chrome.lastError(); err != nil {
 				callback(fmt.Errorf("failed to delete data: %v", err))
 				return nil
 			}
