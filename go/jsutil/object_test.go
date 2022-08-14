@@ -17,30 +17,31 @@
 package jsutil
 
 import (
-	"fmt"
+	"sort"
 	"syscall/js"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
-var (
-	// object refers to Javascript's Object class.
-	object = js.Global().Get("Object")
-)
-
-// NewObject returns a new 'Object' instance.
-func NewObject() js.Value {
-	return object.New()
+func TestNewObject(t *testing.T) {
+	o := NewObject()
+	if typ := o.Type(); typ != js.TypeObject {
+		t.Errorf("expecting TypeObject; got %s", typ)
+	}
 }
 
-// ObjectKeys returns the keys for a given object.
-func ObjectKeys(val js.Value) ([]string, error) {
-	if val.Type() != js.TypeObject {
-		return nil, fmt.Errorf("Object required; got type %s", val.Type())
+func TestObjectKeys(t *testing.T) {
+	o := FromJSON(`{
+		"foo": 2,
+		"bar": "value"
+	}`)
+	got, err := ObjectKeys(o)
+	if err != nil {
+		t.Fatalf("ObjectKeys failed: %v", err)
 	}
-
-	var res []string
-	keys := object.Call("keys", val)
-	for i := 0; i < keys.Length(); i++ {
-		res = append(res, keys.Index(i).String())
+	sort.Strings(got)
+	if diff := cmp.Diff(got, []string{"bar", "foo"}); diff != "" {
+		t.Errorf("incorrect result; -got +want: %s", diff)
 	}
-	return res, nil
 }

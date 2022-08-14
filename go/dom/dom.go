@@ -68,7 +68,7 @@ func (d *Doc) OnDOMContentLoaded(callback func()) jsutil.CleanupFunc {
 		return func() {}
 	}
 
-	return jsutil.AddEventListener(
+	return addEventListener(
 		d.doc, "DOMContentLoaded",
 		func(this js.Value, args []js.Value) interface{} {
 			callback()
@@ -104,10 +104,22 @@ func DoClick(o js.Value) {
 	o.Call("click")
 }
 
+// addEventListener adds a function that will be invoked on the specified event
+// for an object.  The returned cleanup function must be invoked to cleanup the
+// function.
+func addEventListener(o js.Value, event string, f func(this js.Value, args []js.Value) interface{}) jsutil.CleanupFunc {
+	fo := js.FuncOf(f)
+	o.Call("addEventListener", event, fo)
+	return func() {
+		o.Call("removeEventListener", event, fo)
+		fo.Release()
+	}
+}
+
 // OnClick registers a callback to be invoked when the specified object is
 // clicked.
 func OnClick(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
-	return jsutil.AddEventListener(
+	return addEventListener(
 		o, "click",
 		func(this js.Value, args []js.Value) interface{} {
 			callback(Event{Value: jsutil.SingleArg(args)})
@@ -118,7 +130,7 @@ func OnClick(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
 // OnSubmit registers a callback to be invoked when the specified form is
 // submitted.
 func OnSubmit(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
-	return jsutil.AddEventListener(
+	return addEventListener(
 		o, "submit",
 		func(this js.Value, args []js.Value) interface{} {
 			callback(Event{Value: jsutil.SingleArg(args)})
@@ -214,7 +226,7 @@ func (d *Dialog) OnClose(callback func(evt Event)) jsutil.CleanupFunc {
 		return d.simOnClose.Release
 	}
 
-	return jsutil.AddEventListener(
+	return addEventListener(
 		d.dialog, "close",
 		func(this js.Value, args []js.Value) interface{} {
 			callback(Event{Value: jsutil.SingleArg(args)})

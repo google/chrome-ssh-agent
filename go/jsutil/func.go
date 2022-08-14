@@ -64,18 +64,6 @@ func DefineFunc(o js.Value, name string, f func(this js.Value, args []js.Value) 
 	}
 }
 
-// AddEventListener adds a function that will be invoked on the specified event
-// for an object.  The returned cleanup function must be invoked to cleanup the
-// function.
-func AddEventListener(o js.Value, event string, f func(this js.Value, args []js.Value) interface{}) CleanupFunc {
-	fo := js.FuncOf(f)
-	o.Call("addEventListener", event, fo)
-	return func() {
-		o.Call("removeEventListener", event, fo)
-		fo.Release()
-	}
-}
-
 // SetTimeout registers a callback to be invoked when the timeout has expired.
 func SetTimeout(timeout time.Duration, callback func()) {
 	cb := OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
