@@ -359,8 +359,7 @@ func (u *UI) setKeys(newKeys []*displayedKey) {
 	}
 
 	// Construct elements for new keys.
-	u.keys = newKeys
-	for _, k := range u.keys {
+	for _, k := range newKeys {
 		k := k
 		dom.AppendChild(u.keysData, u.dom.NewElement("tr"), func(row js.Value) {
 			// Key name
@@ -431,6 +430,10 @@ func (u *UI) setKeys(newKeys []*displayedKey) {
 			})
 		})
 	}
+	// Update internal state after DOM is updated. Otherwise, callers (e.g.,
+	// our end-to-end test) may look for the new DOM elements before they
+	// are available.
+	u.keys = newKeys
 }
 
 // mergeKeys merges configured and loaded keys to create a consolidated list
