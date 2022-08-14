@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/norunners/vert"
 )
@@ -49,7 +48,7 @@ type Storage struct {
 }
 
 func dataToValue(data map[string]js.Value) js.Value {
-	res := dom.Object.New()
+	res := jsutil.Object.New()
 	for k, v := range data {
 		res.Set(k, v)
 	}
@@ -57,7 +56,7 @@ func dataToValue(data map[string]js.Value) js.Value {
 }
 
 func valueToData(val js.Value) (map[string]js.Value, error) {
-	keys, err := dom.ObjectKeys(val)
+	keys, err := jsutil.ObjectKeys(val)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read data: %v", err)
 	}
@@ -102,7 +101,7 @@ func (s *Storage) Get(callback func(data map[string]js.Value, err error)) {
 				return nil
 			}
 
-			data, err := valueToData(dom.SingleArg(args))
+			data, err := valueToData(jsutil.SingleArg(args))
 			if err != nil {
 				callback(nil, fmt.Errorf("failed to parse data: %v", err))
 				return nil

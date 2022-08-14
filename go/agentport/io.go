@@ -31,7 +31,7 @@ import (
 	"io"
 	"syscall/js"
 
-	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/norunners/vert"
 )
 
@@ -49,7 +49,7 @@ type AgentPort struct {
 // p is a Chrome Port object to which the Chrome Secure Shell Extension
 // has connected.
 func New(p js.Value) *AgentPort {
-	dom.LogDebug("AgentPort.New")
+	jsutil.LogDebug("AgentPort.New")
 	ir, iw := io.Pipe()
 	or, ow := io.Pipe()
 	ap := &AgentPort{
@@ -60,16 +60,16 @@ func New(p js.Value) *AgentPort {
 		outWriter: ow,
 	}
 
-	dom.LogDebug("AgentPort.New: Initiating SendMessages loop")
+	jsutil.LogDebug("AgentPort.New: Initiating SendMessages loop")
 	go ap.SendMessages()
 
 	return ap
 }
 
 func (ap *AgentPort) OnDisconnect() {
-	dom.LogDebug("AgentPort.OnDisconnect: closing input writer")
+	jsutil.LogDebug("AgentPort.OnDisconnect: closing input writer")
 	ap.inWriter.Close()
-	dom.LogDebug("AgentPort.OnDisconnect: closing output writer")
+	jsutil.LogDebug("AgentPort.OnDisconnect: closing output writer")
 	ap.outWriter.Close()
 }
 
@@ -78,32 +78,32 @@ type message struct {
 }
 
 func (ap *AgentPort) OnMessage(msg js.Value) {
-	dom.LogDebug("AgentPort.OnMessage: parsing message from client to agent")
+	jsutil.LogDebug("AgentPort.OnMessage: parsing message from client to agent")
 	var parsed message
 	if err := vert.ValueOf(msg).AssignTo(&parsed); err != nil {
-		dom.LogError("Failed to parse message to agent: %v; message=%s", err, msg)
+		jsutil.LogError("Failed to parse message to agent: %v; message=%s", err, msg)
 		ap.p.Call("disconnect")
 		return
 	}
 
-	dom.LogDebug("AgentPort.OnMessage: converting to bytestream")
+	jsutil.LogDebug("AgentPort.OnMessage: converting to bytestream")
 	framed := make([]byte, 4+len(parsed.Data))
 	binary.BigEndian.PutUint32(framed, uint32(len(parsed.Data)))
 	for i, raw := range parsed.Data {
 		framed[i+4] = byte(raw)
 	}
 
-	dom.LogDebug("AgentPort.OnMessage: writing to agent")
+	jsutil.LogDebug("AgentPort.OnMessage: writing to agent")
 	_, err := ap.inWriter.Write(framed)
 	if err != nil {
-		dom.LogError("Error writing to pipe: %v", err)
+		jsutil.LogError("Error writing to pipe: %v", err)
 		ap.p.Call("disconnect")
 	}
 }
 
 func (ap *AgentPort) Read(p []byte) (n int, err error) {
-	dom.LogDebug("AgentPort.Read: agent reading from client")
-	defer dom.LogDebug("AgentPort.Read: read finished")
+	jsutil.LogDebug("AgentPort.Read: agent reading from client")
+	defer jsutil.LogDebug("AgentPort.Read: read finished")
 	return ap.inReader.Read(p)
 }
 
@@ -112,43 +112,43 @@ var (
 )
 
 func (ap *AgentPort) SendMessages() {
-	dom.LogDebug("AgentPort.SendMessages: starting loop")
-	defer dom.LogDebug("AgentPort.SendMessages: finished loop")
+	jsutil.LogDebug("AgentPort.SendMessages: starting loop")
+	defer jsutil.LogDebug("AgentPort.SendMessages: finished loop")
 	for {
-		dom.LogDebug("AgentPort.SendMessages: reading message length from agent to client")
+		jsutil.LogDebug("AgentPort.SendMessages: reading message length from agent to client")
 		l := make([]byte, 4)
 		_, err := io.ReadFull(ap.outReader, l)
 		if err != nil {
-			dom.Log("AgentPort.SendMessages: Error reading from pipe: %v", err)
+			jsutil.Log("AgentPort.SendMessages: Error reading from pipe: %v", err)
 			ap.outReader.Close()
 			return
 		}
 		length := binary.BigEndian.Uint32(l)
 
-		dom.LogDebug("AgentPort.SendMessages: reading message from agent to client")
+		jsutil.LogDebug("AgentPort.SendMessages: reading message from agent to client")
 		data := make([]byte, length)
 		_, err = io.ReadFull(ap.outReader, data)
 		if err != nil {
-			dom.Log("AgentPort.SendMessages: Error reading from pipe: %v", err)
+			jsutil.Log("AgentPort.SendMessages: Error reading from pipe: %v", err)
 			ap.outReader.Close()
 			return
 		}
 
-		dom.LogDebug("AgentPort.SendMessages: encoding message from agent to client")
+		jsutil.LogDebug("AgentPort.SendMessages: encoding message from agent to client")
 		var encoded message
 		encoded.Data = make([]int, len(data))
 		for i, b := range data {
 			encoded.Data[i] = int(b)
 		}
 
-		dom.LogDebug("AgentPort.SendMessages: sending message to client")
+		jsutil.LogDebug("AgentPort.SendMessages: sending message to client")
 		ap.p.Call("postMessage", vert.ValueOf(encoded).JSValue())
 	}
 }
 
 func (ap *AgentPort) Write(p []byte) (n int, err error) {
-	dom.LogDebug("AgentPort.Write: agent writing to client")
-	defer dom.LogDebug("AgentPort.Write: write finished")
+	jsutil.LogDebug("AgentPort.Write: agent writing to client")
+	defer jsutil.LogDebug("AgentPort.Write: write finished")
 	return ap.outWriter.Write(p)
 }
 

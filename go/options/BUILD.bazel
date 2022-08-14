@@ -9,6 +9,7 @@ go_library(
     deps = [
         "//go/chrome",
         "//go/dom",
+        "//go/jsutil",
         "//go/keys",
         "//go/optionsui",
         "//go/testing",

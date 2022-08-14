@@ -21,7 +21,6 @@ import (
 
 	"github.com/google/chrome-ssh-agent/go/agentport"
 	"github.com/google/chrome-ssh-agent/go/chrome"
-	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"golang.org/x/crypto/ssh/agent"
@@ -41,7 +40,7 @@ var (
 	_ = func() bool {
 		mgr.LoadFromSession(func(err error) {
 			if err != nil {
-				dom.LogError("failed to load keys into agent: %v", err)
+				jsutil.LogError("failed to load keys into agent: %v", err)
 			}
 		})
 		return true // Dummy value.
@@ -54,7 +53,7 @@ var (
 
 func onMessage(this js.Value, args []js.Value) interface{} {
 	var message, sender, sendResponse js.Value
-	dom.ExpandArgs(args, &message, &sender, &sendResponse)
+	jsutil.ExpandArgs(args, &message, &sender, &sendResponse)
 	svr.OnMessage(message, sender, func(rsp js.Value) {
 		sendResponse.Invoke(rsp)
 	})
@@ -62,22 +61,22 @@ func onMessage(this js.Value, args []js.Value) interface{} {
 }
 
 func onConnectExternal(this js.Value, args []js.Value) interface{} {
-	port := dom.SingleArg(args)
+	port := jsutil.SingleArg(args)
 	if ports.Lookup(port) != nil {
-		dom.LogError("onConnectExternal: port already in use; ignoring")
+		jsutil.LogError("onConnectExternal: port already in use; ignoring")
 		return nil
 	}
 
-	dom.LogDebug("onConnectExternal: connecting new port")
+	jsutil.LogDebug("onConnectExternal: connecting new port")
 	ap := agentport.New(port)
 	ports.Add(port, ap)
 
-	dom.LogDebug("onConnectExternal: serving in background")
+	jsutil.LogDebug("onConnectExternal: serving in background")
 	go func() {
-		dom.LogDebug("ServeAgent: starting for new port")
-		defer dom.LogDebug("ServeAgent: finished")
+		jsutil.LogDebug("ServeAgent: starting for new port")
+		defer jsutil.LogDebug("ServeAgent: finished")
 		if err := agent.ServeAgent(agt, ap); err != nil {
-			dom.LogDebug("ServeAgent: finished with error: %v", err)
+			jsutil.LogDebug("ServeAgent: finished with error: %v", err)
 		}
 	}()
 	return nil
@@ -85,37 +84,37 @@ func onConnectExternal(this js.Value, args []js.Value) interface{} {
 
 func onConnectionMessage(this js.Value, args []js.Value) interface{} {
 	var port, msg js.Value
-	dom.ExpandArgs(args, &port, &msg)
+	jsutil.ExpandArgs(args, &port, &msg)
 
 	ap := ports.Lookup(port)
 	if ap == nil {
-		dom.LogError("onConnectionMessage: connection for port not found; ignoring")
+		jsutil.LogError("onConnectionMessage: connection for port not found; ignoring")
 		return nil
 	}
 
-	dom.LogDebug("onConnectionMessage: forwarding message")
+	jsutil.LogDebug("onConnectionMessage: forwarding message")
 	ap.OnMessage(msg)
 	return nil
 }
 
 func onConnectionDisconnect(this js.Value, args []js.Value) interface{} {
-	port := dom.SingleArg(args)
+	port := jsutil.SingleArg(args)
 
 	ap := ports.Lookup(port)
 	if ap == nil {
-		dom.LogError("onConnectionDisconnect: connection for port not found; ignoring")
+		jsutil.LogError("onConnectionDisconnect: connection for port not found; ignoring")
 		return nil
 	}
 
-	dom.LogDebug("onConnectionDisconnect: disconnecting")
+	jsutil.LogDebug("onConnectionDisconnect: disconnecting")
 	ap.OnDisconnect()
 	ports.Delete(port)
 	return nil
 }
 
 func main() {
-	dom.Log("Starting background worker")
-	defer dom.Log("Exiting background worker")
+	jsutil.Log("Starting background worker")
+	defer jsutil.Log("Exiting background worker")
 
 	c1 := jsutil.DefineFunc(js.Global(), "handleOnMessage", onMessage)
 	defer c1()

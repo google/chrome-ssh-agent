@@ -24,7 +24,7 @@ import (
 	"strings"
 	"syscall/js"
 
-	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/norunners/vert"
 )
 
@@ -63,7 +63,7 @@ func (t *TypedStore[V]) readAllItems(callback func(data map[string]*V, err error
 
 			var tv V
 			if err := vert.ValueOf(v).AssignTo(&tv); err != nil {
-				dom.LogError("failed to parse value %s; dropping", k)
+				jsutil.LogError("failed to parse value %s; dropping", k)
 				continue
 			}
 

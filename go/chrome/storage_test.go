@@ -20,7 +20,7 @@ import (
 	"syscall/js"
 	"testing"
 
-	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/go-cmp/cmp"
 	"github.com/norunners/vert"
 )
@@ -28,7 +28,7 @@ import (
 func dataToJSON(data map[string]js.Value) map[string]string {
 	json := map[string]string{}
 	for k, v := range data {
-		json[k] = dom.ToJSON(v)
+		json[k] = jsutil.ToJSON(v)
 	}
 	return json
 }

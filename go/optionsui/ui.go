@@ -98,7 +98,7 @@ func (u *UI) setError(err error) {
 	u.dom.RemoveChildren(u.errorText)
 
 	if err != nil {
-		dom.LogError("UI.setError(): %v", err)
+		jsutil.LogError("UI.setError(): %v", err)
 		u.dom.AppendChild(u.errorText, u.dom.NewText(err.Error()), nil)
 	}
 }
@@ -557,7 +557,7 @@ func (u *UI) EndToEndTest() []error {
 
 	var errs []error
 
-	dom.Log("Generate random name to use for key")
+	jsutil.Log("Generate random name to use for key")
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
 		errs = append(errs, fmt.Errorf("failed to generate random number: %v", err))
@@ -565,14 +565,14 @@ func (u *UI) EndToEndTest() []error {
 	}
 	keyName := fmt.Sprintf("e2e-test-key-%s", i.String())
 
-	dom.Log("Configure a new key")
+	jsutil.Log("Configure a new key")
 	u.dom.DoClick(addButton)
 	u.dom.SetValue(addName, keyName)
 	// Use the long key to exercise storage of large values in Chrome storage.
 	u.dom.SetValue(addKey, testdata.LongKeyWithPassphrase.Private)
 	u.dom.DoClick(addOk)
 
-	dom.Log("Validate configured keys; ensure new key is present")
+	jsutil.Log("Validate configured keys; ensure new key is present")
 	var key *displayedKey
 	poll(func() bool {
 		key = u.keyByName(keyName)
@@ -583,12 +583,12 @@ func (u *UI) EndToEndTest() []error {
 		return errs // Remaining tests have hard dependency on configured key.
 	}
 
-	dom.Log("Load the new key")
+	jsutil.Log("Load the new key")
 	u.dom.DoClick(u.dom.GetElement(buttonID(LoadButton, key.ID)))
 	u.dom.SetValue(passphraseInput, testdata.LongKeyWithPassphrase.Passphrase)
 	u.dom.DoClick(passphraseOk)
 
-	dom.Log("Validate loaded keys; ensure new key is loaded")
+	jsutil.Log("Validate loaded keys; ensure new key is loaded")
 	poll(func() bool {
 		key = u.keyByName(keyName)
 		return key != nil && key.Loaded
@@ -607,10 +607,10 @@ func (u *UI) EndToEndTest() []error {
 		errs = append(errs, fmt.Errorf("after load: failed to find key"))
 	}
 
-	dom.Log("Unload key")
+	jsutil.Log("Unload key")
 	u.dom.DoClick(u.dom.GetElement(buttonID(UnloadButton, key.ID)))
 
-	dom.Log("Validate loaded keys; ensure key is unloaded")
+	jsutil.Log("Validate loaded keys; ensure key is unloaded")
 	poll(func() bool {
 		key = u.keyByName(keyName)
 		return key != nil && !key.Loaded
@@ -629,11 +629,11 @@ func (u *UI) EndToEndTest() []error {
 		errs = append(errs, fmt.Errorf("after unload: failed to find key"))
 	}
 
-	dom.Log("Remove key")
+	jsutil.Log("Remove key")
 	u.dom.DoClick(u.dom.GetElement(buttonID(RemoveButton, key.ID)))
 	u.dom.DoClick(removeYes)
 
-	dom.Log("Validate configured keys; ensure key is removed")
+	jsutil.Log("Validate configured keys; ensure key is removed")
 	poll(func() bool {
 		key = u.keyByName(keyName)
 		return key == nil

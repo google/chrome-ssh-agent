@@ -12,7 +12,6 @@ go_library(
     importpath = "github.com/google/chrome-ssh-agent/go/chrome",
     visibility = ["//visibility:public"],
     deps = [
-        "//go/dom",
         "//go/jsutil",
         "@com_github_norunners_vert//:vert",
     ],

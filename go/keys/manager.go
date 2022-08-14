@@ -31,7 +31,7 @@ import (
 	"strings"
 
 	"github.com/google/chrome-ssh-agent/go/chrome"
-	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/youmark/pkcs8"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -82,7 +82,7 @@ func (k *LoadedKey) SetBlob(b []byte) {
 func (k *LoadedKey) Blob() []byte {
 	b, err := base64.StdEncoding.DecodeString(k.InternalBlob)
 	if err != nil {
-		dom.LogError("failed to decode key blob: %v", err)
+		jsutil.LogError("failed to decode key blob: %v", err)
 		return nil
 	}
 
@@ -323,7 +323,7 @@ func (m *DefaultManager) LoadFromSession(callback func(err error)) {
 		for _, k := range sessionKeys {
 			m.addToAgent(ID(k.ID), decryptedKey(k.PrivateKey), func(err error) {
 				if err != nil {
-					dom.LogError("failed to load session key ID %s into agent: %v; skipping", k.ID, err)
+					jsutil.LogError("failed to load session key ID %s into agent: %v; skipping", k.ID, err)
 					return
 				}
 			})

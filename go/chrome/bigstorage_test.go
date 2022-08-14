@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
-	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/go-cmp/cmp"
 	"github.com/norunners/vert"
 )
@@ -74,7 +74,7 @@ func syncGetJSON(s PersistentStore) (map[string]string, error) {
 
 	json := map[string]string{}
 	for k, v := range data {
-		json[k] = dom.ToJSON(v)
+		json[k] = jsutil.ToJSON(v)
 	}
 	return json, nil
 }

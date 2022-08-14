@@ -23,7 +23,7 @@ import (
 	"strings"
 	"syscall/js"
 
-	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/norunners/vert"
 )
 
@@ -116,7 +116,7 @@ func (b *BigStorage) Set(data map[string]js.Value, callback func(err error)) {
 
 	chunked := map[string]js.Value{}
 	for k, v := range data {
-		json := dom.ToJSON(v)
+		json := jsutil.ToJSON(v)
 		if b.canStore(k, json) {
 			// Store directly. Value is small enough.
 			chunked[k] = v
@@ -192,7 +192,7 @@ func (b *BigStorage) Get(callback func(data map[string]js.Value, err error)) {
 					json.WriteString(string(dec))
 				}
 
-				unchunked[k] = dom.FromJSON(json.String())
+				unchunked[k] = jsutil.FromJSON(json.String())
 				continue
 			}
 

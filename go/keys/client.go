@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/norunners/vert"
 )
 
@@ -151,7 +151,7 @@ func makeErrStr(err error) string {
 // sendErrorResponse sends a generic error response to the client. This is used
 // in case a more specific error is not possible.
 func (s *Server) sendErrorResponse(err error, sendResponse func(js.Value)) {
-	dom.LogError("Server.sendErrorResponse: %v", err)
+	jsutil.LogError("Server.sendErrorResponse: %v", err)
 	rsp := rspError{
 		Type: msgTypeErrorRsp,
 		Err:  makeErrStr(err),
@@ -178,12 +178,12 @@ func (s *Server) OnMessage(headerObj js.Value, sender js.Value, sendResponse fun
 		return
 	}
 
-	dom.LogDebug("Server.OnMessage(type = %d)", header.Type)
+	jsutil.LogDebug("Server.OnMessage(type = %d)", header.Type)
 	switch header.Type {
 	case msgTypeConfigured:
-		dom.LogDebug("Server.OnMessage(Configured req)")
+		jsutil.LogDebug("Server.OnMessage(Configured req)")
 		s.mgr.Configured(func(keys []*ConfiguredKey, err error) {
-			dom.LogDebug("Server.OnMessage(Configured rsp): %d keys, err=%v", len(keys), err)
+			jsutil.LogDebug("Server.OnMessage(Configured rsp): %d keys, err=%v", len(keys), err)
 			rsp := rspConfigured{
 				Type: msgTypeConfiguredRsp,
 				Keys: keys,
@@ -193,9 +193,9 @@ func (s *Server) OnMessage(headerObj js.Value, sender js.Value, sendResponse fun
 		})
 		return
 	case msgTypeLoaded:
-		dom.LogDebug("Server.OnMessage(Loaded req)")
+		jsutil.LogDebug("Server.OnMessage(Loaded req)")
 		s.mgr.Loaded(func(keys []*LoadedKey, err error) {
-			dom.LogDebug("Server.OnMessage(Loaded rsp): %d keys, err=%v", len(keys), err)
+			jsutil.LogDebug("Server.OnMessage(Loaded rsp): %d keys, err=%v", len(keys), err)
 			rsp := rspLoaded{
 				Type: msgTypeLoadedRsp,
 				Keys: keys,
@@ -210,13 +210,13 @@ func (s *Server) OnMessage(headerObj js.Value, sender js.Value, sendResponse fun
 			s.sendErrorResponse(fmt.Errorf("failed to parse Add message: %v", err), sendResponse)
 			return
 		}
-		dom.LogDebug("Server.OnMessage(Add req): name=%s", m.Name)
+		jsutil.LogDebug("Server.OnMessage(Add req): name=%s", m.Name)
 		s.mgr.Add(m.Name, m.PEMPrivateKey, func(err error) {
 			rsp := rspAdd{
 				Type: msgTypeAddRsp,
 				Err:  makeErrStr(err),
 			}
-			dom.LogDebug("Server.OnMessage(Add rsp): err=%v", err)
+			jsutil.LogDebug("Server.OnMessage(Add rsp): err=%v", err)
 			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
 		return
@@ -226,13 +226,13 @@ func (s *Server) OnMessage(headerObj js.Value, sender js.Value, sendResponse fun
 			s.sendErrorResponse(fmt.Errorf("failed to parse Remove message: %v", err), sendResponse)
 			return
 		}
-		dom.LogDebug("Server.OnMessage(Remove req): id=%s", m.ID)
+		jsutil.LogDebug("Server.OnMessage(Remove req): id=%s", m.ID)
 		s.mgr.Remove(ID(m.ID), func(err error) {
 			rsp := rspRemove{
 				Type: msgTypeRemoveRsp,
 				Err:  makeErrStr(err),
 			}
-			dom.LogDebug("Server.OnMessage(Remove rsp): err=%v", err)
+			jsutil.LogDebug("Server.OnMessage(Remove rsp): err=%v", err)
 			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
 		return
@@ -242,13 +242,13 @@ func (s *Server) OnMessage(headerObj js.Value, sender js.Value, sendResponse fun
 			s.sendErrorResponse(fmt.Errorf("failed to parse Load message: %v", err), sendResponse)
 			return
 		}
-		dom.LogDebug("Server.OnMessage(Load req): id=%s", m.ID)
+		jsutil.LogDebug("Server.OnMessage(Load req): id=%s", m.ID)
 		s.mgr.Load(ID(m.ID), m.Passphrase, func(err error) {
 			rsp := rspLoad{
 				Type: msgTypeLoadRsp,
 				Err:  makeErrStr(err),
 			}
-			dom.LogDebug("Server.OnMessage(Load rsp): err=%v", err)
+			jsutil.LogDebug("Server.OnMessage(Load rsp): err=%v", err)
 			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
 		return
@@ -258,13 +258,13 @@ func (s *Server) OnMessage(headerObj js.Value, sender js.Value, sendResponse fun
 			s.sendErrorResponse(fmt.Errorf("failed to parse Unload message: %v", err), sendResponse)
 			return
 		}
-		dom.LogDebug("Server.OnMessage(Unload req): id=%s", m.ID)
+		jsutil.LogDebug("Server.OnMessage(Unload req): id=%s", m.ID)
 		s.mgr.Unload(ID(m.ID), func(err error) {
 			rsp := rspUnload{
 				Type: msgTypeUnloadRsp,
 				Err:  makeErrStr(err),
 			}
-			dom.LogDebug("Server.OnMessage(Unload rsp): err=%v", err)
+			jsutil.LogDebug("Server.OnMessage(Unload rsp): err=%v", err)
 			sendResponse(vert.ValueOf(rsp).JSValue())
 		})
 		return
@@ -294,9 +294,9 @@ func NewClient(msg MessageSender) Manager {
 func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	var msg msgConfigured
 	msg.Type = msgTypeConfigured
-	dom.LogDebug("Client.Configured(req)")
+	jsutil.LogDebug("Client.Configured(req)")
 	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
-		dom.LogDebug("Client.Configured(rsp)")
+		jsutil.LogDebug("Client.Configured(rsp)")
 		if err := c.msg.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
 			return
@@ -314,9 +314,9 @@ func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
 	var msg msgLoaded
 	msg.Type = msgTypeLoaded
-	dom.LogDebug("Client.Loaded(req)")
+	jsutil.LogDebug("Client.Loaded(req)")
 	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
-		dom.LogDebug("Client.Loaded(rsp)")
+		jsutil.LogDebug("Client.Loaded(rsp)")
 		if err := c.msg.Error(); err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
 			return
@@ -336,9 +336,9 @@ func (c *client) Add(name string, pemPrivateKey string, callback func(err error)
 	msg.Type = msgTypeAdd
 	msg.Name = name
 	msg.PEMPrivateKey = pemPrivateKey
-	dom.LogDebug("Client.Add(req): name=%s", msg.Name)
+	jsutil.LogDebug("Client.Add(req): name=%s", msg.Name)
 	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
-		dom.LogDebug("Client.Add(rsp)")
+		jsutil.LogDebug("Client.Add(rsp)")
 		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return
@@ -357,9 +357,9 @@ func (c *client) Remove(id ID, callback func(err error)) {
 	var msg msgRemove
 	msg.Type = msgTypeRemove
 	msg.ID = string(id)
-	dom.LogDebug("Client.Remove(req): id=%s", msg.ID)
+	jsutil.LogDebug("Client.Remove(req): id=%s", msg.ID)
 	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
-		dom.LogDebug("Client.Remove(rsp)")
+		jsutil.LogDebug("Client.Remove(rsp)")
 		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return
@@ -379,9 +379,9 @@ func (c *client) Load(id ID, passphrase string, callback func(err error)) {
 	msg.Type = msgTypeLoad
 	msg.ID = string(id)
 	msg.Passphrase = passphrase
-	dom.LogDebug("Client.Load(req): id=%s", msg.ID)
+	jsutil.LogDebug("Client.Load(req): id=%s", msg.ID)
 	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
-		dom.LogDebug("Client.Load(rsp)")
+		jsutil.LogDebug("Client.Load(rsp)")
 		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return
@@ -400,9 +400,9 @@ func (c *client) Unload(id ID, callback func(err error)) {
 	var msg msgUnload
 	msg.Type = msgTypeUnload
 	msg.ID = string(id)
-	dom.LogDebug("Client.Unload(req): id=%s", msg.ID)
+	jsutil.LogDebug("Client.Unload(req): id=%s", msg.ID)
 	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value) {
-		dom.LogDebug("Client.Unload(rsp)")
+		jsutil.LogDebug("Client.Unload(rsp)")
 		if err := c.msg.Error(); err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
 			return

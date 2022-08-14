@@ -74,3 +74,22 @@ func AddEventListener(o js.Value, event string, f func(this js.Value, args []js.
 		fo.Release()
 	}
 }
+
+// ExpandArgs unpacks function arguments to target values.
+func ExpandArgs(args []js.Value, target ...*js.Value) {
+	// Assign args to target.
+	for i := 0; i < len(args) && i < len(target); i++ {
+		*(target[i]) = args[i]
+	}
+	// Any excessive targets are set to undefined.
+	for i := len(args); i < len(target); i++ {
+		*(target[i]) = js.Undefined()
+	}
+}
+
+// SingleArg unpacks a single function argument and returns it.
+func SingleArg(args []js.Value) js.Value {
+	var val js.Value
+	ExpandArgs(args, &val)
+	return val
+}

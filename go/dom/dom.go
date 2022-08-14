@@ -30,15 +30,6 @@ var (
 	// code. See NewDocForTesting() for a Document object that can be used in
 	// unit tests.
 	Doc = js.Global().Get("document")
-
-	// Console is the default 'console' object for the browser.
-	Console = js.Global().Get("console")
-
-	// Object refers to Javascript's Object class.
-	Object = js.Global().Get("Object")
-
-	// JSON refers to Javascript's JSON class.
-	JSON = js.Global().Get("JSON")
 )
 
 // Event provides an API for interacting with events.
@@ -86,7 +77,7 @@ func (d *DOM) OnClick(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
 	return jsutil.AddEventListener(
 		o, "click",
 		func(this js.Value, args []js.Value) interface{} {
-			callback(Event{Value: SingleArg(args)})
+			callback(Event{Value: jsutil.SingleArg(args)})
 			return nil
 		})
 }
@@ -97,7 +88,7 @@ func (d *DOM) OnSubmit(o js.Value, callback func(evt Event)) jsutil.CleanupFunc 
 	return jsutil.AddEventListener(
 		o, "submit",
 		func(this js.Value, args []js.Value) interface{} {
-			callback(Event{Value: SingleArg(args)})
+			callback(Event{Value: jsutil.SingleArg(args)})
 			return nil
 		})
 }
@@ -190,7 +181,7 @@ func NewDialog(dialog js.Value) *Dialog {
 func (d *Dialog) ShowModal() {
 	if d.dialog.Get("showModal").IsUndefined() {
 		// jsdom (which is used in tests) does not support showModal.
-		Log("showModal() not found")
+		jsutil.Log("showModal() not found")
 		return
 	}
 	d.dialog.Call("showModal")
@@ -200,7 +191,7 @@ func (d *Dialog) ShowModal() {
 func (d *Dialog) Close() {
 	if d.dialog.Get("close").IsUndefined() {
 		// jsdom (which is used in tests) does not support close.
-		Log("close() not found")
+		jsutil.Log("close() not found")
 		// Simulate 'close' event; we need to ensure OnClose is triggered.
 		// Using Javascript's dispatchEvent(new Event('close')) doesn't
 		// work; it appears to send node.js into an infinite loop.
@@ -224,7 +215,7 @@ func (d *Dialog) OnClose(callback func(evt Event)) jsutil.CleanupFunc {
 			panic(fmt.Errorf("Multiple simulated OnClose handlers not supported"))
 		}
 		d.simOnClose = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-			callback(Event{Value: SingleArg(args)})
+			callback(Event{Value: jsutil.SingleArg(args)})
 			return nil
 		})
 		return d.simOnClose.Release
@@ -233,71 +224,7 @@ func (d *Dialog) OnClose(callback func(evt Event)) jsutil.CleanupFunc {
 	return jsutil.AddEventListener(
 		d.dialog, "close",
 		func(this js.Value, args []js.Value) interface{} {
-			callback(Event{Value: SingleArg(args)})
+			callback(Event{Value: jsutil.SingleArg(args)})
 			return nil
 		})
-}
-
-// Log logs general information to the Javascript Console.
-func Log(format string, objs ...interface{}) {
-	Console.Call("log", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
-}
-
-// LogError logs an error to the Javascript Console.
-func LogError(format string, objs ...interface{}) {
-	Console.Call("error", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
-}
-
-// LogDebug logs a debug message to the Javascript Console.
-func LogDebug(format string, objs ...interface{}) {
-	Console.Call("debug", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
-}
-
-// ExpandArgs unpacks function arguments to target values.
-func ExpandArgs(args []js.Value, target ...*js.Value) {
-	// Assign args to target.
-	for i := 0; i < len(args) && i < len(target); i++ {
-		*(target[i]) = args[i]
-	}
-	// Any excessive targets are set to undefined.
-	for i := len(args); i < len(target); i++ {
-		*(target[i]) = js.Undefined()
-	}
-}
-
-// SingleArg unpacks a single function argument and returns it.
-func SingleArg(args []js.Value) js.Value {
-	var val js.Value
-	ExpandArgs(args, &val)
-	return val
-}
-
-// ObjectKeys returns the keys for a given object.
-func ObjectKeys(val js.Value) ([]string, error) {
-	if val.Type() != js.TypeObject {
-		return nil, fmt.Errorf("Object required; got type %s", val.Type())
-	}
-
-	var res []string
-	keys := Object.Call("keys", val)
-	for i := 0; i < keys.Length(); i++ {
-		res = append(res, keys.Index(i).String())
-	}
-	return res, nil
-}
-
-// ToJSON converts the supplied value to a JSON string.
-func ToJSON(val js.Value) string {
-	return JSON.Call("stringify", val).String()
-}
-
-// FromJSON converts the supplied JSON string to a Javascript value.
-func FromJSON(s string) js.Value {
-	defer func() {
-		if r := recover(); r != nil {
-			LogError("Failed to parse JSON string; returning default. Error: %v", r)
-		}
-	}()
-
-	return JSON.Call("parse", s)
 }

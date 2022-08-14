@@ -2,7 +2,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "jsutil",
-    srcs = ["func.go"],
+    srcs = [
+        "func.go",
+        "json.go",
+        "log.go",
+        "object.go",
+    ],
     importpath = "github.com/google/chrome-ssh-agent/go/jsutil",
     visibility = ["//visibility:public"],
 )
