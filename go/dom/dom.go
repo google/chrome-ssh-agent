@@ -46,12 +46,6 @@ type Event struct {
 	js.Value
 }
 
-// PreventDefault prevents the default action for the event (e.g., submitting a
-// form).
-func (e *Event) PreventDefault() {
-	e.Call("preventDefault")
-}
-
 // DOM provides an API for interacting with the DOM for a Document.
 type DOM struct {
 	doc js.Value
@@ -91,6 +85,17 @@ func (d *DOM) DoClick(o js.Value) {
 func (d *DOM) OnClick(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
 	return jsutil.AddEventListener(
 		o, "click",
+		func(this js.Value, args []js.Value) interface{} {
+			callback(Event{Value: SingleArg(args)})
+			return nil
+		})
+}
+
+// OnSubmit registers a callback to be invoked when the specified form is
+// submitted.
+func (d *DOM) OnSubmit(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
+	return jsutil.AddEventListener(
+		o, "submit",
 		func(this js.Value, args []js.Value) interface{} {
 			callback(Event{Value: SingleArg(args)})
 			return nil

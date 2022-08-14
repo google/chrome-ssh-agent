@@ -23,7 +23,7 @@
   <body class="body">
     <dialog id="passphraseDialog" class="dialog">
       <div class="modal-content">
-        <form>
+        <form method="dialog" id="passphraseForm">
           <div>
             <label for="passphrase">Passphrase</label>
           </div>
@@ -40,7 +40,7 @@
 
     <dialog id="addDialog" class="dialog">
       <div class="dialog-content">
-        <form>
+        <form method="dialog" id="addForm">
           <div>
             <label for="addName">Name</label>
           </div>
@@ -63,7 +63,7 @@
 
     <dialog id="removeDialog" class="dialog">
       <div class="dialog-content">
-        <form>
+        <form method="dialog" id="removeForm">
           <div>
             Are you sure you want to remove the '<span id="removeName"></span>' key?
           </div>

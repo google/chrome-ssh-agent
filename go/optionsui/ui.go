@@ -107,7 +107,6 @@ func (u *UI) setError(err error) {
 // and the corresponding private key.  If the user continues, the key is
 // added to the manager.
 func (u *UI) add(evt dom.Event) {
-	evt.PreventDefault()
 	u.promptAdd(func(name, privateKey string) {
 		u.mgr.Add(name, privateKey, func(err error) {
 			if err != nil {
@@ -125,14 +124,13 @@ func (u *UI) add(evt dom.Event) {
 // callback is invoked when user clicks OK.
 func (u *UI) promptAdd(onOk func(name, privateKey string)) {
 	dialog := dom.NewDialog(u.dom.GetElement("addDialog"))
+	form := u.dom.GetElement("addForm")
 	name := u.dom.GetElement("addName")
 	key := u.dom.GetElement("addKey")
-	ok := u.dom.GetElement("addOk")
 	cancel := u.dom.GetElement("addCancel")
 
 	var cleanup jsutil.CleanupFuncs
-	cleanup.Add(u.dom.OnClick(ok, func(evt dom.Event) {
-		evt.PreventDefault()
+	cleanup.Add(u.dom.OnSubmit(form, func(evt dom.Event) {
 		onOk(u.dom.Value(name), u.dom.Value(key))
 		dialog.Close()
 	}))
@@ -179,13 +177,12 @@ func (u *UI) load(id keys.ID) {
 // callback is invoked if user continues.
 func (u *UI) promptPassphrase(onOk func(passphrase string)) {
 	dialog := dom.NewDialog(u.dom.GetElement("passphraseDialog"))
+	form := u.dom.GetElement("passphraseForm")
 	passphrase := u.dom.GetElement("passphrase")
-	ok := u.dom.GetElement("passphraseOk")
 	cancel := u.dom.GetElement("passphraseCancel")
 
 	var cleanup jsutil.CleanupFuncs
-	cleanup.Add(u.dom.OnClick(ok, func(evt dom.Event) {
-		evt.PreventDefault()
+	cleanup.Add(u.dom.OnSubmit(form, func(evt dom.Event) {
 		onOk(u.dom.Value(passphrase))
 		dialog.Close()
 	}))
@@ -222,14 +219,13 @@ func (u *UI) promptRemove(id keys.ID, onYes func()) {
 	}
 
 	dialog := dom.NewDialog(u.dom.GetElement("removeDialog"))
+	form := u.dom.GetElement("removeForm")
 	name := u.dom.GetElement("removeName")
-	yes := u.dom.GetElement("removeYes")
 	no := u.dom.GetElement("removeNo")
 	u.dom.AppendChild(name, u.dom.NewText(k.Name), nil)
 
 	var cleanup jsutil.CleanupFuncs
-	cleanup.Add(u.dom.OnClick(yes, func(evt dom.Event) {
-		evt.PreventDefault()
+	cleanup.Add(u.dom.OnSubmit(form, func(evt dom.Event) {
 		onYes()
 		dialog.Close()
 	}))
