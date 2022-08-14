@@ -48,7 +48,7 @@ type Storage struct {
 }
 
 func dataToValue(data map[string]js.Value) js.Value {
-	res := jsutil.Object.New()
+	res := jsutil.NewObject()
 	for k, v := range data {
 		res.Set(k, v)
 	}

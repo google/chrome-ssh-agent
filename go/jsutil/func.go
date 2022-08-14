@@ -18,6 +18,7 @@ package jsutil
 
 import (
 	"syscall/js"
+	"time"
 )
 
 // OneTimeFuncOf returns a js.Func that can be invoked once. It is automatically
@@ -73,6 +74,15 @@ func AddEventListener(o js.Value, event string, f func(this js.Value, args []js.
 		o.Call("removeEventListener", event, fo)
 		fo.Release()
 	}
+}
+
+// SetTimeout registers a callback to be invoked when the timeout has expired.
+func SetTimeout(timeout time.Duration, callback func()) {
+	cb := OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
+		callback()
+		return nil
+	})
+	js.Global().Call("setTimeout", cb, timeout.Milliseconds())
 }
 
 // ExpandArgs unpacks function arguments to target values.

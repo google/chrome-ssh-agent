@@ -22,9 +22,13 @@ import (
 )
 
 var (
-	// Object refers to Javascript's Object class.
-	Object = js.Global().Get("Object")
+	// object refers to Javascript's Object class.
+	object = js.Global().Get("Object")
 )
+
+func NewObject() js.Value {
+	return object.New()
+}
 
 // ObjectKeys returns the keys for a given object.
 func ObjectKeys(val js.Value) ([]string, error) {
@@ -33,7 +37,7 @@ func ObjectKeys(val js.Value) ([]string, error) {
 	}
 
 	var res []string
-	keys := Object.Call("keys", val)
+	keys := object.Call("keys", val)
 	for i := 0; i < keys.Length(); i++ {
 		res = append(res, keys.Index(i).String())
 	}

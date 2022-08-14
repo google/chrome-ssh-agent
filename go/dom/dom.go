@@ -20,16 +20,15 @@ package dom
 import (
 	"fmt"
 	"syscall/js"
-	"time"
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
 var (
-	// Doc is the default 'document' object.  This should be used for regular
-	// code. See NewDocForTesting() for a Document object that can be used in
-	// unit tests.
-	Doc = js.Global().Get("document")
+	// document is the default 'document' object.  This should be used for
+	// regular code. See NewDocForTesting() for a Document object that can
+	// be used in unit tests.
+	document = js.Global().Get("document")
 )
 
 // Event provides an API for interacting with events.
@@ -37,76 +36,35 @@ type Event struct {
 	js.Value
 }
 
-// DOM provides an API for interacting with the DOM for a Document.
-type DOM struct {
+// Doc provides an API for interacting with the DOM for a Document.
+type Doc struct {
 	doc js.Value
 }
 
-// New returns a DOM instance for interacting with the specified
+// New returns a Doc instance for interacting with the specified
 // Document object.
-func New(doc js.Value) *DOM {
-	return &DOM{doc: doc}
-}
-
-// RemoveChildren removes all children of the specified node.
-func (d *DOM) RemoveChildren(p js.Value) {
-	for p.Call("hasChildNodes").Bool() {
-		p.Call("removeChild", p.Get("firstChild"))
+func New(doc js.Value) *Doc {
+	if doc.IsUndefined() || doc.IsNull() {
+		doc = document
 	}
+	return &Doc{doc: doc}
 }
 
 // NewElement returns a new element with the specified tag (e.g., 'tr', 'td').
-func (d *DOM) NewElement(tag string) js.Value {
+func (d *Doc) NewElement(tag string) js.Value {
 	return d.doc.Call("createElement", tag)
 }
 
 // NewText returns a new text element with the specified text.
-func (d *DOM) NewText(text string) js.Value {
+func (d *Doc) NewText(text string) js.Value {
 	return d.doc.Call("createTextNode", text)
-}
-
-// DoClick simulates a click. Any callback registered by OnClick() will be
-// invoked.
-func (d *DOM) DoClick(o js.Value) {
-	o.Call("click")
-}
-
-// OnClick registers a callback to be invoked when the specified object is
-// clicked.
-func (d *DOM) OnClick(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
-	return jsutil.AddEventListener(
-		o, "click",
-		func(this js.Value, args []js.Value) interface{} {
-			callback(Event{Value: jsutil.SingleArg(args)})
-			return nil
-		})
-}
-
-// OnSubmit registers a callback to be invoked when the specified form is
-// submitted.
-func (d *DOM) OnSubmit(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
-	return jsutil.AddEventListener(
-		o, "submit",
-		func(this js.Value, args []js.Value) interface{} {
-			callback(Event{Value: jsutil.SingleArg(args)})
-			return nil
-		})
-}
-
-// SetTimeout registers a callback to be invoked when the timeout has expired.
-func SetTimeout(timeout time.Duration, callback func()) {
-	cb := jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
-		callback()
-		return nil
-	})
-	js.Global().Call("setTimeout", cb, timeout.Milliseconds())
 }
 
 // OnDOMContentLoaded registers a callback to be invoked when the DOM has
 // finished loading.
-func (d *DOM) OnDOMContentLoaded(callback func()) jsutil.CleanupFunc {
+func (d *Doc) OnDOMContentLoaded(callback func()) jsutil.CleanupFunc {
 	if d.doc.Get("readyState").String() != "loading" {
-		SetTimeout(0, callback) // Event already fired. Invoke callback directly.
+		jsutil.SetTimeout(0, callback) // Event already fired. Invoke callback directly.
 		return func() {}
 	}
 
@@ -118,49 +76,84 @@ func (d *DOM) OnDOMContentLoaded(callback func()) jsutil.CleanupFunc {
 		})
 }
 
-// ID returns the element ID of an object as a string.
-func (d *DOM) ID(o js.Value) string {
-	return o.Get("id").String()
-}
-
-// Value returns the value of an object as a string.
-func (d *DOM) Value(o js.Value) string {
-	return o.Get("value").String()
-}
-
-// SetValue sets the of the object.
-func (d *DOM) SetValue(o js.Value, value string) {
-	o.Set("value", value)
-}
-
-// TextContent returns the text content of the specified object (and its
-// children).
-func (d *DOM) TextContent(o js.Value) string {
-	return o.Get("textContent").String()
-}
-
-// AppendChild adds the child object.  If non-nil, the populate() function is
-// invoked on the child to initialize it.
-func (d *DOM) AppendChild(parent, child js.Value, populate func(child js.Value)) {
-	if populate != nil {
-		populate(child)
-	}
-	parent.Call("appendChild", child)
-}
-
 // GetElement returns the element with the specified ID.
-func (d *DOM) GetElement(id string) js.Value {
+func (d *Doc) GetElement(id string) js.Value {
 	return d.doc.Call("getElementById", id)
 }
 
 // GetElementsByTag returns the elements with the speciied tag.
-func (d *DOM) GetElementsByTag(tag string) []js.Value {
+func (d *Doc) GetElementsByTag(tag string) []js.Value {
 	var result []js.Value
 	elts := d.doc.Call("getElementsByTagName", tag)
 	for i := 0; i < elts.Length(); i++ {
 		result = append(result, elts.Index(i))
 	}
 	return result
+}
+
+// RemoveChildren removes all children of the specified node.
+func RemoveChildren(p js.Value) {
+	for p.Call("hasChildNodes").Bool() {
+		p.Call("removeChild", p.Get("firstChild"))
+	}
+}
+
+// DoClick simulates a click. Any callback registered by OnClick() will be
+// invoked.
+func DoClick(o js.Value) {
+	o.Call("click")
+}
+
+// OnClick registers a callback to be invoked when the specified object is
+// clicked.
+func OnClick(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
+	return jsutil.AddEventListener(
+		o, "click",
+		func(this js.Value, args []js.Value) interface{} {
+			callback(Event{Value: jsutil.SingleArg(args)})
+			return nil
+		})
+}
+
+// OnSubmit registers a callback to be invoked when the specified form is
+// submitted.
+func OnSubmit(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
+	return jsutil.AddEventListener(
+		o, "submit",
+		func(this js.Value, args []js.Value) interface{} {
+			callback(Event{Value: jsutil.SingleArg(args)})
+			return nil
+		})
+}
+
+// ID returns the element ID of an object as a string.
+func ID(o js.Value) string {
+	return o.Get("id").String()
+}
+
+// Value returns the value of an object as a string.
+func Value(o js.Value) string {
+	return o.Get("value").String()
+}
+
+// SetValue sets the of the object.
+func SetValue(o js.Value, value string) {
+	o.Set("value", value)
+}
+
+// TextContent returns the text content of the specified object (and its
+// children).
+func TextContent(o js.Value) string {
+	return o.Get("textContent").String()
+}
+
+// AppendChild adds the child object.  If non-nil, the populate() function is
+// invoked on the child to initialize it.
+func AppendChild(parent, child js.Value, populate func(child js.Value)) {
+	if populate != nil {
+		populate(child)
+	}
+	parent.Call("appendChild", child)
 }
 
 // Dialog represents an HTML dialog.

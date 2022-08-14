@@ -39,7 +39,7 @@ import (
 // options.
 type UI struct {
 	mgr       keys.Manager
-	dom       *dom.DOM
+	dom       *dom.Doc
 	addButton js.Value
 	errorText js.Value
 	keysData  js.Value
@@ -66,7 +66,7 @@ type passphraseDialog struct {
 // New returns a new UI instance that manages keys using the supplied manager.
 // domObj is the DOM instance corresponding to the document in which the Options
 // UI is displayed.
-func New(mgr keys.Manager, domObj *dom.DOM) *UI {
+func New(mgr keys.Manager, domObj *dom.Doc) *UI {
 	result := &UI{
 		mgr:       mgr,
 		dom:       domObj,
@@ -81,7 +81,7 @@ func New(mgr keys.Manager, domObj *dom.DOM) *UI {
 	// Populate keys on initial display
 	cf.Add(result.dom.OnDOMContentLoaded(result.updateKeys))
 	// Configure new key on click
-	cf.Add(result.dom.OnClick(result.addButton, result.add))
+	cf.Add(dom.OnClick(result.addButton, result.add))
 	return result
 }
 
@@ -95,11 +95,11 @@ func (u *UI) Release() {
 // is nil, then any displayed error is cleared.
 func (u *UI) setError(err error) {
 	// Clear any existing error
-	u.dom.RemoveChildren(u.errorText)
+	dom.RemoveChildren(u.errorText)
 
 	if err != nil {
 		jsutil.LogError("UI.setError(): %v", err)
-		u.dom.AppendChild(u.errorText, u.dom.NewText(err.Error()), nil)
+		dom.AppendChild(u.errorText, u.dom.NewText(err.Error()), nil)
 	}
 }
 
@@ -130,16 +130,16 @@ func (u *UI) promptAdd(onOk func(name, privateKey string)) {
 	cancel := u.dom.GetElement("addCancel")
 
 	var cleanup jsutil.CleanupFuncs
-	cleanup.Add(u.dom.OnSubmit(form, func(evt dom.Event) {
-		onOk(u.dom.Value(name), u.dom.Value(key))
+	cleanup.Add(dom.OnSubmit(form, func(evt dom.Event) {
+		onOk(dom.Value(name), dom.Value(key))
 		dialog.Close()
 	}))
-	cleanup.Add(u.dom.OnClick(cancel, func(evt dom.Event) {
+	cleanup.Add(dom.OnClick(cancel, func(evt dom.Event) {
 		dialog.Close()
 	}))
 	cleanup.Add(dialog.OnClose(func(evt dom.Event) {
-		u.dom.SetValue(name, "")
-		u.dom.SetValue(key, "")
+		dom.SetValue(name, "")
+		dom.SetValue(key, "")
 		cleanup.Do()
 	}))
 
@@ -182,15 +182,15 @@ func (u *UI) promptPassphrase(onOk func(passphrase string)) {
 	cancel := u.dom.GetElement("passphraseCancel")
 
 	var cleanup jsutil.CleanupFuncs
-	cleanup.Add(u.dom.OnSubmit(form, func(evt dom.Event) {
-		onOk(u.dom.Value(passphrase))
+	cleanup.Add(dom.OnSubmit(form, func(evt dom.Event) {
+		onOk(dom.Value(passphrase))
 		dialog.Close()
 	}))
-	cleanup.Add(u.dom.OnClick(cancel, func(evt dom.Event) {
+	cleanup.Add(dom.OnClick(cancel, func(evt dom.Event) {
 		dialog.Close()
 	}))
 	cleanup.Add(dialog.OnClose(func(evt dom.Event) {
-		u.dom.SetValue(passphrase, "")
+		dom.SetValue(passphrase, "")
 		cleanup.Do()
 	}))
 
@@ -222,18 +222,18 @@ func (u *UI) promptRemove(id keys.ID, onYes func()) {
 	form := u.dom.GetElement("removeForm")
 	name := u.dom.GetElement("removeName")
 	no := u.dom.GetElement("removeNo")
-	u.dom.AppendChild(name, u.dom.NewText(k.Name), nil)
+	dom.AppendChild(name, u.dom.NewText(k.Name), nil)
 
 	var cleanup jsutil.CleanupFuncs
-	cleanup.Add(u.dom.OnSubmit(form, func(evt dom.Event) {
+	cleanup.Add(dom.OnSubmit(form, func(evt dom.Event) {
 		onYes()
 		dialog.Close()
 	}))
-	cleanup.Add(u.dom.OnClick(no, func(evt dom.Event) {
+	cleanup.Add(dom.OnClick(no, func(evt dom.Event) {
 		dialog.Close()
 	}))
 	cleanup.Add(dialog.OnClose(func(evt dom.Event) {
-		u.dom.RemoveChildren(name)
+		dom.RemoveChildren(name)
 		cleanup.Do()
 	}))
 
@@ -353,7 +353,7 @@ func buttonID(kind buttonKind, id keys.ID) string {
 // displayed.
 func (u *UI) setKeys(newKeys []*displayedKey) {
 	// Cleanup elements and resources for all previous keys.
-	u.dom.RemoveChildren(u.keysData)
+	dom.RemoveChildren(u.keysData)
 	for _, k := range u.keys {
 		k.cleanup.Do()
 	}
@@ -362,18 +362,18 @@ func (u *UI) setKeys(newKeys []*displayedKey) {
 	u.keys = newKeys
 	for _, k := range u.keys {
 		k := k
-		u.dom.AppendChild(u.keysData, u.dom.NewElement("tr"), func(row js.Value) {
+		dom.AppendChild(u.keysData, u.dom.NewElement("tr"), func(row js.Value) {
 			// Key name
-			u.dom.AppendChild(row, u.dom.NewElement("td"), func(cell js.Value) {
-				u.dom.AppendChild(cell, u.dom.NewElement("div"), func(div js.Value) {
+			dom.AppendChild(row, u.dom.NewElement("td"), func(cell js.Value) {
+				dom.AppendChild(cell, u.dom.NewElement("div"), func(div js.Value) {
 					div.Set("className", "keyName")
-					u.dom.AppendChild(div, u.dom.NewText(k.Name), nil)
+					dom.AppendChild(div, u.dom.NewText(k.Name), nil)
 				})
 			})
 
 			// Controls
-			u.dom.AppendChild(row, u.dom.NewElement("td"), func(cell js.Value) {
-				u.dom.AppendChild(cell, u.dom.NewElement("div"), func(div js.Value) {
+			dom.AppendChild(row, u.dom.NewElement("td"), func(cell js.Value) {
+				dom.AppendChild(cell, u.dom.NewElement("div"), func(div js.Value) {
 					div.Set("className", "keyControls")
 					if k.ID == keys.InvalidID {
 						// We only control keys with a valid ID.
@@ -382,32 +382,32 @@ func (u *UI) setKeys(newKeys []*displayedKey) {
 
 					if k.Loaded {
 						// Unload button
-						u.dom.AppendChild(div, u.dom.NewElement("button"), func(btn js.Value) {
+						dom.AppendChild(div, u.dom.NewElement("button"), func(btn js.Value) {
 							btn.Set("type", "button")
 							btn.Set("id", buttonID(UnloadButton, k.ID))
-							u.dom.AppendChild(btn, u.dom.NewText("Unload"), nil)
-							k.cleanup.Add(u.dom.OnClick(btn, func(evt dom.Event) {
+							dom.AppendChild(btn, u.dom.NewText("Unload"), nil)
+							k.cleanup.Add(dom.OnClick(btn, func(evt dom.Event) {
 								u.unload(k.ID)
 							}))
 						})
 					} else {
 						// Load button
-						u.dom.AppendChild(div, u.dom.NewElement("button"), func(btn js.Value) {
+						dom.AppendChild(div, u.dom.NewElement("button"), func(btn js.Value) {
 							btn.Set("type", "button")
 							btn.Set("id", buttonID(LoadButton, k.ID))
-							u.dom.AppendChild(btn, u.dom.NewText("Load"), nil)
-							k.cleanup.Add(u.dom.OnClick(btn, func(evt dom.Event) {
+							dom.AppendChild(btn, u.dom.NewText("Load"), nil)
+							k.cleanup.Add(dom.OnClick(btn, func(evt dom.Event) {
 								u.load(k.ID)
 							}))
 						})
 					}
 
 					// Remove button
-					u.dom.AppendChild(div, u.dom.NewElement("button"), func(btn js.Value) {
+					dom.AppendChild(div, u.dom.NewElement("button"), func(btn js.Value) {
 						btn.Set("type", "button")
 						btn.Set("id", buttonID(RemoveButton, k.ID))
-						u.dom.AppendChild(btn, u.dom.NewText("Remove"), nil)
-						k.cleanup.Add(u.dom.OnClick(btn, func(evt dom.Event) {
+						dom.AppendChild(btn, u.dom.NewText("Remove"), nil)
+						k.cleanup.Add(dom.OnClick(btn, func(evt dom.Event) {
 							u.remove(k.ID)
 						}))
 					})
@@ -415,18 +415,18 @@ func (u *UI) setKeys(newKeys []*displayedKey) {
 			})
 
 			// Type
-			u.dom.AppendChild(row, u.dom.NewElement("td"), func(cell js.Value) {
-				u.dom.AppendChild(cell, u.dom.NewElement("div"), func(div js.Value) {
+			dom.AppendChild(row, u.dom.NewElement("td"), func(cell js.Value) {
+				dom.AppendChild(cell, u.dom.NewElement("div"), func(div js.Value) {
 					div.Set("className", "keyType")
-					u.dom.AppendChild(div, u.dom.NewText(k.Type), nil)
+					dom.AppendChild(div, u.dom.NewText(k.Type), nil)
 				})
 			})
 
 			// Blob
-			u.dom.AppendChild(row, u.dom.NewElement("td"), func(cell js.Value) {
-				u.dom.AppendChild(cell, u.dom.NewElement("div"), func(div js.Value) {
+			dom.AppendChild(row, u.dom.NewElement("td"), func(cell js.Value) {
+				dom.AppendChild(cell, u.dom.NewElement("div"), func(div js.Value) {
 					div.Set("className", "keyBlob")
-					u.dom.AppendChild(div, u.dom.NewText(k.Blob), nil)
+					dom.AppendChild(div, u.dom.NewText(k.Blob), nil)
 				})
 			})
 		})
@@ -566,11 +566,11 @@ func (u *UI) EndToEndTest() []error {
 	keyName := fmt.Sprintf("e2e-test-key-%s", i.String())
 
 	jsutil.Log("Configure a new key")
-	u.dom.DoClick(addButton)
-	u.dom.SetValue(addName, keyName)
+	dom.DoClick(addButton)
+	dom.SetValue(addName, keyName)
 	// Use the long key to exercise storage of large values in Chrome storage.
-	u.dom.SetValue(addKey, testdata.LongKeyWithPassphrase.Private)
-	u.dom.DoClick(addOk)
+	dom.SetValue(addKey, testdata.LongKeyWithPassphrase.Private)
+	dom.DoClick(addOk)
 
 	jsutil.Log("Validate configured keys; ensure new key is present")
 	var key *displayedKey
@@ -584,9 +584,9 @@ func (u *UI) EndToEndTest() []error {
 	}
 
 	jsutil.Log("Load the new key")
-	u.dom.DoClick(u.dom.GetElement(buttonID(LoadButton, key.ID)))
-	u.dom.SetValue(passphraseInput, testdata.LongKeyWithPassphrase.Passphrase)
-	u.dom.DoClick(passphraseOk)
+	dom.DoClick(u.dom.GetElement(buttonID(LoadButton, key.ID)))
+	dom.SetValue(passphraseInput, testdata.LongKeyWithPassphrase.Passphrase)
+	dom.DoClick(passphraseOk)
 
 	jsutil.Log("Validate loaded keys; ensure new key is loaded")
 	poll(func() bool {
@@ -608,7 +608,7 @@ func (u *UI) EndToEndTest() []error {
 	}
 
 	jsutil.Log("Unload key")
-	u.dom.DoClick(u.dom.GetElement(buttonID(UnloadButton, key.ID)))
+	dom.DoClick(u.dom.GetElement(buttonID(UnloadButton, key.ID)))
 
 	jsutil.Log("Validate loaded keys; ensure key is unloaded")
 	poll(func() bool {
@@ -630,8 +630,8 @@ func (u *UI) EndToEndTest() []error {
 	}
 
 	jsutil.Log("Remove key")
-	u.dom.DoClick(u.dom.GetElement(buttonID(RemoveButton, key.ID)))
-	u.dom.DoClick(removeYes)
+	dom.DoClick(u.dom.GetElement(buttonID(RemoveButton, key.ID)))
+	dom.DoClick(removeYes)
 
 	jsutil.Log("Validate configured keys; ensure key is removed")
 	poll(func() bool {

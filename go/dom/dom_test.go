@@ -29,7 +29,7 @@ func TestTextContent(t *testing.T) {
 	d := New(dt.NewDocForTesting(`
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
-	if diff := cmp.Diff(d.TextContent(d.GetElement("list")), "firstsecond"); diff != "" {
+	if diff := cmp.Diff(TextContent(d.GetElement("list")), "firstsecond"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
 }
@@ -38,8 +38,8 @@ func TestRemoveChildren(t *testing.T) {
 	d := New(dt.NewDocForTesting(`
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
-	d.RemoveChildren(d.GetElement("list"))
-	if diff := cmp.Diff(d.TextContent(d.GetElement("list")), ""); diff != "" {
+	RemoveChildren(d.GetElement("list"))
+	if diff := cmp.Diff(TextContent(d.GetElement("list")), ""); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
 }
@@ -48,21 +48,21 @@ func TestNewElement(t *testing.T) {
 	d := New(dt.NewDocForTesting(`
 		<div id="list"></div>
 	`))
-	d.AppendChild(d.GetElement("list"), d.NewElement("div"), func(child js.Value) {
+	AppendChild(d.GetElement("list"), d.NewElement("div"), func(child js.Value) {
 		child.Set("id", "first")
-		d.AppendChild(child, d.NewText("first"), nil)
+		AppendChild(child, d.NewText("first"), nil)
 	})
-	d.AppendChild(d.GetElement("list"), d.NewElement("div"), func(child js.Value) {
+	AppendChild(d.GetElement("list"), d.NewElement("div"), func(child js.Value) {
 		child.Set("id", "second")
-		d.AppendChild(child, d.NewText("second"), nil)
+		AppendChild(child, d.NewText("second"), nil)
 	})
-	if diff := cmp.Diff(d.TextContent(d.GetElement("list")), "firstsecond"); diff != "" {
+	if diff := cmp.Diff(TextContent(d.GetElement("list")), "firstsecond"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
-	if diff := cmp.Diff(d.TextContent(d.GetElement("first")), "first"); diff != "" {
+	if diff := cmp.Diff(TextContent(d.GetElement("first")), "first"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
-	if diff := cmp.Diff(d.TextContent(d.GetElement("second")), "second"); diff != "" {
+	if diff := cmp.Diff(TextContent(d.GetElement("second")), "second"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
 }
@@ -71,8 +71,8 @@ func TestNewText(t *testing.T) {
 	d := New(dt.NewDocForTesting(`
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
-	d.AppendChild(d.GetElement("list"), d.NewText("third"), nil)
-	if diff := cmp.Diff(d.TextContent(d.GetElement("list")), "firstsecondthird"); diff != "" {
+	AppendChild(d.GetElement("list"), d.NewText("third"), nil)
+	if diff := cmp.Diff(TextContent(d.GetElement("list")), "firstsecondthird"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
 }
@@ -82,8 +82,8 @@ func TestClick(t *testing.T) {
 		<button id="btn"/>
 	`))
 	var clicked bool
-	d.OnClick(d.GetElement("btn"), func(evt Event) { clicked = true })
-	d.DoClick(d.GetElement("btn"))
+	OnClick(d.GetElement("btn"), func(evt Event) { clicked = true })
+	DoClick(d.GetElement("btn"))
 	if !clicked {
 		t.Errorf("clicked callback not invoked")
 	}
@@ -111,20 +111,20 @@ func TestValue(t *testing.T) {
 		<input id="ipt" type="text" value="Hello">
 	`))
 
-	if diff := cmp.Diff(d.Value(d.GetElement("ipt")), "Hello"); diff != "" {
+	if diff := cmp.Diff(Value(d.GetElement("ipt")), "Hello"); diff != "" {
 		t.Errorf("incorrect value; -got +want: %s", diff)
 	}
 
-	d.SetValue(d.GetElement("ipt"), "World")
-	if diff := cmp.Diff(d.Value(d.GetElement("ipt")), "World"); diff != "" {
+	SetValue(d.GetElement("ipt"), "World")
+	if diff := cmp.Diff(Value(d.GetElement("ipt")), "World"); diff != "" {
 		t.Errorf("incorrect value; -got +want: %s", diff)
 	}
 }
 
-func joinTextContent(d *DOM, objs []js.Value) string {
+func joinTextContent(objs []js.Value) string {
 	var result string
 	for _, o := range objs {
-		result = result + d.TextContent(o)
+		result = result + TextContent(o)
 	}
 	return result
 }
@@ -134,10 +134,10 @@ func TestGetElementsByTag(t *testing.T) {
 		<div>foo</div>
 		<pre>bar</pre>
 	`))
-	if diff := cmp.Diff(joinTextContent(d, d.GetElementsByTag("div")), "foo"); diff != "" {
+	if diff := cmp.Diff(joinTextContent(d.GetElementsByTag("div")), "foo"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
-	if diff := cmp.Diff(joinTextContent(d, d.GetElementsByTag("pre")), "bar"); diff != "" {
+	if diff := cmp.Diff(joinTextContent(d.GetElementsByTag("pre")), "bar"); diff != "" {
 		t.Errorf("incorrect text content; -got +want: %s", diff)
 	}
 }

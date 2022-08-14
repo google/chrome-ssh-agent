@@ -36,7 +36,7 @@ func resultsAsString(errs []error) string {
 }
 
 // getBody returns the body object, and undefined if none is present.
-func getBody(d *dom.DOM) js.Value {
+func getBody(d *dom.Doc) js.Value {
 	for _, e := range d.GetElementsByTag("body") {
 		return e
 	}
@@ -50,23 +50,23 @@ func getBody(d *dom.DOM) js.Value {
 //     that failed.
 // - failures: A pre element, whose contained text is a human-readable list
 //     of the individual failures.
-func WriteResults(d *dom.DOM, errs []error) {
+func WriteResults(d *dom.Doc, errs []error) {
 	body := getBody(d)
 	// Top-level container element into which we'll write results.
-	d.AppendChild(body, d.NewElement("div"), func(results js.Value) {
+	dom.AppendChild(body, d.NewElement("div"), func(results js.Value) {
 		// Indicate how many tests failed.
-		d.AppendChild(results, d.NewElement("div"), func(failureCount js.Value) {
+		dom.AppendChild(results, d.NewElement("div"), func(failureCount js.Value) {
 			// Allow the element to be read by automation.
 			failureCount.Set("id", "failureCount")
-			d.AppendChild(failureCount, d.NewText(fmt.Sprintf("%d", len(errs))), nil)
+			dom.AppendChild(failureCount, d.NewText(fmt.Sprintf("%d", len(errs))), nil)
 		})
 
 		// Enumerate the failures. This is a more readable list of the
 		// individual tests that failed.
-		d.AppendChild(results, d.NewElement("pre"), func(failures js.Value) {
+		dom.AppendChild(results, d.NewElement("pre"), func(failures js.Value) {
 			// Allow element to be read by automation.
 			failures.Set("id", "failures")
-			d.AppendChild(failures, d.NewText(resultsAsString(errs)), nil)
+			dom.AppendChild(failures, d.NewText(resultsAsString(errs)), nil)
 		})
 	})
 }

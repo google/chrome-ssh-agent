@@ -21,13 +21,13 @@ import (
 )
 
 var (
-	// JSON refers to Javascript's JSON class.
-	JSON = js.Global().Get("JSON")
+	// json refers to Javascript's JSON class.
+	json = js.Global().Get("JSON")
 )
 
 // ToJSON converts the supplied value to a JSON string.
 func ToJSON(val js.Value) string {
-	return JSON.Call("stringify", val).String()
+	return json.Call("stringify", val).String()
 }
 
 // FromJSON converts the supplied JSON string to a Javascript value.
@@ -38,5 +38,5 @@ func FromJSON(s string) js.Value {
 		}
 	}()
 
-	return JSON.Call("parse", s)
+	return json.Call("parse", s)
 }

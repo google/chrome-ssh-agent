@@ -23,21 +23,21 @@ import (
 )
 
 var (
-	// Console is the default 'console' object for the browser.
-	Console = js.Global().Get("console")
+	// console is the default 'console' object for the browser.
+	console = js.Global().Get("console")
 )
 
 // Log logs general information to the Javascript Console.
 func Log(format string, objs ...interface{}) {
-	Console.Call("log", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
+	console.Call("log", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
 }
 
 // LogError logs an error to the Javascript Console.
 func LogError(format string, objs ...interface{}) {
-	Console.Call("error", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
+	console.Call("error", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
 }
 
 // LogDebug logs a debug message to the Javascript Console.
 func LogDebug(format string, objs ...interface{}) {
-	Console.Call("debug", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
+	console.Call("debug", time.Now().Format(time.StampMilli), fmt.Sprintf(format, objs...))
 }

@@ -34,7 +34,7 @@ func main() {
 
 	c := chrome.New(js.Null())
 	mgr := keys.NewClient(c)
-	d := dom.New(dom.Doc)
+	d := dom.New(js.Null())
 	ui := optionsui.New(mgr, d)
 	defer ui.Release()
 
