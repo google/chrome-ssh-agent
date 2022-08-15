@@ -8,9 +8,9 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//go/agentport",
-        "//go/chrome",
         "//go/jsutil",
         "//go/keys",
+        "//go/storage",
         "@org_golang_x_crypto//ssh/agent",
     ],
 )

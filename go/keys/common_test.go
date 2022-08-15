@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/google/chrome-ssh-agent/go/chrome"
+	"github.com/google/chrome-ssh-agent/go/storage"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -145,7 +145,7 @@ func loadedKeyIDs(keys []*LoadedKey) []ID {
 	return res
 }
 
-func sessionKeyIDs(sessionKeys *chrome.TypedStore[sessionKey]) ([]ID, error) {
+func sessionKeyIDs(sessionKeys *storage.Typed[sessionKey]) ([]ID, error) {
 	keysc := make(chan []*sessionKey, 1)
 	errc := make(chan error, 1)
 	sessionKeys.ReadAll(func(keys []*sessionKey, err error) {

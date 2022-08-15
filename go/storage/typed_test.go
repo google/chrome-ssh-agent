@@ -14,14 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package chrome
+package storage
 
 import (
 	"errors"
 	"syscall/js"
 	"testing"
 
-	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
+	"github.com/google/chrome-ssh-agent/go/storage/fakes"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/norunners/vert"
@@ -33,7 +33,7 @@ var (
 	deleteError = errors.New("Storage.Delete failed")
 )
 
-func syncSet(t *testing.T, store PersistentStore, data map[string]js.Value) {
+func syncSet(t *testing.T, store Area, data map[string]js.Value) {
 	errc := make(chan error, 1)
 	store.Set(data, func(err error) {
 		errc <- err
@@ -45,7 +45,7 @@ func syncSet(t *testing.T, store PersistentStore, data map[string]js.Value) {
 
 const testKeyPrefix = "key:"
 
-func TestTypedStoreReadAll(t *testing.T) {
+func TestTypedReadAll(t *testing.T) {
 	testcases := []struct {
 		description string
 		init        map[string]js.Value
@@ -95,10 +95,10 @@ func TestTypedStoreReadAll(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			store := fakes.NewMemStorage()
+			store := fakes.NewMem()
 			syncSet(t, store, tc.init)
 
-			ts := NewTypedStore[myStruct](store, testKeyPrefix)
+			ts := NewTyped[myStruct](store, testKeyPrefix)
 
 			store.SetError(tc.errs)
 			gotc := make(chan []*myStruct, 1)
@@ -120,7 +120,7 @@ func TestTypedStoreReadAll(t *testing.T) {
 	}
 }
 
-func TestTypedStoreRead(t *testing.T) {
+func TestTypedRead(t *testing.T) {
 	const testKeyPrefix = "key:"
 	testcases := []struct {
 		description string
@@ -160,10 +160,10 @@ func TestTypedStoreRead(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			store := fakes.NewMemStorage()
+			store := fakes.NewMem()
 			syncSet(t, store, tc.init)
 
-			ts := NewTypedStore[myStruct](store, testKeyPrefix)
+			ts := NewTyped[myStruct](store, testKeyPrefix)
 
 			store.SetError(tc.errs)
 			gotc := make(chan *myStruct, 1)
@@ -185,7 +185,7 @@ func TestTypedStoreRead(t *testing.T) {
 	}
 }
 
-func TestTypedStoreWrite(t *testing.T) {
+func TestTypedWrite(t *testing.T) {
 	testcases := []struct {
 		description string
 		init        map[string]js.Value
@@ -232,10 +232,10 @@ func TestTypedStoreWrite(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			store := fakes.NewMemStorage()
+			store := fakes.NewMem()
 			syncSet(t, store, tc.init)
 
-			ts := NewTypedStore[myStruct](store, testKeyPrefix)
+			ts := NewTyped[myStruct](store, testKeyPrefix)
 
 			store.SetError(tc.errs)
 			errc := make(chan error, 1)
@@ -265,7 +265,7 @@ func TestTypedStoreWrite(t *testing.T) {
 	}
 }
 
-func TestTypedStoreDelete(t *testing.T) {
+func TestTypedDelete(t *testing.T) {
 	testcases := []struct {
 		description string
 		init        map[string]js.Value
@@ -317,10 +317,10 @@ func TestTypedStoreDelete(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			store := fakes.NewMemStorage()
+			store := fakes.NewMem()
 			syncSet(t, store, tc.init)
 
-			ts := NewTypedStore[myStruct](store, testKeyPrefix)
+			ts := NewTyped[myStruct](store, testKeyPrefix)
 
 			store.SetError(tc.errs)
 			errc := make(chan error, 1)

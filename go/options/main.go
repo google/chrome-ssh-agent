@@ -19,10 +19,10 @@ package main
 import (
 	"syscall/js"
 
-	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/chrome-ssh-agent/go/keys"
+	"github.com/google/chrome-ssh-agent/go/message"
 	"github.com/google/chrome-ssh-agent/go/optionsui"
 	"github.com/google/chrome-ssh-agent/go/testing"
 )
@@ -32,8 +32,7 @@ func main() {
 	defer jsutil.Log("Exiting Options UI")
 	done := make(chan struct{}, 0)
 
-	c := chrome.New(js.Null())
-	mgr := keys.NewClient(c)
+	mgr := keys.NewClient(message.NewLocalSender())
 	d := dom.New(js.Null())
 	ui := optionsui.New(mgr, d)
 	defer ui.Release()

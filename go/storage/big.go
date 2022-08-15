@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package chrome
+package storage
 
 import (
 	"crypto/sha256"
@@ -27,20 +27,27 @@ import (
 	"github.com/norunners/vert"
 )
 
-// BigStorage supports storing and retrieving keys and values of arbitrary sizes
-// in persistent storage.  Items that fit within the per-item quota are stored
-// normally; larger ones are split into multiple chunks.
+// Big supports storing and retrieving keys and values of arbitrary sizes. Items
+// that fit within the per-item quota are stored normally; larger ones are split
+// into multiple chunks.
 //
 // Overall storage quota still applies, but this bypasses the per-item quotas.
 //
-// BigStorage implements the PersistentStore interface.
-type BigStorage struct {
+// Big implements the Area interface.
+type Big struct {
 	// maxItemBytes is the maximum size of the key and value for
 	// an entry in the storage.
 	maxItemBytes int
 
-	// s is the underlying persistent storage.
-	s PersistentStore
+	// s is the underlying storage area.
+	s Area
+}
+
+func NewBig(maxItemBytes int, store Area) *Big {
+	return &Big{
+		maxItemBytes: maxItemBytes,
+		s:            store,
+	}
 }
 
 // bigValueManifest is the value stored in place of a big value.  It contains
@@ -78,7 +85,7 @@ var (
 	chunkKeyLength = len(makeChunkKey("dummy"))
 )
 
-func (b *BigStorage) maxChunkSize() int {
+func (b *Big) maxChunkSize() int {
 	// Chunk values are stored as strings; subtract 2 to leave room for
 	// quotes added as part of stringification when storing.
 	res := b.maxItemBytes - chunkKeyLength - 2
@@ -88,7 +95,7 @@ func (b *BigStorage) maxChunkSize() int {
 	return res
 }
 
-func (b *BigStorage) canStore(key string, valJSON string) bool {
+func (b *Big) canStore(key string, valJSON string) bool {
 	// Values are stored as strings after converting to JSON.
 	// When stored as JSON, Chrome may escape some additional characters.
 	// See:
@@ -110,7 +117,7 @@ func isChunkKey(key string) bool {
 }
 
 // See PersistentStore.Set().
-func (b *BigStorage) Set(data map[string]js.Value, callback func(err error)) {
+func (b *Big) Set(data map[string]js.Value, callback func(err error)) {
 	maxEncodedChunkSize := b.maxChunkSize()
 	maxDecodedChunkSize := base64.StdEncoding.DecodedLen(maxEncodedChunkSize)
 
@@ -158,7 +165,7 @@ func (b *BigStorage) Set(data map[string]js.Value, callback func(err error)) {
 }
 
 // See PersistentStore.Get().
-func (b *BigStorage) Get(callback func(data map[string]js.Value, err error)) {
+func (b *Big) Get(callback func(data map[string]js.Value, err error)) {
 	b.s.Get(func(data map[string]js.Value, err error) {
 		if err != nil {
 			callback(nil, err)
@@ -205,7 +212,7 @@ func (b *BigStorage) Get(callback func(data map[string]js.Value, err error)) {
 }
 
 // See PersistentStore.Delete().
-func (b *BigStorage) Delete(keys []string, callback func(err error)) {
+func (b *Big) Delete(keys []string, callback func(err error)) {
 	// Delete the requested keys.
 	b.s.Delete(keys, func(err error) {
 		if err != nil {

@@ -20,9 +20,9 @@ import (
 	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/agentport"
-	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/chrome-ssh-agent/go/keys"
+	"github.com/google/chrome-ssh-agent/go/storage"
 	"golang.org/x/crypto/ssh/agent"
 )
 
@@ -32,8 +32,7 @@ var (
 
 	// Create a wrapper that can update the loaded keys. Exposed the
 	// wrapper so it can be used by other pages in the extension.
-	chr = chrome.New(js.Null())
-	mgr = keys.NewManager(agt, chr.SyncStorage(), chr.SessionStorage())
+	mgr = keys.NewManager(agt, storage.DefaultSync(), storage.DefaultSession())
 	svr = keys.NewServer(mgr)
 
 	// Reload any keys for the session into the agent.

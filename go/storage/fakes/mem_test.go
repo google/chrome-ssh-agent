@@ -34,14 +34,14 @@ var (
 func TestFunctions(t *testing.T) {
 	testcases := []struct {
 		description string
-		sequence    func(m *MemStorage, errc chan<- error)
+		sequence    func(m *Mem, errc chan<- error)
 		errs        Errs
 		want        map[string]js.Value
 		wantErrs    []error
 	}{
 		{
 			description: "set keys",
-			sequence: func(m *MemStorage, errc chan<- error) {
+			sequence: func(m *Mem, errc chan<- error) {
 				m.Set(map[string]js.Value{"key1": js.ValueOf(42)}, func(err error) {
 					errc <- err
 				})
@@ -56,7 +56,7 @@ func TestFunctions(t *testing.T) {
 		},
 		{
 			description: "overwrite key",
-			sequence: func(m *MemStorage, errc chan<- error) {
+			sequence: func(m *Mem, errc chan<- error) {
 				m.Set(map[string]js.Value{"key1": js.ValueOf(42)}, func(err error) {
 					errc <- err
 				})
@@ -71,7 +71,7 @@ func TestFunctions(t *testing.T) {
 		},
 		{
 			description: "delete key",
-			sequence: func(m *MemStorage, errc chan<- error) {
+			sequence: func(m *Mem, errc chan<- error) {
 				m.Set(map[string]js.Value{"key1": js.ValueOf(42), "key2": js.ValueOf("bar")}, func(err error) {
 					errc <- err
 				})
@@ -85,7 +85,7 @@ func TestFunctions(t *testing.T) {
 		},
 		{
 			description: "delete non-existent key returns no error",
-			sequence: func(m *MemStorage, errc chan<- error) {
+			sequence: func(m *Mem, errc chan<- error) {
 				m.Set(map[string]js.Value{"key1": js.ValueOf(42)}, func(err error) {
 					errc <- err
 				})
@@ -99,7 +99,7 @@ func TestFunctions(t *testing.T) {
 		},
 		{
 			description: "return errors",
-			sequence: func(m *MemStorage, errc chan<- error) {
+			sequence: func(m *Mem, errc chan<- error) {
 				m.Set(map[string]js.Value{"key1": js.ValueOf(42)}, func(err error) {
 					errc <- err
 				})
@@ -127,7 +127,7 @@ func TestFunctions(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 
-			m := NewMemStorage()
+			m := NewMem()
 			errc := make(chan error, 10)
 
 			// Execute the test case, applying any configured errors.

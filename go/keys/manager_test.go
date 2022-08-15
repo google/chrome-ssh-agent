@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/chrome-ssh-agent/go/chrome"
-	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
+	"github.com/google/chrome-ssh-agent/go/storage"
+	"github.com/google/chrome-ssh-agent/go/storage/fakes"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"golang.org/x/crypto/ssh"
@@ -45,7 +45,7 @@ var (
 	storageDeleteErr = errors.New("Storage.Delete() failed")
 )
 
-func newTestManager(agent agent.Agent, syncStorage, sessionStorage chrome.PersistentStore, keys []*initialKey) (*DefaultManager, error) {
+func newTestManager(agent agent.Agent, syncStorage, sessionStorage storage.Area, keys []*initialKey) (*DefaultManager, error) {
 	mgr := NewManager(agent, syncStorage, sessionStorage)
 	for _, k := range keys {
 		if err := syncAdd(mgr, k.Name, k.PEMPrivateKey); err != nil {
@@ -125,8 +125,8 @@ func TestAdd(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			syncStorage := fakes.NewMemStorage()
-			sessionStorage := fakes.NewMemStorage()
+			syncStorage := fakes.NewMem()
+			sessionStorage := fakes.NewMem()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
@@ -222,8 +222,8 @@ func TestRemove(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			syncStorage := fakes.NewMemStorage()
-			sessionStorage := fakes.NewMemStorage()
+			syncStorage := fakes.NewMem()
+			sessionStorage := fakes.NewMem()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
@@ -301,8 +301,8 @@ func TestConfigured(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			syncStorage := fakes.NewMemStorage()
-			sessionStorage := fakes.NewMemStorage()
+			syncStorage := fakes.NewMem()
+			sessionStorage := fakes.NewMem()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
@@ -545,8 +545,8 @@ func TestLoadAndLoaded(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			syncStorage := fakes.NewMemStorage()
-			sessionStorage := fakes.NewMemStorage()
+			syncStorage := fakes.NewMem()
+			sessionStorage := fakes.NewMem()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
@@ -644,8 +644,8 @@ func TestUnload(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			syncStorage := fakes.NewMemStorage()
-			sessionStorage := fakes.NewMemStorage()
+			syncStorage := fakes.NewMem()
+			sessionStorage := fakes.NewMem()
 			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 			if err != nil {
 				t.Fatalf("failed to initialize manager: %v", err)
@@ -691,8 +691,8 @@ func TestUnload(t *testing.T) {
 func TestGetID(t *testing.T) {
 	// Create a manager with one configured key.  We load the key and
 	// ensure we can correctly extract the ID.
-	syncStorage := fakes.NewMemStorage()
-	sessionStorage := fakes.NewMemStorage()
+	syncStorage := fakes.NewMem()
+	sessionStorage := fakes.NewMem()
 	agt := agent.NewKeyring()
 	mgr, err := newTestManager(agt, syncStorage, sessionStorage, []*initialKey{
 		{
@@ -749,8 +749,8 @@ func TestGetID(t *testing.T) {
 
 func TestLoadFromSession(t *testing.T) {
 	// Storage peresists across multiple manager instances
-	syncStorage := fakes.NewMemStorage()
-	sessionStorage := fakes.NewMemStorage()
+	syncStorage := fakes.NewMem()
+	sessionStorage := fakes.NewMem()
 
 	// First manager instance configures and loads a key.
 	var wantID ID

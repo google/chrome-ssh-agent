@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package chrome
+package storage
 
 import (
 	"crypto/rand"
@@ -28,19 +28,19 @@ import (
 	"github.com/norunners/vert"
 )
 
-// TypedStore reads and writes typed values. They are serialized upon writing,
+// Typed reads and writes typed values. They are serialized upon writing,
 // and deserialized upon reading.  If deserialization fails for a given value,
 // it is ignored.
-type TypedStore[V any] struct {
-	store     PersistentStore
+type Typed[V any] struct {
+	store     Area
 	keyPrefix string
 }
 
-// NewTypedStore returns a new TypedStore using the underlying persistent store.
+// NewTyped returns a new Typed using the underlying persistent store.
 // keyPrefix is the prefix used to distinguish values from others in the same
 // underlying store.
-func NewTypedStore[V any](store PersistentStore, keyPrefix string) *TypedStore[V] {
-	return &TypedStore[V]{
+func NewTyped[V any](store Area, keyPrefix string) *Typed[V] {
+	return &Typed[V]{
 		store:     store,
 		keyPrefix: keyPrefix,
 	}
@@ -48,7 +48,7 @@ func NewTypedStore[V any](store PersistentStore, keyPrefix string) *TypedStore[V
 
 // readAllItems returns all the stored values, along with their keys. callback
 // is invoked with the result.
-func (t *TypedStore[V]) readAllItems(callback func(data map[string]*V, err error)) {
+func (t *Typed[V]) readAllItems(callback func(data map[string]*V, err error)) {
 	t.store.Get(func(data map[string]js.Value, err error) {
 		if err != nil {
 			callback(nil, err)
@@ -74,7 +74,7 @@ func (t *TypedStore[V]) readAllItems(callback func(data map[string]*V, err error
 }
 
 // ReadAll returns all the stored values. callback is invoked when complete.
-func (t *TypedStore[V]) ReadAll(callback func(values []*V, err error)) {
+func (t *Typed[V]) ReadAll(callback func(values []*V, err error)) {
 	t.readAllItems(func(data map[string]*V, err error) {
 		if err != nil {
 			callback(nil, err)
@@ -93,7 +93,7 @@ func (t *TypedStore[V]) ReadAll(callback func(values []*V, err error)) {
 // multiple values match, only the first is returned.  callback is invoked with
 // the returned value. If the value is not found, then the callback is invoked
 // with a nil value.
-func (t *TypedStore[V]) Read(test func(v *V) bool, callback func(value *V, err error)) {
+func (t *Typed[V]) Read(test func(v *V) bool, callback func(value *V, err error)) {
 	t.ReadAll(func(values []*V, err error) {
 		if err != nil {
 			callback(nil, err)
@@ -112,7 +112,7 @@ func (t *TypedStore[V]) Read(test func(v *V) bool, callback func(value *V, err e
 }
 
 // Write writes a new value to storage. callback is invoked when complete.
-func (t *TypedStore[V]) Write(value *V, callback func(err error)) {
+func (t *Typed[V]) Write(value *V, callback func(err error)) {
 	// Generate a unique key under which value will be stored.
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
@@ -130,7 +130,7 @@ func (t *TypedStore[V]) Write(value *V, callback func(err error)) {
 // Delete removes the value that matches the supplied test function. If multiple
 // values match, all matching values are removed. callback is invoked upon
 // completion.
-func (t *TypedStore[V]) Delete(test func(v *V) bool, callback func(err error)) {
+func (t *Typed[V]) Delete(test func(v *V) bool, callback func(err error)) {
 	t.readAllItems(func(data map[string]*V, err error) {
 		if err != nil {
 			callback(fmt.Errorf("failed to enumerate values: %w", err))

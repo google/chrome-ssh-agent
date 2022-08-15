@@ -22,6 +22,7 @@ import (
 	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
+	"github.com/google/chrome-ssh-agent/go/message"
 	"github.com/norunners/vert"
 )
 
@@ -274,18 +275,13 @@ func (s *Server) OnMessage(headerObj js.Value, sender js.Value, sendResponse fun
 	}
 }
 
-// MessageSender defines methods sufficient to send messages.
-type MessageSender interface {
-	SendMessage(msg js.Value, callback func(rsp js.Value, err error))
-}
-
 // client implements the Manager interface and forwards calls to a Server.
 type client struct {
-	msg MessageSender
+	msg message.Sender
 }
 
 // NewClient returns a Manager implementation that forwards calls to a Server.
-func NewClient(msg MessageSender) Manager {
+func NewClient(msg message.Sender) Manager {
 	return &client{msg: msg}
 }
 
@@ -294,7 +290,7 @@ func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
 	var msg msgConfigured
 	msg.Type = msgTypeConfigured
 	jsutil.LogDebug("Client.Configured(req)")
-	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
+	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
 		jsutil.LogDebug("Client.Configured(rsp)")
 		if err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
@@ -314,7 +310,7 @@ func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
 	var msg msgLoaded
 	msg.Type = msgTypeLoaded
 	jsutil.LogDebug("Client.Loaded(req)")
-	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
+	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
 		jsutil.LogDebug("Client.Loaded(rsp)")
 		if err != nil {
 			callback(nil, fmt.Errorf("failed to send message: %v", err))
@@ -336,7 +332,7 @@ func (c *client) Add(name string, pemPrivateKey string, callback func(err error)
 	msg.Name = name
 	msg.PEMPrivateKey = pemPrivateKey
 	jsutil.LogDebug("Client.Add(req): name=%s", msg.Name)
-	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
+	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
 		jsutil.LogDebug("Client.Add(rsp)")
 		if err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
@@ -357,7 +353,7 @@ func (c *client) Remove(id ID, callback func(err error)) {
 	msg.Type = msgTypeRemove
 	msg.ID = string(id)
 	jsutil.LogDebug("Client.Remove(req): id=%s", msg.ID)
-	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
+	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
 		jsutil.LogDebug("Client.Remove(rsp)")
 		if err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
@@ -379,7 +375,7 @@ func (c *client) Load(id ID, passphrase string, callback func(err error)) {
 	msg.ID = string(id)
 	msg.Passphrase = passphrase
 	jsutil.LogDebug("Client.Load(req): id=%s", msg.ID)
-	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
+	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
 		jsutil.LogDebug("Client.Load(rsp)")
 		if err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))
@@ -400,7 +396,7 @@ func (c *client) Unload(id ID, callback func(err error)) {
 	msg.Type = msgTypeUnload
 	msg.ID = string(id)
 	jsutil.LogDebug("Client.Unload(req): id=%s", msg.ID)
-	c.msg.SendMessage(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
+	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
 		jsutil.LogDebug("Client.Unload(rsp)")
 		if err != nil {
 			callback(fmt.Errorf("failed to send message: %v", err))

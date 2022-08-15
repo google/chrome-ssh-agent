@@ -49,7 +49,7 @@ func (m *mapReceiver) OnMessage(header js.Value, sender js.Value, sendResponse f
 }
 
 func TestMessagePassing(t *testing.T) {
-	hub := NewMessageHub()
+	hub := NewHub()
 
 	// Add handlers that respond to different values.
 	hub.AddReceiver(&intReceiver{})
@@ -58,21 +58,21 @@ func TestMessagePassing(t *testing.T) {
 
 	// Send messages of the various types.
 	var intRsp, strRsp, mapRsp js.Value
-	hub.SendMessage(js.ValueOf(42), func(rsp js.Value, err error) {
+	hub.Send(js.ValueOf(42), func(rsp js.Value, err error) {
 		if err != nil {
 			t.Errorf("SendMessage failed: %v", err)
 			return
 		}
 		intRsp = rsp
 	})
-	hub.SendMessage(js.ValueOf("foo"), func(rsp js.Value, err error) {
+	hub.Send(js.ValueOf("foo"), func(rsp js.Value, err error) {
 		if err != nil {
 			t.Errorf("SendMessage failed: %v", err)
 			return
 		}
 		strRsp = rsp
 	})
-	hub.SendMessage(vert.ValueOf(map[string]int{"some-key": 7}).JSValue(), func(rsp js.Value, err error) {
+	hub.Send(vert.ValueOf(map[string]int{"some-key": 7}).JSValue(), func(rsp js.Value, err error) {
 		if err != nil {
 			t.Errorf("SendMessage failed: %v", err)
 			return

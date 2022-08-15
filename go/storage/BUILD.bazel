@@ -1,0 +1,43 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//build_defs:wasm.bzl", "go_wasm_test")
+
+go_library(
+    name = "storage",
+    srcs = [
+        "area.go",
+        "big.go",
+        "default.go",
+        "raw.go",
+        "typed.go",
+    ],
+    importpath = "github.com/google/chrome-ssh-agent/go/storage",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//go/chrome",
+        "//go/jsutil",
+        "@com_github_norunners_vert//:vert",
+    ],
+)
+
+go_library(
+    name = "storage_testlib",
+    testonly = True,
+    srcs = [
+        "big_test.go",
+        "raw_test.go",
+        "typed_test.go",
+    ],
+    embed = [":storage"],
+    importpath = "github.com/google/chrome-ssh-agent/go/storage",
+    deps = [
+        "//go/storage/fakes",
+        "@com_github_google_go_cmp//cmp",
+        "@com_github_google_go_cmp//cmp/cmpopts",
+        "@com_github_norunners_vert//:vert",
+    ],
+)
+
+go_wasm_test(
+    name = "storage_test",
+    testlib = ":storage_testlib",
+)

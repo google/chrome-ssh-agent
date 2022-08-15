@@ -20,7 +20,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
+	mfakes "github.com/google/chrome-ssh-agent/go/message/fakes"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -66,7 +66,7 @@ func (m *dummyManager) Unload(id ID, callback func(err error)) {
 }
 
 func TestClientServerConfigured(t *testing.T) {
-	hub := fakes.NewMessageHub()
+	hub := mfakes.NewHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	srv := NewServer(mgr)
@@ -97,7 +97,7 @@ func TestClientServerConfigured(t *testing.T) {
 }
 
 func TestClientServerAdd(t *testing.T) {
-	hub := fakes.NewMessageHub()
+	hub := mfakes.NewHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	srv := NewServer(mgr)
@@ -124,7 +124,7 @@ func TestClientServerAdd(t *testing.T) {
 }
 
 func TestClientServerRemove(t *testing.T) {
-	hub := fakes.NewMessageHub()
+	hub := mfakes.NewHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	srv := NewServer(mgr)
@@ -147,7 +147,7 @@ func TestClientServerRemove(t *testing.T) {
 }
 
 func TestClientServerLoaded(t *testing.T) {
-	hub := fakes.NewMessageHub()
+	hub := mfakes.NewHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	srv := NewServer(mgr)
@@ -180,7 +180,7 @@ func TestClientServerLoaded(t *testing.T) {
 }
 
 func TestClientServerLoad(t *testing.T) {
-	hub := fakes.NewMessageHub()
+	hub := mfakes.NewHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	srv := NewServer(mgr)
@@ -207,7 +207,7 @@ func TestClientServerLoad(t *testing.T) {
 }
 
 func TestClientServerUnload(t *testing.T) {
-	hub := fakes.NewMessageHub()
+	hub := mfakes.NewHub()
 	mgr := &dummyManager{}
 	cli := NewClient(hub)
 	srv := NewServer(mgr)

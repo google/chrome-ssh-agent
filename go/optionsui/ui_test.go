@@ -24,11 +24,12 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 
-	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/google/chrome-ssh-agent/go/dom"
 	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
+	mfakes "github.com/google/chrome-ssh-agent/go/message/fakes"
+	sfakes "github.com/google/chrome-ssh-agent/go/storage/fakes"
 	"github.com/google/chrome-ssh-agent/go/testutil"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -45,7 +46,7 @@ var (
 )
 
 type testHarness struct {
-	messaging *fakes.MessageHub
+	messaging *mfakes.Hub
 	agent     agent.Agent
 	manager   keys.Manager
 	server    *keys.Server
@@ -70,9 +71,9 @@ func (h *testHarness) Release() {
 }
 
 func newHarness() *testHarness {
-	syncStorage := fakes.NewMemStorage()
-	sessionStorage := fakes.NewMemStorage()
-	msg := fakes.NewMessageHub()
+	syncStorage := sfakes.NewMem()
+	sessionStorage := sfakes.NewMem()
+	msg := mfakes.NewHub()
 
 	agt := agent.NewKeyring()
 	mgr := keys.NewManager(agt, syncStorage, sessionStorage)

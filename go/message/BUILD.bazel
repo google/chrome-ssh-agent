@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//build_defs:wasm.bzl", "go_wasm_test")
+
+go_library(
+    name = "message",
+    srcs = ["sender.go"],
+    importpath = "github.com/google/chrome-ssh-agent/go/message",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//go/chrome",
+        "//go/jsutil",
+    ],
+)

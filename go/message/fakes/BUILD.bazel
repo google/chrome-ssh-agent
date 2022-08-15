@@ -3,23 +3,18 @@ load("//build_defs:wasm.bzl", "go_wasm_test")
 
 go_library(
     name = "fakes",
-    srcs = [
-        "messaging.go",
-        "storage.go",
-    ],
-    importpath = "github.com/google/chrome-ssh-agent/go/chrome/fakes",
+    testonly = True,
+    srcs = ["hub.go"],
+    importpath = "github.com/google/chrome-ssh-agent/go/message/fakes",
     visibility = ["//visibility:public"],
 )
 
 go_library(
     name = "fakes_testlib",
     testonly = True,
-    srcs = [
-        "messaging_test.go",
-        "storage_test.go",
-    ],
+    srcs = ["hub_test.go"],
     embed = [":fakes"],
-    importpath = "github.com/google/chrome-ssh-agent/go/chrome/fakes",
+    importpath = "github.com/google/chrome-ssh-agent/go/message/fakes",
     deps = [
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",

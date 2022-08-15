@@ -30,8 +30,8 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
+	"github.com/google/chrome-ssh-agent/go/storage"
 	"github.com/youmark/pkcs8"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -141,19 +141,19 @@ type Manager interface {
 
 // NewManager returns a Manager implementation that can manage keys in the
 // supplied agent, and store configured keys in the supplied storage.
-func NewManager(agt agent.Agent, syncStorage, sessionStorage chrome.PersistentStore) *DefaultManager {
+func NewManager(agt agent.Agent, syncStorage, sessionStorage storage.Area) *DefaultManager {
 	return &DefaultManager{
 		agent:       agt,
-		storedKeys:  chrome.NewTypedStore[storedKey](syncStorage, keyPrefix),
-		sessionKeys: chrome.NewTypedStore[sessionKey](sessionStorage, keyPrefix),
+		storedKeys:  storage.NewTyped[storedKey](syncStorage, keyPrefix),
+		sessionKeys: storage.NewTyped[sessionKey](sessionStorage, keyPrefix),
 	}
 }
 
 // DefaultManager is an implementation of Manager.
 type DefaultManager struct {
 	agent       agent.Agent
-	storedKeys  *chrome.TypedStore[storedKey]
-	sessionKeys *chrome.TypedStore[sessionKey]
+	storedKeys  *storage.Typed[storedKey]
+	sessionKeys *storage.Typed[sessionKey]
 }
 
 // storedKey is the raw object stored in persistent storage for a configured

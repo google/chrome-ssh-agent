@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package chrome
+package storage
 
 import (
 	"fmt"
@@ -22,13 +22,13 @@ import (
 	"syscall/js"
 	"testing"
 
-	"github.com/google/chrome-ssh-agent/go/chrome/fakes"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
+	"github.com/google/chrome-ssh-agent/go/storage/fakes"
 	"github.com/google/go-cmp/cmp"
 	"github.com/norunners/vert"
 )
 
-func syncGet(s PersistentStore) (map[string]js.Value, error) {
+func syncGet(s Area) (map[string]js.Value, error) {
 	datac := make(chan map[string]js.Value, 1)
 	errc := make(chan error, 1)
 	s.Get(func(data map[string]js.Value, err error) {
@@ -46,7 +46,7 @@ func isManifest(v js.Value) bool {
 	return false
 }
 
-func syncGetEntryType(s PersistentStore) (map[string]string, error) {
+func syncGetEntryType(s Area) (map[string]string, error) {
 	data, err := syncGet(s)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func syncGetEntryType(s PersistentStore) (map[string]string, error) {
 	return res, nil
 }
 
-func syncGetJSON(s PersistentStore) (map[string]string, error) {
+func syncGetJSON(s Area) (map[string]string, error) {
 	data, err := syncGet(s)
 	if err != nil {
 		return nil, err
@@ -141,11 +141,7 @@ func TestSetAndGet(t *testing.T) {
 				tc.maxItemBytes = defaultMaxItemBytes
 			}
 
-			b := &BigStorage{
-				maxItemBytes: tc.maxItemBytes,
-				s:            fakes.NewMemStorage(),
-			}
-
+			b := NewBig(tc.maxItemBytes, fakes.NewMem())
 			b.Set(tc.set, func(err error) {
 				if err != nil {
 					t.Fatalf("set failed: %v", err)
@@ -157,7 +153,7 @@ func TestSetAndGet(t *testing.T) {
 				}
 				got, err := syncGetJSON(b)
 				if err != nil {
-					t.Fatalf("get failed for BigStorage: %v", err)
+					t.Fatalf("get failed for Big: %v", err)
 				}
 
 				if diff := cmp.Diff(gotRaw, tc.wantRaw); diff != "" {
@@ -249,11 +245,7 @@ func TestDelete(t *testing.T) {
 				tc.maxItemBytes = defaultMaxItemBytes
 			}
 
-			b := &BigStorage{
-				maxItemBytes: tc.maxItemBytes,
-				s:            fakes.NewMemStorage(),
-			}
-
+			b := NewBig(tc.maxItemBytes, fakes.NewMem())
 			b.Set(tc.set, func(err error) {
 				if err != nil {
 					t.Fatalf("set failed: %v", err)
@@ -270,7 +262,7 @@ func TestDelete(t *testing.T) {
 					}
 					got, err := syncGetJSON(b)
 					if err != nil {
-						t.Fatalf("get failed for BigStorage: %v", err)
+						t.Fatalf("get failed for Big: %v", err)
 					}
 
 					if diff := cmp.Diff(gotRaw, tc.wantRaw); diff != "" {

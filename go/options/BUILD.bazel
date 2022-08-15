@@ -7,10 +7,10 @@ go_library(
     importpath = "github.com/google/chrome-ssh-agent/go/options",
     visibility = ["//visibility:private"],
     deps = [
-        "//go/chrome",
         "//go/dom",
         "//go/jsutil",
         "//go/keys",
+        "//go/message",
         "//go/optionsui",
         "//go/testing",
     ],

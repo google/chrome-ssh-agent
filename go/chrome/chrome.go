@@ -20,90 +20,43 @@ package chrome
 import (
 	"errors"
 	"syscall/js"
-
-	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
-// C provides access to Chrome's extension APIs.
-type C struct {
-	// chrome is a reference to the top-level 'chrome' Javascript object.
-	chrome js.Value
-	// runtime is a reference to 'chrome.runtime'.
-	runtime js.Value
-	// sessionStorage is a reference to 'chrome.storage.session'.
-	sessionStorage js.Value
-	// syncStorage is a reference to 'chrome.storage.sync'.
-	syncStorage js.Value
+var (
+	// chrome is a reference to the 'chrome' object.
+	chrome = js.Global().Get("chrome")
+	// runtime is a reference to the'chrome.runtime' object.
+	runtime = func() js.Value {
+		if chrome.IsUndefined() {
+			return js.Undefined() // Not running under chrome.
+		}
+		return chrome.Get("runtime")
+	}()
 	// extensionID is the unique ID allocated to our extension.
-	extensionID string
+	extensionID = func() string {
+		if runtime.IsUndefined() {
+			return "" // Not running under chrome.
+		}
+		return runtime.Get("id").String()
+	}()
+)
+
+// Runtime returns a reference to 'chrome.runtime'.
+func Runtime() js.Value {
+	return runtime
 }
 
-// New returns an instance of C that can be used to access Chrome's extension
-// APIs. Set chrome to nil to access the default Chrome API implementation;
-// it should only be overridden for testing.
-func New(chrome js.Value) *C {
-	if chrome.IsUndefined() || chrome.IsNull() {
-		chrome = js.Global().Get("chrome")
-	}
-
-	return &C{
-		chrome:         chrome,
-		runtime:        chrome.Get("runtime"),
-		sessionStorage: chrome.Get("storage").Get("session"),
-		syncStorage:    chrome.Get("storage").Get("sync"),
-		extensionID:    chrome.Get("runtime").Get("id").String(),
-	}
+// ExtensionID returns the unique ID allocated to this extension.
+func ExtensionID() string {
+	return extensionID
 }
 
-// SessionStorage returns a PersistentStore object that can be used to to store
-// data in memory. Data persists across Service Worker restarts.
-//
-// See https://developer.chrome.com/apps/storage#property-session.
-func (c *C) SessionStorage() PersistentStore {
-	return &Storage{
-		chrome: c,
-		o:      c.sessionStorage,
-	}
-}
-
-// SyncStorage returns a PersistentStore object that can be used to to store
-// persistent data that is synchronized with Chrome Sync.
-//
-// See https://developer.chrome.com/apps/storage#property-sync.
-func (c *C) SyncStorage() PersistentStore {
-	return &BigStorage{
-		maxItemBytes: c.syncStorage.Get("QUOTA_BYTES_PER_ITEM").Int(),
-		s: &Storage{
-			chrome: c,
-			o:      c.syncStorage,
-		},
-	}
-}
-
-// SendMessage sends a message within our extension. While the underlying
-// Chrome API supports sending a message to another extension, we only
-// expose functionality to send within the same extension.
-//
-// See https://developer.chrome.com/apps/runtime#method-sendMessage.
-func (c *C) SendMessage(msg js.Value, callback func(rsp js.Value, err error)) {
-	c.runtime.Call(
-		"sendMessage", c.extensionID, msg, nil,
-		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
-			if err := c.lastError(); err != nil {
-				callback(js.Undefined(), err)
-				return nil
-			}
-			callback(jsutil.SingleArg(args), nil)
-			return nil
-		}))
-}
-
-// lastError returns the error (if any) from the last call. Returns nil if there
+// LastError returns the error (if any) from the last call. Returns nil if there
 // was no error.
 //
 // See https://developer.chrome.com/apps/runtime#property-lastError.
-func (c *C) lastError() error {
-	if err := c.runtime.Get("lastError"); !err.IsNull() && !err.IsUndefined() {
+func LastError() error {
+	if err := runtime.Get("lastError"); !err.IsNull() && !err.IsUndefined() {
 		return errors.New(err.Get("message").String())
 	}
 	return nil
