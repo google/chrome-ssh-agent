@@ -570,12 +570,12 @@ def go_dependencies():
     go_repository(
         name = "com_github_tebeka_selenium",
         importpath = "github.com/tebeka/selenium",
-        sum = "h1:XPXngAHu62H2O4ebHjewil2w4UJjbHDGOJi0TST80A4=",
-        version = "v0.9.10-0.20211105214847-e9100b7f5ac1",
+        patch_args = ["-p1"],
         patches = [
             "//:patches/selenium-xvfb-timeout.patch",
         ],
-        patch_args = ["-p1"],
+        sum = "h1:XPXngAHu62H2O4ebHjewil2w4UJjbHDGOJi0TST80A4=",
+        version = "v0.9.10-0.20211105214847-e9100b7f5ac1",
     )
     go_repository(
         name = "com_github_tmc_grpc_websocket_proxy",
