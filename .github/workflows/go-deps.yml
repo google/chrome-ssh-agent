@@ -8,6 +8,10 @@ on:
 jobs:
   go-deps:
     runs-on: ubuntu-latest
+    permissions:
+      # This is broad, but unfortunately it is required.
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v3
       - uses: bazelbuild/setup-bazelisk@v2
