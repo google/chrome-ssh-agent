@@ -1,17 +1,22 @@
 name: Go Dependencies
+# File an issue when updates to Go dependencies are available. We can't use the
+# standard 'go mod' support in Dependabot or Renovate since we also need to run
+# gazelle to update Bazel's dependencies. See the following feature requests:
+#   Renovate: https://github.com/renovatebot/renovate/issues/3347 (Gazelle)
+#   Dependabot: https://github.com/dependabot/dependabot-core/issues/2196 (Bazel only)
 
 on:
   schedule:
-    - cron: '0 9 * * *'
+    # Run once per-week (Fridays). This creates an issue for a human to address,
+    # so don't file new issues too much.
+    - cron: '0 9 * * 6'
   workflow_dispatch:
 
 jobs:
   go-deps:
     runs-on: ubuntu-latest
     permissions:
-      # This is broad, but unfortunately it is required.
-      contents: write
-      pull-requests: write
+      issues: write
     steps:
       - uses: actions/checkout@v3
       - uses: bazelbuild/setup-bazelisk@v2
@@ -19,17 +24,18 @@ jobs:
         with:
           go-version: '>=1.18.0'
       - run: go mod tidy
-      - run: bazel run //:gazelle-update-repos
-      - run: bazel build ...
-      - run: bazel test --test_output=errors ...
-      - uses: peter-evans/create-pull-request@v4
+      - uses: UnicornGlobal/has-changes-action@v1.0.11
+        id: has-changes
+      - uses: dacbd/create-issue-action@v1
+        if: steps.has-changes.outputs.changed == 1
         with:
-          commit-message: Update Go Dependencies
           title: Update Go Dependencies
-          body: Auto-generated Go dependency updates.
-          # For consistency with dependabot:
-          #   https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#labels
-          labels: |
-            dependencies
-          branch: go-deps-auto-update
-          delete-branch: true
+          body: |
+            Update to Go dependencies are available.
+
+            To update, run
+
+            ```
+            go mod tidy
+            bazel //:gazelle-update-repos
+            ```
