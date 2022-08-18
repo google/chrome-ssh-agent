@@ -41,11 +41,14 @@ http_archive(
 )
 
 http_archive(
-    name = "com_google_protobuf",
-    sha256 = "d0f5f605d0d656007ce6c8b5a82df3037e1d8fe8b121ed42e536f569dec16113",
-    strip_prefix = "protobuf-3.14.0",
-    urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.14.0.tar.gz"],
+    name = "rules_proto",
+    sha256 = "e017528fd1c91c5a33f15493e3a398181a9e821a804eb7ff5acdd1d2d6c2b18d",
+    strip_prefix = "rules_proto-4.0.0-3.20.0",
+    urls = [
+        "https://github.com/bazelbuild/rules_proto/archive/refs/tags/4.0.0-3.20.0.tar.gz",
+    ],
 )
+
 
 # Instructions, courtesy of rules_webtesting.
 #
@@ -91,6 +94,17 @@ genrule(
     # 103.0.5060.134
     urls = ["https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1002910/chrome-linux.zip"],
 )
+
+# Proto support.  Required by github.com/mediabuyerbot/go-crx3, which is needed by
+# Selenium browser-based testing.
+#
+# See https://github.com/bazelbuild/rules_go/issues/2902 for how to configure this
+# such that we avoid needing to compile the proto compiler.  Avoid the standard
+# instructions in https://github.com/bazelbuild/rules_go#protobuf-and-grpc.
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
+
+rules_proto_dependencies()
+rules_proto_toolchains()
 
 # Go build support.
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
@@ -138,8 +152,3 @@ bazel_skylib_workspace()
 load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
 
 rules_pkg_dependencies()
-
-# Proto support.  Required by github.com/mediabuyerbot/go-crx3, which is needed by Selenium browser-based testing.
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
-protobuf_deps()
