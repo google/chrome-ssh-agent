@@ -17,25 +17,18 @@ go_library(
     ],
 )
 
-go_library(
-    name = "chrome_testlib",
-    testonly = True,
+go_wasm_test(
+    name = "chrome_test",
     srcs = [
         "bigstorage_test.go",
         "storage_test.go",
         "typedstorage_test.go",
     ],
     embed = [":chrome"],
-    importpath = "github.com/google/chrome-ssh-agent/go/chrome",
     deps = [
         "//go/chrome/fakes",
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",
         "@com_github_norunners_vert//:vert",
     ],
-)
-
-go_wasm_test(
-    name = "chrome_test",
-    testlib = ":chrome_testlib",
 )

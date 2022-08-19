@@ -1,5 +1,3 @@
-//go:build js && wasm
-
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -806,7 +804,7 @@ func TestLoadFromSession(t *testing.T) {
 		mgr.LoadFromSession(func(err error) {
 			errc <- err
 		})
-		if err := <-errc; err != nil {
+		if err = <-errc; err != nil {
 			t.Fatalf("failed to load keys from session: %v", err)
 		}
 

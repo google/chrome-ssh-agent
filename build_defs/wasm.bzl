@@ -1,50 +1,39 @@
-load("@io_bazel_rules_go//go/private:context.bzl", "go_context")
 load("@io_bazel_rules_go//go/private:providers.bzl", "GoLibrary", "GoPath", "GoArchive")
-load("@io_bazel_rules_go//go:def.bzl", "go_path")
+load("@io_bazel_rules_go//go:def.bzl", "go_test", "go_library", "go_binary")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def _go_wasm_test_impl(ctx):
-    go = go_context(ctx)
     node_info = ctx.toolchains["@rules_nodejs//nodejs:toolchain_type"].nodeinfo
     node_path = node_info.target_tool_path
     node_inputs = node_info.tool_files
+    test_executable = ctx.attr.test_target[DefaultInfo].files_to_run.executable
+    test_runfiles = ctx.attr.test_target[DefaultInfo].default_runfiles
 
     runner = ctx.actions.declare_file(ctx.label.name + '_runner.sh')
     ctx.actions.write(
         runner,
         '\n'.join([
             '#!/bin/bash -eu',
-            # Setup Go environment
-	    'export GOROOT="${{PWD}}/{0}"'.format(go.env['GOROOT']),
-	    'export GOPATH="${{PWD}}/{0}"'.format(ctx.attr.gopath[GoPath].gopath),
-	    'export GOCACHE=${PWD}/.gocache',
-	    'export GO111MODULE=off',  # We populated GOPATH; no need for modules
-            # Setup for WASM
-            'export GOOS=js',
-            'export GOARCH=wasm',
             # Ensure 'node' binary is on the PATH.
             'export PATH="${{PWD}}/{0}:${{PATH}}"'.format(paths.dirname(node_path)),
             # TODO: Replace with proper way to discover directory
             'export NODE_PATH="${PWD}/external/npm/node_modules"',
-	    'exec ${{PWD}}/{0} test -exec="${{PWD}}/{1}" {2}'.format(
-                go.go.short_path,
+	    # Wrapping executes a subprocess and uses pipe() for communication;
+	    # pipe() is unsupported under node.js and WASM.
+	    'export GO_TEST_WRAP=0',
+	    'exec ${{PWD}}/{0} "${{PWD}}/{1}"'.format(
                 ctx.executable.run_wasm.short_path,
-                ctx.attr.testlib[GoLibrary].importpath,
+		test_executable.short_path,
             ),
         ]),
         is_executable = True,
     )
 
     runfiles = ctx.runfiles(files=(
-        go.sdk.headers
-        + go.sdk.srcs
-        + node_inputs
-        + ctx.files.node_deps
-        + [ctx.executable.run_wasm]
-	+ [go.go] + go.sdk.tools
+	[runner, test_executable, ctx.executable.run_wasm]
+        + node_inputs + ctx.files.node_deps
     ))
-    runfiles = runfiles.merge(ctx.attr.gopath[DefaultInfo].default_runfiles)
-    runfiles = runfiles.merge(ctx.attr.testlib[GoArchive].runfiles)
+    runfiles = runfiles.merge(test_runfiles)
 
     return [DefaultInfo(
         executable = runner,
@@ -56,13 +45,9 @@ _go_wasm_test = rule(
     implementation = _go_wasm_test_impl,
     test = True,
     attrs = {
-        "testlib": attr.label(
+	"test_target": attr.label(
             mandatory = True,
-            providers = [GoLibrary, GoArchive],
-        ),
-	"gopath": attr.label(
-            mandatory = True,
-            providers = [GoPath],
+            providers = [DefaultInfo],
         ),
         "run_wasm": attr.label(
             executable = True,
@@ -71,26 +56,46 @@ _go_wasm_test = rule(
             default = Label("@go_sdk//:misc/wasm/go_js_wasm_exec"),
         ),
         "node_deps": attr.label_list(), 
-        "_go_context_data": attr.label(
-            default = "@io_bazel_rules_go//:go_context_data",
-        ),
     },
     toolchains = [
-        "@io_bazel_rules_go//go:toolchain",
 	"@rules_nodejs//nodejs:toolchain_type",
     ],
 )
 
-def go_wasm_test(name, testlib, **kwargs):
-    path_target = '{0}_gopath'.format(name)
-    go_path(
-        name = path_target,
-        deps = [testlib],
-	testonly = True,
+def go_wasm_test(name, srcs, embed, deps, node_deps = [], **kwargs):
+    # Define a target that builds the test binary. Specify the manual tag
+    # so it is not executed automatically.
+    test_tags = kwargs.get("tags", [])
+    if "manual" not in test_tags:
+        test_tags += ["manual"]
+
+    test_target = '_{0}_internal'.format(name)
+    go_test(
+        name = test_target,
+	srcs = srcs,
+	deps = deps,
+	embed = embed,
+	goos = "js",
+	goarch = "wasm",
+	tags = test_tags,
+	**kwargs,
     )
+
+    # Run the test binary via a wrapper.
     _go_wasm_test(
         name = name,
-	gopath = ':{0}'.format(path_target),
-        testlib = testlib,
-	**kwargs,
+	test_target = ":{0}".format(test_target),
+	node_deps = node_deps,
+    )
+
+
+def go_wasm_binary(name, **kwargs):
+    if "out" not in kwargs:
+        kwargs["out"] = "{0}.wasm".format(name)
+
+    go_binary(
+        name = name,
+	goos = "js",
+	goarch = "wasm",
+        **kwargs,
     )

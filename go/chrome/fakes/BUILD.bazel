@@ -11,23 +11,16 @@ go_library(
     visibility = ["//visibility:public"],
 )
 
-go_library(
-    name = "fakes_testlib",
-    testonly = True,
+go_wasm_test(
+    name = "fakes_test",
     srcs = [
         "messaging_test.go",
         "storage_test.go",
     ],
     embed = [":fakes"],
-    importpath = "github.com/google/chrome-ssh-agent/go/chrome/fakes",
     deps = [
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",
         "@com_github_norunners_vert//:vert",
     ],
-)
-
-go_wasm_test(
-    name = "fakes_test",
-    testlib = ":fakes_testlib",
 )
