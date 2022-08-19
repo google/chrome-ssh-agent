@@ -49,7 +49,6 @@ http_archive(
     ],
 )
 
-
 # Instructions, courtesy of rules_webtesting.
 #
 # To update Chromium, do the following:
@@ -104,6 +103,7 @@ genrule(
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
 
 rules_proto_dependencies()
+
 rules_proto_toolchains()
 
 # Go build support.

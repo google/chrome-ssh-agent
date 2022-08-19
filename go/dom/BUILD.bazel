@@ -14,15 +14,15 @@ go_library(
 
 go_wasm_test(
     name = "dom_test",
-    node_deps = [
-        "@npm//jsdom",
-        "@npm//url-search-params",
-    ],
     srcs = [
         "dom_test.go",
         "url_test.go",
     ],
     embed = [":dom"],
+    node_deps = [
+        "@npm//jsdom",
+        "@npm//url-search-params",
+    ],
     deps = [
         "//go/dom/testing",
         "@com_github_google_go_cmp//cmp",

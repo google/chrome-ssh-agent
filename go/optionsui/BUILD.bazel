@@ -17,14 +17,14 @@ go_library(
 
 go_wasm_test(
     name = "optionsui_test",
-    node_deps = [
-        "@npm//jsdom",
-    ],
     srcs = ["ui_test.go"],
     data = [
         "//html:optionsui",
     ],
     embed = [":optionsui"],
+    node_deps = [
+        "@npm//jsdom",
+    ],
     deps = [
         "//go/chrome/fakes",
         "//go/dom",
@@ -38,5 +38,4 @@ go_wasm_test(
         "@org_golang_x_crypto//ssh",
         "@org_golang_x_crypto//ssh/agent",
     ],
-
 )
