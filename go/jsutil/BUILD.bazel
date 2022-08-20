@@ -13,22 +13,15 @@ go_library(
     visibility = ["//visibility:public"],
 )
 
-go_library(
-    name = "jsutil_testlib",
-    testonly = True,
+go_wasm_test(
+    name = "jsutil_test",
     srcs = [
         "func_test.go",
         "json_test.go",
         "object_test.go",
     ],
     embed = [":jsutil"],
-    importpath = "github.com/google/chrome-ssh-agent/go/jsutil",
     deps = [
         "@com_github_google_go_cmp//cmp",
     ],
-)
-
-go_wasm_test(
-    name = "jsutil_test",
-    testlib = ":jsutil_testlib",
 )

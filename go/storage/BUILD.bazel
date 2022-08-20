@@ -19,25 +19,18 @@ go_library(
     ],
 )
 
-go_library(
-    name = "storage_testlib",
-    testonly = True,
+go_wasm_test(
+    name = "storage_test",
     srcs = [
         "big_test.go",
         "raw_test.go",
         "typed_test.go",
     ],
     embed = [":storage"],
-    importpath = "github.com/google/chrome-ssh-agent/go/storage",
     deps = [
         "//go/storage/fakes",
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",
         "@com_github_norunners_vert//:vert",
     ],
-)
-
-go_wasm_test(
-    name = "storage_test",
-    testlib = ":storage_testlib",
 )

@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "testbuildtags",
+    srcs = ["testbuildtags.go"],
+    importpath = "github.com/google/chrome-ssh-agent/nogo/testbuildtags",
+    visibility = ["//visibility:public"],
+    deps = ["@org_golang_x_tools//go/analysis"],
+)

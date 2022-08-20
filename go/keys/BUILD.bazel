@@ -1,5 +1,5 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//build_defs:wasm.bzl", "go_wasm_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "keys",
@@ -20,16 +20,14 @@ go_library(
     ],
 )
 
-go_library(
-    name = "keys_testlib",
-    testonly = True,
+go_wasm_test(
+    name = "keys_test",
     srcs = [
         "client_test.go",
         "common_test.go",
         "manager_test.go",
     ],
     embed = [":keys"],
-    importpath = "github.com/google/chrome-ssh-agent/go/keys",
     deps = [
         "//go/keys/testdata",
         "//go/message/fakes",
@@ -39,9 +37,4 @@ go_library(
         "@org_golang_x_crypto//ssh",
         "@org_golang_x_crypto//ssh/agent",
     ],
-)
-
-go_wasm_test(
-    name = "keys_test",
-    testlib = ":keys_testlib",
 )

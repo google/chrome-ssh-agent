@@ -12,26 +12,19 @@ go_library(
     deps = ["//go/jsutil"],
 )
 
-go_library(
-    name = "dom_testlib",
-    testonly = True,
+go_wasm_test(
+    name = "dom_test",
     srcs = [
         "dom_test.go",
         "url_test.go",
     ],
     embed = [":dom"],
-    importpath = "github.com/google/chrome-ssh-agent/go/dom",
-    deps = [
-        "//go/dom/testing",
-        "@com_github_google_go_cmp//cmp",
-    ],
-)
-
-go_wasm_test(
-    name = "dom_test",
     node_deps = [
         "@npm//jsdom",
         "@npm//url-search-params",
     ],
-    testlib = ":dom_testlib",
+    deps = [
+        "//go/dom/testing",
+        "@com_github_google_go_cmp//cmp",
+    ],
 )

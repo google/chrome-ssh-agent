@@ -1,5 +1,6 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//build_defs:wasm.bzl", "go_wasm_binary")
 
 go_library(
     name = "options_lib",
@@ -16,12 +17,9 @@ go_library(
     ],
 )
 
-go_binary(
+go_wasm_binary(
     name = "options",
-    out = "options.wasm",
     embed = [":options_lib"],
-    goarch = "wasm",
-    goos = "js",
     visibility = ["//visibility:private"],
 )
 

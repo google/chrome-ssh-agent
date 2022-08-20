@@ -104,9 +104,6 @@ func TestWebApp(t *testing.T) {
 
 	var selOut bytes.Buffer
 	opts := []selenium.ServiceOption{
-		selenium.StartFrameBufferWithOptions(selenium.FrameBufferOptions{
-			XvfbTimeout: 15 * time.Second,
-		}),
 		selenium.Output(&selOut),
 	}
 	service, err := selenium.NewChromeDriverService(chromeDriverPath, port, opts...)
@@ -131,6 +128,9 @@ func TestWebApp(t *testing.T) {
 		Path: chromePath,
 		Args: []string{
 			"--no-sandbox",
+			// Specific headless mode that supports extensions. See:
+			//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c36
+			"--headless=chrome",
 		},
 	}
 	if err = chromeCaps.AddUnpackedExtension(extPath); err != nil {

@@ -1,5 +1,5 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//build_defs:wasm.bzl", "go_wasm_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "optionsui",
@@ -15,15 +15,16 @@ go_library(
     ],
 )
 
-go_library(
-    name = "optionsui_testlib",
-    testonly = True,
+go_wasm_test(
+    name = "optionsui_test",
     srcs = ["ui_test.go"],
     data = [
         "//html:optionsui",
     ],
     embed = [":optionsui"],
-    importpath = "github.com/google/chrome-ssh-agent/go/optionsui",
+    node_deps = [
+        "@npm//jsdom",
+    ],
     deps = [
         "//go/dom",
         "//go/dom/testing",
@@ -38,12 +39,4 @@ go_library(
         "@org_golang_x_crypto//ssh",
         "@org_golang_x_crypto//ssh/agent",
     ],
-)
-
-go_wasm_test(
-    name = "optionsui_test",
-    node_deps = [
-        "@npm//jsdom",
-    ],
-    testlib = ":optionsui_testlib",
 )
