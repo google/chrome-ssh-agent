@@ -24,7 +24,7 @@ jobs:
         with:
           go-version: '>=1.18.0'
       - run: go mod tidy
-      - uses: UnicornGlobal/has-changes-action@v1.0.11
+      - uses: UnicornGlobal/has-changes-action@v1.0.12
         id: has-changes
       - uses: dacbd/create-issue-action@v1
         if: steps.has-changes.outputs.changed == 1
