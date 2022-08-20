@@ -1,4 +1,4 @@
-//go:build js && wasm
+//go:build js
 
 // Copyright 2022 Google LLC
 //
