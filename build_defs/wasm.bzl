@@ -63,12 +63,7 @@ _go_wasm_test = rule(
 )
 
 def go_wasm_test(name, srcs, embed, deps, node_deps = [], **kwargs):
-    # Define a target that builds the test binary. Specify the manual tag
-    # so it is not executed automatically.
-    test_tags = kwargs.get("tags", [])
-    if "manual" not in test_tags:
-        test_tags += ["manual"]
-
+    # Define a target that builds the test binary.
     test_target = '_{0}_internal'.format(name)
     go_test(
         name = test_target,
@@ -77,7 +72,10 @@ def go_wasm_test(name, srcs, embed, deps, node_deps = [], **kwargs):
 	embed = embed,
 	goos = "js",
 	goarch = "wasm",
-	tags = test_tags,
+        # We don't want this target executed automatically with invocations
+        # such as 'blaze build path/to/....', since it would not be executed
+        # with the correct wrapper. To avoid this, add the 'manual' tag.
+        tags = kwargs.get("tags", []) + ["manual"],
 	**kwargs,
     )
 
