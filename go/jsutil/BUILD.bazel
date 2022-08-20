@@ -8,6 +8,7 @@ go_library(
         "json.go",
         "log.go",
         "object.go",
+        "promise.go",
     ],
     importpath = "github.com/google/chrome-ssh-agent/go/jsutil",
     visibility = ["//visibility:public"],
@@ -19,6 +20,7 @@ go_wasm_test(
         "func_test.go",
         "json_test.go",
         "object_test.go",
+        "promise_test.go",
     ],
     embed = [":jsutil"],
     deps = [
