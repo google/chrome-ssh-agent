@@ -25,14 +25,13 @@ import (
 
 var (
 	chromeObj = js.Global().Get("chrome")
-	runtime =  func() js.Value  {
+	runtime   = func() js.Value {
 		if chromeObj.IsUndefined() {
 			return js.Undefined()
 		}
 		return chromeObj.Get("runtime")
 	}()
 )
-
 
 // Sender specifies the interface for a type that sends messages.
 type Sender interface {
