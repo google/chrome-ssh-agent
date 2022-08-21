@@ -18,7 +18,6 @@
 package chrome
 
 import (
-	"errors"
 	"syscall/js"
 )
 
@@ -41,23 +40,7 @@ var (
 	}()
 )
 
-// Runtime returns a reference to 'chrome.runtime'.
-func Runtime() js.Value {
-	return runtime
-}
-
 // ExtensionID returns the unique ID allocated to this extension.
 func ExtensionID() string {
 	return extensionID
-}
-
-// LastError returns the error (if any) from the last call. Returns nil if there
-// was no error.
-//
-// See https://developer.chrome.com/apps/runtime#property-lastError.
-func LastError() error {
-	if err := runtime.Get("lastError"); !err.IsNull() && !err.IsUndefined() {
-		return errors.New(err.Get("message").String())
-	}
-	return nil
 }
