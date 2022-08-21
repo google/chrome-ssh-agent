@@ -4,12 +4,12 @@ load("//build_defs:wasm.bzl", "go_wasm_test")
 go_library(
     name = "jsutil",
     srcs = [
+        "error.go",
         "func.go",
         "json.go",
         "log.go",
         "object.go",
         "promise.go",
-	"error.go",
     ],
     importpath = "github.com/google/chrome-ssh-agent/go/jsutil",
     visibility = ["//visibility:public"],
@@ -18,11 +18,11 @@ go_library(
 go_wasm_test(
     name = "jsutil_test",
     srcs = [
+        "error_test.go",
         "func_test.go",
         "json_test.go",
         "object_test.go",
         "promise_test.go",
-	"error_test.go",
     ],
     embed = [":jsutil"],
     deps = [

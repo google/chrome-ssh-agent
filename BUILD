@@ -39,7 +39,7 @@ nogo(
     visibility = ["//visibility:public"],
     deps = TOOLS_NOGO + [
         # Prohibit build tags (e.g., //go:build ... ) within tests, as these may
-	# cause tests to silently be skipped unless we are extremely careful.
+        # cause tests to silently be skipped unless we are extremely careful.
         "//nogo/testbuildtags",
     ],
 )
