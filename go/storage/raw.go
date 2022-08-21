@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/norunners/vert"
 )
@@ -63,37 +62,25 @@ func valueToData(val js.Value) (map[string]js.Value, error) {
 
 // Set implements Area.Set().
 func (r *Raw) Set(data map[string]js.Value, callback func(err error)) {
-	r.o.Call(
-		"set", dataToValue(data),
-		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
-			if err := chrome.LastError(); err != nil {
-				callback(fmt.Errorf("failed to set data: %v", err))
-				return nil
-			}
-			callback(nil)
-			return nil
-		}))
+	jsutil.AsPromise(r.o.Call("set", dataToValue(data))).Then(
+		func(val js.Value) { callback(nil) },
+		func(err error) { callback(fmt.Errorf("failed to set data: %v", err)) },
+	)
 }
 
 // Get implements Area.Get().
 func (r *Raw) Get(callback func(data map[string]js.Value, err error)) {
-	r.o.Call(
-		"get", js.Null(),
-		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
-			if err := chrome.LastError(); err != nil {
-				callback(nil, fmt.Errorf("failed to get data: %v", err))
-				return nil
-			}
-
-			data, err := valueToData(jsutil.SingleArg(args))
+	jsutil.AsPromise(r.o.Call("get", js.Null())).Then(
+		func(val js.Value) {
+			data, err := valueToData(val)
 			if err != nil {
 				callback(nil, fmt.Errorf("failed to parse data: %v", err))
-				return nil
+				return
 			}
-
 			callback(data, nil)
-			return nil
-		}))
+		},
+		func(err error) { callback(nil, fmt.Errorf("failed to get data: %v", err)) },
+	)
 }
 
 // Delete implements Area.Delete().
@@ -103,14 +90,8 @@ func (r *Raw) Delete(keys []string, callback func(err error)) {
 		return
 	}
 
-	r.o.Call(
-		"remove", vert.ValueOf(keys).JSValue(),
-		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
-			if err := chrome.LastError(); err != nil {
-				callback(fmt.Errorf("failed to delete data: %v", err))
-				return nil
-			}
-			callback(nil)
-			return nil
-		}))
+	jsutil.AsPromise(r.o.Call("remove", vert.ValueOf(keys).JSValue())).Then(
+		func(val js.Value) { callback(nil) },
+		func(err error) { callback(fmt.Errorf("failed to delete data: %v", err)) },
+	)
 }
