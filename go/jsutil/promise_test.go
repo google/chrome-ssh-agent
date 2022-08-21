@@ -15,6 +15,7 @@
 package jsutil
 
 import (
+	"errors"
 	"syscall/js"
 	"testing"
 	"time"
@@ -22,27 +23,38 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestAsPromise(t *testing.T) {
+	orig := NewPromise(func(ctx AsyncContext, resolve ResolveFunc, reject RejectFunc) {
+		resolve(js.Null())
+	})
+	p := AsPromise(orig.JSValue())
+
+	done := make(chan struct{})
+	p.Then(
+		func(val js.Value) { close(done) },
+		func(err error) { close(done) },
+	)
+	<-done
+}
+
 func TestPromiseResolve(t *testing.T) {
-	orig := NewPromise(func(resolve, reject func(v js.Value)) {
+	p := NewPromise(func(ctx AsyncContext, resolve ResolveFunc, reject RejectFunc) {
 		time.Sleep(10 * time.Millisecond) // some blocking function
 		resolve(js.ValueOf(2))
 	})
 
 	resolved := make(chan struct{})
-	defer close(resolved)
-
-	p := AsPromise(orig.JSValue())
 	p.Then(
 		// Resolve
 		func(value js.Value) {
 			if diff := cmp.Diff(value.Int(), 2); diff != "" {
 				t.Errorf("incorrect number: -got +want: %s", diff)
 			}
-			resolved <- struct{}{}
+			close(resolved)
 		},
 		// Reject
-		func(reason js.Value) {
-			t.Errorf("Reject invoked incorrectly")
+		func(err error) {
+			t.Errorf("Reject invoked incorrectly with error %v", err)
 		},
 	)
 
@@ -55,26 +67,24 @@ func TestPromiseResolve(t *testing.T) {
 }
 
 func TestPromiseReject(t *testing.T) {
-	orig := NewPromise(func(resolve, reject func(v js.Value)) {
+	orig := NewPromise(func(ctx AsyncContext, resolve ResolveFunc, reject RejectFunc) {
 		time.Sleep(10 * time.Millisecond) // some blocking function
-		reject(js.ValueOf(2))
+		reject(errors.New("my error"))
 	})
 
 	rejected := make(chan struct{})
-	defer close(rejected)
-
 	p := AsPromise(orig.JSValue())
 	p.Then(
 		// Resolve
 		func(value js.Value) {
-			t.Errorf("Resolve invoked incorrectly")
+			t.Errorf("Resolve invoked incorrectly with value: %s", value)
 		},
 		// Reject
-		func(reason js.Value) {
-			if diff := cmp.Diff(reason.Int(), 2); diff != "" {
-				t.Errorf("incorrect number: -got +want: %s", diff)
+		func(err error) {
+			if diff := cmp.Diff(err.Error(), "GoError: my error"); diff != "" {
+				t.Errorf("incorrect error: -got +want: %s", diff)
 			}
-			rejected <- struct{}{}
+			close(rejected)
 		},
 	)
 
@@ -84,5 +94,103 @@ func TestPromiseReject(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Errorf("Reject not invoked")
 	}
-	return nil
+}
+
+func TestAsyncSuccess(t *testing.T) {
+	p := Async(func(ctx AsyncContext) (js.Value, error) {
+		return js.ValueOf(2), nil
+	})
+
+	resolved := make(chan struct{}, 1)
+	p.Then(
+		// Resolve
+		func(value js.Value) {
+			if diff := cmp.Diff(value.Int(), 2); diff != "" {
+				t.Errorf("incorrect number: -got +want: %s", diff)
+			}
+			close(resolved)
+		},
+		// Reject
+		func(err error) {
+			t.Errorf("Reject invoked incorrectly with error %v", err)
+		},
+	)
+
+	select {
+	case <-resolved:
+		// Done.
+	case <-time.After(5 * time.Second):
+		t.Errorf("Resolve not invoked")
+	}
+}
+
+func TestAsyncError(t *testing.T) {
+	p := Async(func(ctx AsyncContext) (js.Value, error) {
+		return js.Null(), errors.New("my error")
+	})
+
+	rejected := make(chan struct{})
+	p.Then(
+		// Resolve
+		func(value js.Value) {
+			t.Errorf("Resolve invoked incorrectly with value: %s", value)
+		},
+		// Reject
+		func(err error) {
+			if diff := cmp.Diff(err.Error(), "GoError: my error"); diff != "" {
+				t.Errorf("incorrect error: -got +want: %s", diff)
+			}
+			close(rejected)
+		},
+	)
+
+	select {
+	case <-rejected:
+		// Done.
+	case <-time.After(5 * time.Second):
+		t.Errorf("Reject not invoked")
+	}
+}
+
+func TestAwait(t *testing.T) {
+	p := Async(func(ctx AsyncContext) (js.Value, error) {
+		// Function that returns success
+		val, err := Async(func(ctx AsyncContext) (js.Value, error) {
+			return js.ValueOf(2), nil
+		}).Await(ctx)
+		if diff := cmp.Diff(val.Int(), 2); diff != "" {
+			t.Errorf("incorrect result: -got +want: %s", diff)
+		}
+		if err != nil {
+			t.Errorf("incorrect error; got %v", err)
+		}
+
+		// Function that returns an error
+		val, err = Async(func(ctx AsyncContext) (js.Value, error) {
+			return js.ValueOf(2), errors.New("my error")
+		}).Await(ctx)
+		if !val.IsUndefined() {
+			t.Errorf("incorrect result: got %s", val)
+		}
+		if diff := cmp.Diff(err.Error(), "GoError: my error"); diff != "" {
+			t.Errorf("incorrect error; -got +want: %s", diff)
+		}
+
+		return js.ValueOf("done!"), nil
+	})
+
+	done := make(chan struct{})
+	p.Then(
+		func(value js.Value) {
+			if diff := cmp.Diff(value.String(), "done!"); diff != "" {
+				t.Errorf("incorrect result: -got +want: %s", diff)
+			}
+			close(done)
+		},
+		func(err error) {
+			t.Errorf("Reject invoked with error: %v", err)
+			close(done)
+		},
+	)
+	<-done
 }
