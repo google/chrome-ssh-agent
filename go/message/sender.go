@@ -23,6 +23,17 @@ import (
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
+var (
+	chromeObj = js.Global().Get("chrome")
+	runtime =  func() js.Value  {
+		if chromeObj.IsUndefined() {
+			return js.Undefined()
+		}
+		return chromeObj.Get("runtime")
+	}()
+)
+
+
 // Sender specifies the interface for a type that sends messages.
 type Sender interface {
 	// Send sends a message. Callback is invoked with either the response
@@ -49,14 +60,8 @@ func NewLocalSender() *ExtSender {
 
 // Send implements Sender.Send().
 func (e *ExtSender) Send(msg js.Value, callback func(rsp js.Value, err error)) {
-	chrome.Runtime().Call(
-		"sendMessage", e.extensionID, msg, nil,
-		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
-			if err := chrome.LastError(); err != nil {
-				callback(js.Undefined(), err)
-				return nil
-			}
-			callback(jsutil.SingleArg(args), nil)
-			return nil
-		}))
+	jsutil.AsPromise(runtime.Call("sendMessage", e.extensionID, msg)).Then(
+		func(val js.Value) { callback(val, nil) },
+		func(err error) { callback(js.Undefined(), err) },
+	)
 }
