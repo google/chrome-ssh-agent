@@ -18,32 +18,37 @@ import (
 	"syscall/js"
 	"testing"
 
+	"github.com/google/chrome-ssh-agent/go/jsutil"
+	jut "github.com/google/chrome-ssh-agent/go/jsutil/testing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/norunners/vert"
 )
 
 type intReceiver struct{}
 
-func (i *intReceiver) OnMessage(header js.Value, sender js.Value, sendResponse func(js.Value)) {
+func (i *intReceiver) OnMessage(ctx jsutil.AsyncContext, header js.Value, sender js.Value) js.Value {
 	if header.Type() == js.TypeNumber && header.Int() == 42 {
-		sendResponse(js.ValueOf("int"))
+		return js.ValueOf("int")
 	}
+	return js.Undefined()
 }
 
 type stringReceiver struct{}
 
-func (s *stringReceiver) OnMessage(header js.Value, sender js.Value, sendResponse func(js.Value)) {
+func (s *stringReceiver) OnMessage(ctx jsutil.AsyncContext, header js.Value, sender js.Value) js.Value {
 	if header.Type() == js.TypeString && header.String() == "foo" {
-		sendResponse(js.ValueOf("string"))
+		return js.ValueOf("string")
 	}
+	return js.Undefined()
 }
 
 type mapReceiver struct{}
 
-func (m *mapReceiver) OnMessage(header js.Value, sender js.Value, sendResponse func(js.Value)) {
+func (m *mapReceiver) OnMessage(ctx jsutil.AsyncContext, header js.Value, sender js.Value) js.Value {
 	if header.Type() == js.TypeObject && !header.Get("some-key").IsUndefined() {
-		sendResponse(js.ValueOf("map"))
+		return js.ValueOf("map")
 	}
+	return js.Undefined()
 }
 
 func TestMessagePassing(t *testing.T) {
@@ -55,27 +60,21 @@ func TestMessagePassing(t *testing.T) {
 	hub.AddReceiver(&mapReceiver{})
 
 	// Send messages of the various types.
+	var err error
 	var intRsp, strRsp, mapRsp js.Value
-	hub.Send(js.ValueOf(42), func(rsp js.Value, err error) {
-		if err != nil {
+	jut.DoSync(func(ctx jsutil.AsyncContext) {
+		if intRsp, err = hub.Send(ctx, js.ValueOf(42)); err != nil {
 			t.Errorf("SendMessage failed: %v", err)
 			return
 		}
-		intRsp = rsp
-	})
-	hub.Send(js.ValueOf("foo"), func(rsp js.Value, err error) {
-		if err != nil {
+		if strRsp, err = hub.Send(ctx, js.ValueOf("foo")); err != nil {
 			t.Errorf("SendMessage failed: %v", err)
 			return
 		}
-		strRsp = rsp
-	})
-	hub.Send(vert.ValueOf(map[string]int{"some-key": 7}).JSValue(), func(rsp js.Value, err error) {
-		if err != nil {
+		if mapRsp, err = hub.Send(ctx, vert.ValueOf(map[string]int{"some-key": 7}).JSValue()); err != nil {
 			t.Errorf("SendMessage failed: %v", err)
 			return
 		}
-		mapRsp = rsp
 	})
 
 	// Ensure we got the correct responses.

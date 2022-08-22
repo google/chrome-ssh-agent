@@ -21,20 +21,11 @@ import (
 	"testing"
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
+	jut "github.com/google/chrome-ssh-agent/go/jsutil/testing"
 	"github.com/google/chrome-ssh-agent/go/storage/fakes"
 	"github.com/google/go-cmp/cmp"
 	"github.com/norunners/vert"
 )
-
-func syncGet(s Area) (map[string]js.Value, error) {
-	datac := make(chan map[string]js.Value, 1)
-	errc := make(chan error, 1)
-	s.Get(func(data map[string]js.Value, err error) {
-		datac <- data
-		errc <- err
-	})
-	return <-datac, <-errc
-}
 
 func isManifest(v js.Value) bool {
 	var manifest bigValueManifest
@@ -44,8 +35,8 @@ func isManifest(v js.Value) bool {
 	return false
 }
 
-func syncGetEntryType(s Area) (map[string]string, error) {
-	data, err := syncGet(s)
+func getEntryType(ctx jsutil.AsyncContext, s Area) (map[string]string, error) {
+	data, err := s.Get(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +55,8 @@ func syncGetEntryType(s Area) (map[string]string, error) {
 	return res, nil
 }
 
-func syncGetJSON(s Area) (map[string]string, error) {
-	data, err := syncGet(s)
+func getJSON(ctx jsutil.AsyncContext, s Area) (map[string]string, error) {
+	data, err := s.Get(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -139,17 +130,17 @@ func TestSetAndGet(t *testing.T) {
 				tc.maxItemBytes = defaultMaxItemBytes
 			}
 
-			b := NewBig(tc.maxItemBytes, fakes.NewMem())
-			b.Set(tc.set, func(err error) {
-				if err != nil {
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				b := NewBig(tc.maxItemBytes, fakes.NewMem())
+				if err := b.Set(ctx, tc.set); err != nil {
 					t.Fatalf("set failed: %v", err)
 				}
 
-				gotRaw, err := syncGetEntryType(b.s)
+				gotRaw, err := getEntryType(ctx, b.s)
 				if err != nil {
 					t.Fatalf("get failed for underlying storage: %v", err)
 				}
-				got, err := syncGetJSON(b)
+				got, err := getJSON(ctx, b)
 				if err != nil {
 					t.Fatalf("get failed for Big: %v", err)
 				}
@@ -243,33 +234,31 @@ func TestDelete(t *testing.T) {
 				tc.maxItemBytes = defaultMaxItemBytes
 			}
 
-			b := NewBig(tc.maxItemBytes, fakes.NewMem())
-			b.Set(tc.set, func(err error) {
-				if err != nil {
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				b := NewBig(tc.maxItemBytes, fakes.NewMem())
+				if err := b.Set(ctx, tc.set); err != nil {
 					t.Fatalf("set failed: %v", err)
 				}
 
-				b.Delete(tc.del, func(err error) {
-					if err != nil {
-						t.Fatalf("delete failed: %v", err)
-					}
+				if err := b.Delete(ctx, tc.del); err != nil {
+					t.Fatalf("delete failed: %v", err)
+				}
 
-					gotRaw, err := syncGetEntryType(b.s)
-					if err != nil {
-						t.Fatalf("get failed for underlying storage: %v", err)
-					}
-					got, err := syncGetJSON(b)
-					if err != nil {
-						t.Fatalf("get failed for Big: %v", err)
-					}
+				gotRaw, err := getEntryType(ctx, b.s)
+				if err != nil {
+					t.Fatalf("get failed for underlying storage: %v", err)
+				}
+				got, err := getJSON(ctx, b)
+				if err != nil {
+					t.Fatalf("get failed for Big: %v", err)
+				}
 
-					if diff := cmp.Diff(gotRaw, tc.wantRaw); diff != "" {
-						t.Errorf("incorrect raw data: -got +want: %s", diff)
-					}
-					if diff := cmp.Diff(got, tc.want); diff != "" {
-						t.Errorf("incorrect data: -got +want: %s", diff)
-					}
-				})
+				if diff := cmp.Diff(gotRaw, tc.wantRaw); diff != "" {
+					t.Errorf("incorrect raw data: -got +want: %s", diff)
+				}
+				if diff := cmp.Diff(got, tc.want); diff != "" {
+					t.Errorf("incorrect data: -got +want: %s", diff)
+				}
 			})
 		})
 	}

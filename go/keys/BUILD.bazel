@@ -29,6 +29,7 @@ go_wasm_test(
     ],
     embed = [":keys"],
     deps = [
+        "//go/jsutil/testing",
         "//go/keys/testdata",
         "//go/message/fakes",
         "//go/storage/fakes",

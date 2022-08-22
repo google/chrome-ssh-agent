@@ -38,7 +38,11 @@ type RejectFunc func(err error)
 
 // AsyncContext is a type of context passed to a function executing
 // asynchronously.
-type AsyncContext interface{}
+type AsyncContext interface {
+	// AFunc is a dummy method to avoid arbitrary types from satisfying this
+	// interface.
+	AFunc()
+}
 
 // NewPromise runs a function in the background.  The function must
 // invoke resolve or reject when complete. The function is passed an
@@ -87,7 +91,7 @@ func (p *Promise) JSValue() js.Value {
 
 // Then implements Promise.then(). Resolve is invoked when the promise is
 // resolved, and reject is invoked when it is rejected.
-func (p *Promise) Then(resolve ResolveFunc, reject RejectFunc) {
+func (p *Promise) Then(resolve ResolveFunc, reject RejectFunc) *Promise {
 	var onReject, onResolve js.Func
 	onResolve = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		// Only one of resolve or reject will be called, but both must
@@ -103,8 +107,12 @@ func (p *Promise) Then(resolve ResolveFunc, reject RejectFunc) {
 		reject(NewErrorFromVal(SingleArg(args)))
 		return nil
 	})
-	p.v.Call("then", onResolve, onReject)
+	return AsPromise(p.v.Call("then", onResolve, onReject))
 }
+
+type asyncContextImpl struct{}
+
+func (a *asyncContextImpl) AFunc() {}
 
 var (
 	// asyncContext is a token value that implements AsyncContext. This
@@ -113,7 +121,7 @@ var (
 	// to supply the context, providing some safety that the caller was
 	// actually invoking them from an asynchronously executing function. If
 	// blocking calls were made from the the main thread, we would deadlock.
-	asyncContext = &struct{}{}
+	asyncContext = &asyncContextImpl{}
 )
 
 // Async executes a function asynchronously.  A promise corresponding to the

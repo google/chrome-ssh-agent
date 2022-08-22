@@ -17,13 +17,16 @@
 package fakes
 
 import (
+	"errors"
 	"syscall/js"
+
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
 // Receiver defines methods sufficient to receive messages and send
 // responses.
 type Receiver interface {
-	OnMessage(header js.Value, sender js.Value, sendResponse func(js.Value))
+	OnMessage(ctx jsutil.AsyncContext, header js.Value, sender js.Value) js.Value
 }
 
 // Hub is a fake implementation of Chrome's messaging APIs.
@@ -42,10 +45,12 @@ func (m *Hub) AddReceiver(r Receiver) {
 }
 
 // Send implements Sender.Send().
-func (m *Hub) Send(msg js.Value, callback func(rsp js.Value, err error)) {
+func (m *Hub) Send(ctx jsutil.AsyncContext, msg js.Value) (js.Value, error) {
 	for _, r := range m.receivers {
-		r.OnMessage(msg, js.Null(), func(rsp js.Value) {
-			callback(rsp, nil)
-		})
+		rsp := r.OnMessage(ctx, msg, js.Null())
+		if !rsp.IsUndefined() {
+			return rsp, nil
+		}
 	}
+	return js.Undefined(), errors.New("No receivers!")
 }

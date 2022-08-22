@@ -117,7 +117,7 @@ func isChunkKey(key string) bool {
 }
 
 // See PersistentStore.Set().
-func (b *Big) Set(data map[string]js.Value, callback func(err error)) {
+func (b *Big) Set(ctx jsutil.AsyncContext, data map[string]js.Value) error {
 	maxEncodedChunkSize := b.maxChunkSize()
 	maxDecodedChunkSize := base64.StdEncoding.DecodedLen(maxEncodedChunkSize)
 
@@ -161,106 +161,95 @@ func (b *Big) Set(data map[string]js.Value, callback func(err error)) {
 		chunked[k] = vert.ValueOf(manifest).JSValue()
 	}
 
-	b.s.Set(chunked, callback)
+	return b.s.Set(ctx, chunked)
 }
 
 // See PersistentStore.Get().
-func (b *Big) Get(callback func(data map[string]js.Value, err error)) {
-	b.s.Get(func(data map[string]js.Value, err error) {
-		if err != nil {
-			callback(nil, err)
-			return
+func (b *Big) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
+	data, err := b.s.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	unchunked := map[string]js.Value{}
+	for k, v := range data {
+		if isChunkKey(k) {
+			// Skip chunks. We read these as part of the manifest.
+			continue
 		}
 
-		unchunked := map[string]js.Value{}
-		for k, v := range data {
-			if isChunkKey(k) {
-				// Skip chunks. We read these as part of the manifest.
-				continue
-			}
-
-			// Attempt to read as a manifest.
-			var manifest bigValueManifest
-			if err := vert.ValueOf(v).AssignTo(&manifest); err == nil && manifest.Valid() {
-				// Concatenate chunks and parse the JSON.
-				var json strings.Builder
-				for _, chunkKey := range manifest.ChunkKeys {
-					chunkVal, present := data[chunkKey]
-					if !present {
-						callback(nil, fmt.Errorf("failed to read data; chunk key %s missing", chunkKey))
-						return
-					}
-					dec, err := base64.StdEncoding.DecodeString(chunkVal.String())
-					if err != nil {
-						callback(nil, fmt.Errorf("failed to read data; base64 decode failed: %v", err))
-						return
-					}
-
-					json.WriteString(string(dec))
+		// Attempt to read as a manifest.
+		var manifest bigValueManifest
+		if err := vert.ValueOf(v).AssignTo(&manifest); err == nil && manifest.Valid() {
+			// Concatenate chunks and parse the JSON.
+			var json strings.Builder
+			for _, chunkKey := range manifest.ChunkKeys {
+				chunkVal, present := data[chunkKey]
+				if !present {
+					return nil, fmt.Errorf("failed to read data; chunk key %s missing", chunkKey)
+				}
+				dec, err := base64.StdEncoding.DecodeString(chunkVal.String())
+				if err != nil {
+					return nil, fmt.Errorf("failed to read data; base64 decode failed: %v", err)
 				}
 
-				unchunked[k] = jsutil.FromJSON(json.String())
-				continue
+				json.WriteString(string(dec))
 			}
 
-			// This is just a simple key.
-			unchunked[k] = v
+			unchunked[k] = jsutil.FromJSON(json.String())
+			continue
 		}
 
-		callback(unchunked, nil)
-	})
+		// This is just a simple key.
+		unchunked[k] = v
+	}
+
+	return unchunked, nil
 }
 
 // See PersistentStore.Delete().
-func (b *Big) Delete(keys []string, callback func(err error)) {
+func (b *Big) Delete(ctx jsutil.AsyncContext, keys []string) error {
 	// Delete the requested keys.
-	b.s.Delete(keys, func(err error) {
-		if err != nil {
-			callback(err)
-			return
+	err := b.s.Delete(ctx, keys)
+	if err != nil {
+		return err
+	}
+
+	// Once successful, delete all chunks that are no longer
+	// referenced by any manifest. This takes care of those that
+	// were just deleted, as well as any dangling ones that may
+	// have been left over from before.
+	data, err := b.s.Get(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to query for dangling chunks: %v", err)
+	}
+
+	// Initially, consider all chunk keys as dangling.
+	danglingChunkKeys := map[string]bool{}
+	for k := range data {
+		if isChunkKey(k) {
+			danglingChunkKeys[k] = true
 		}
+	}
 
-		// Once successful, delete all chunks that are no longer
-		// referenced by any manifest. This takes care of those that
-		// were just deleted, as well as any dangling ones that may
-		// have been left over from before.
-		b.s.Get(func(data map[string]js.Value, err error) {
-			if err != nil {
-				callback(fmt.Errorf("failed to query for dangling chunks: %v", err))
-				return
-			}
+	// Remove those that are referenced by a manifest.
+	for _, v := range data {
+		var manifest bigValueManifest
+		if err := vert.ValueOf(v).AssignTo(&manifest); err != nil || !manifest.Valid() {
+			continue // This is not a manifest.
+		}
+		for _, chunkKey := range manifest.ChunkKeys {
+			delete(danglingChunkKeys, chunkKey)
+		}
+	}
 
-			// Initially, consider all chunk keys as dangling.
-			danglingChunkKeys := map[string]bool{}
-			for k := range data {
-				if isChunkKey(k) {
-					danglingChunkKeys[k] = true
-				}
-			}
-
-			// Remove those that are referenced by a manifest.
-			for _, v := range data {
-				var manifest bigValueManifest
-				if err := vert.ValueOf(v).AssignTo(&manifest); err != nil || !manifest.Valid() {
-					continue // This is not a manifest.
-				}
-				for _, chunkKey := range manifest.ChunkKeys {
-					delete(danglingChunkKeys, chunkKey)
-				}
-			}
-
-			// Delete dangling chunk keys.
-			var dangling []string
-			for k := range danglingChunkKeys {
-				dangling = append(dangling, k)
-			}
-			b.s.Delete(dangling, func(err error) {
-				if err != nil {
-					callback(fmt.Errorf("failed to delete dangling chunks: %v", err))
-					return
-				}
-				callback(nil)
-			})
-		})
-	})
+	// Delete dangling chunk keys.
+	var dangling []string
+	for k := range danglingChunkKeys {
+		dangling = append(dangling, k)
+	}
+	if err := b.s.Delete(ctx, dangling); err != nil {
+		return fmt.Errorf("failed to delete dangling chunks: %v", err)
+	}
+	return nil
 }

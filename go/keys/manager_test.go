@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/chrome-ssh-agent/go/jsutil"
+	jut "github.com/google/chrome-ssh-agent/go/jsutil/testing"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/google/chrome-ssh-agent/go/storage"
 	"github.com/google/chrome-ssh-agent/go/storage/fakes"
@@ -43,19 +45,19 @@ var (
 	storageDeleteErr = errors.New("Storage.Delete() failed")
 )
 
-func newTestManager(agent agent.Agent, syncStorage, sessionStorage storage.Area, keys []*initialKey) (*DefaultManager, error) {
+func newTestManager(ctx jsutil.AsyncContext, agent agent.Agent, syncStorage, sessionStorage storage.Area, keys []*initialKey) (*DefaultManager, error) {
 	mgr := NewManager(agent, syncStorage, sessionStorage)
 	for _, k := range keys {
-		if err := syncAdd(mgr, k.Name, k.PEMPrivateKey); err != nil {
+		if err := mgr.Add(ctx, k.Name, k.PEMPrivateKey); err != nil {
 			return nil, err
 		}
 
 		if k.Load {
-			id, err := findKey(mgr, InvalidID, k.Name)
+			id, err := findKey(ctx, mgr, InvalidID, k.Name)
 			if err != nil {
 				return nil, err
 			}
-			if err := syncLoad(mgr, id, k.Passphrase); err != nil {
+			if err := mgr.Load(ctx, id, k.Passphrase); err != nil {
 				return nil, err
 			}
 		}
@@ -123,33 +125,36 @@ func TestAdd(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			syncStorage := fakes.NewMem()
-			sessionStorage := fakes.NewMem()
-			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
-			if err != nil {
-				t.Fatalf("failed to initialize manager: %v", err)
-			}
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
 
-			// Add the key.
-			func() {
-				syncStorage.SetError(tc.storageErr)
-				defer syncStorage.SetError(fakes.Errs{})
-
-				ferr := syncAdd(mgr, tc.name, tc.pemPrivateKey)
-				if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-					t.Errorf("incorrect error; -got +want: %s", diff)
+				syncStorage := fakes.NewMem()
+				sessionStorage := fakes.NewMem()
+				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
+				if err != nil {
+					t.Fatalf("failed to initialize manager: %v", err)
 				}
-			}()
 
-			// Ensure the correct keys are configured at the end.
-			configured, err := syncConfigured(mgr)
-			if err != nil {
-				t.Errorf("failed to get configured keys: %v", err)
-			}
-			names := configuredKeyNames(configured)
-			if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
-				t.Errorf("incorrect configured keys; -got +want: %s", diff)
-			}
+				// Add the key.
+				func() {
+					syncStorage.SetError(tc.storageErr)
+					defer syncStorage.SetError(fakes.Errs{})
+
+					ferr := mgr.Add(ctx, tc.name, tc.pemPrivateKey)
+					if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+						t.Errorf("incorrect error; -got +want: %s", diff)
+					}
+				}()
+
+				// Ensure the correct keys are configured at the end.
+				configured, err := mgr.Configured(ctx)
+				if err != nil {
+					t.Errorf("failed to get configured keys: %v", err)
+				}
+				names := configuredKeyNames(configured)
+				if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
+					t.Errorf("incorrect configured keys; -got +want: %s", diff)
+				}
+			})
 		})
 	}
 }
@@ -220,39 +225,41 @@ func TestRemove(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			syncStorage := fakes.NewMem()
-			sessionStorage := fakes.NewMem()
-			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
-			if err != nil {
-				t.Fatalf("failed to initialize manager: %v", err)
-			}
-
-			// Figure out the ID of the key we will try to remove.
-			id, err := findKey(mgr, tc.byID, tc.byName)
-			if err != nil {
-				t.Fatalf("failed to find key: %v", err)
-			}
-
-			// Remove the key
-			func() {
-				syncStorage.SetError(tc.storageErr)
-				defer syncStorage.SetError(fakes.Errs{})
-
-				ferr := syncRemove(mgr, id)
-				if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-					t.Errorf("incorrect error; -got +want: %s", diff)
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				syncStorage := fakes.NewMem()
+				sessionStorage := fakes.NewMem()
+				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
+				if err != nil {
+					t.Fatalf("failed to initialize manager: %v", err)
 				}
-			}()
 
-			// Ensure the correct keys are configured at the end.
-			configured, err := syncConfigured(mgr)
-			if err != nil {
-				t.Errorf("failed to get configured keys: %v", err)
-			}
-			names := configuredKeyNames(configured)
-			if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
-				t.Errorf("incorrect configured keys; -got +want: %s", diff)
-			}
+				// Figure out the ID of the key we will try to remove.
+				id, err := findKey(ctx, mgr, tc.byID, tc.byName)
+				if err != nil {
+					t.Fatalf("failed to find key: %v", err)
+				}
+
+				// Remove the key
+				func() {
+					syncStorage.SetError(tc.storageErr)
+					defer syncStorage.SetError(fakes.Errs{})
+
+					ferr := mgr.Remove(ctx, id)
+					if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+						t.Errorf("incorrect error; -got +want: %s", diff)
+					}
+				}()
+
+				// Ensure the correct keys are configured at the end.
+				configured, err := mgr.Configured(ctx)
+				if err != nil {
+					t.Errorf("failed to get configured keys: %v", err)
+				}
+				names := configuredKeyNames(configured)
+				if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
+					t.Errorf("incorrect configured keys; -got +want: %s", diff)
+				}
+			})
 		})
 	}
 }
@@ -299,27 +306,29 @@ func TestConfigured(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			syncStorage := fakes.NewMem()
-			sessionStorage := fakes.NewMem()
-			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
-			if err != nil {
-				t.Fatalf("failed to initialize manager: %v", err)
-			}
-
-			// Enumerate the keys.
-			func() {
-				syncStorage.SetError(tc.storageErr)
-				defer syncStorage.SetError(fakes.Errs{})
-
-				configured, err := syncConfigured(mgr)
-				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-					t.Errorf("incorrect error; -got +want: %s", diff)
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				syncStorage := fakes.NewMem()
+				sessionStorage := fakes.NewMem()
+				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
+				if err != nil {
+					t.Fatalf("failed to initialize manager: %v", err)
 				}
-				names := configuredKeyNames(configured)
-				if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
-					t.Errorf("incorrect configured keys; -got +want: %s", diff)
-				}
-			}()
+
+				// Enumerate the keys.
+				func() {
+					syncStorage.SetError(tc.storageErr)
+					defer syncStorage.SetError(fakes.Errs{})
+
+					configured, err := mgr.Configured(ctx)
+					if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+						t.Errorf("incorrect error; -got +want: %s", diff)
+					}
+					names := configuredKeyNames(configured)
+					if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
+						t.Errorf("incorrect configured keys; -got +want: %s", diff)
+					}
+				}()
+			})
 		})
 	}
 }
@@ -543,48 +552,50 @@ func TestLoadAndLoaded(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			syncStorage := fakes.NewMem()
-			sessionStorage := fakes.NewMem()
-			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
-			if err != nil {
-				t.Fatalf("failed to initialize manager: %v", err)
-			}
-
-			// Figure out the ID of the key we will try to load.
-			id, err := findKey(mgr, tc.byID, tc.byName)
-			if err != nil {
-				t.Fatalf("failed to find key: %v", err)
-			}
-
-			// Load the key
-			func() {
-				syncStorage.SetError(tc.storageErr)
-				defer syncStorage.SetError(fakes.Errs{})
-
-				ferr := syncLoad(mgr, id, tc.passphrase)
-				if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-					t.Errorf("incorrect error; -got +want: %s", diff)
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				syncStorage := fakes.NewMem()
+				sessionStorage := fakes.NewMem()
+				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
+				if err != nil {
+					t.Fatalf("failed to initialize manager: %v", err)
 				}
-			}()
 
-			// Ensure the correct keys are loaded at the end.
-			loaded, err := syncLoaded(mgr)
-			if err != nil {
-				t.Errorf("failed to get loaded keys: %v", err)
-			}
-			blobs := loadedKeyBlobs(loaded)
-			if diff := cmp.Diff(blobs, tc.wantLoaded); diff != "" {
-				t.Errorf("incorrect loaded keys; -got +want: %s", diff)
-			}
+				// Figure out the ID of the key we will try to load.
+				id, err := findKey(ctx, mgr, tc.byID, tc.byName)
+				if err != nil {
+					t.Fatalf("failed to find key: %v", err)
+				}
 
-			// Ensure correct keys stored in session
-			gotSessionKeys, err := sessionKeyIDs(mgr.sessionKeys)
-			if err != nil {
-				t.Errorf("failed to get session keys: %v", err)
-			}
-			if diff := cmp.Diff(gotSessionKeys, loadedKeyIDs(loaded), idSlice); diff != "" {
-				t.Errorf("incorrect session keys; -got +want: %s", diff)
-			}
+				// Load the key
+				func() {
+					syncStorage.SetError(tc.storageErr)
+					defer syncStorage.SetError(fakes.Errs{})
+
+					ferr := mgr.Load(ctx, id, tc.passphrase)
+					if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+						t.Errorf("incorrect error; -got +want: %s", diff)
+					}
+				}()
+
+				// Ensure the correct keys are loaded at the end.
+				loaded, err := mgr.Loaded(ctx)
+				if err != nil {
+					t.Errorf("failed to get loaded keys: %v", err)
+				}
+				blobs := loadedKeyBlobs(loaded)
+				if diff := cmp.Diff(blobs, tc.wantLoaded); diff != "" {
+					t.Errorf("incorrect loaded keys; -got +want: %s", diff)
+				}
+
+				// Ensure correct keys stored in session
+				gotSessionKeys, err := sessionKeyIDs(ctx, mgr.sessionKeys)
+				if err != nil {
+					t.Errorf("failed to get session keys: %v", err)
+				}
+				if diff := cmp.Diff(gotSessionKeys, loadedKeyIDs(loaded), idSlice); diff != "" {
+					t.Errorf("incorrect session keys; -got +want: %s", diff)
+				}
+			})
 		})
 	}
 }
@@ -642,119 +653,60 @@ func TestUnload(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			syncStorage := fakes.NewMem()
-			sessionStorage := fakes.NewMem()
-			mgr, err := newTestManager(agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
-			if err != nil {
-				t.Fatalf("failed to initialize manager: %v", err)
-			}
-
-			// Attempt to fill in the ID of the key we will try to unload.
-			id := tc.unloadID
-			if id == InvalidID {
-				id, err = findKey(mgr, InvalidID, tc.unloadName)
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				syncStorage := fakes.NewMem()
+				sessionStorage := fakes.NewMem()
+				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 				if err != nil {
-					t.Fatalf("failed to get determine key ID to unload: %v", err)
+					t.Fatalf("failed to initialize manager: %v", err)
 				}
-			}
 
-			// Unload the key
-			err = syncUnload(mgr, id)
-			if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("incorrect error; -got +want: %s", diff)
-			}
+				// Attempt to fill in the ID of the key we will try to unload.
+				id := tc.unloadID
+				if id == InvalidID {
+					id, err = findKey(ctx, mgr, InvalidID, tc.unloadName)
+					if err != nil {
+						t.Fatalf("failed to get determine key ID to unload: %v", err)
+					}
+				}
 
-			// Ensure the correct keys are loaded at the end.
-			loaded, err := syncLoaded(mgr)
-			if err != nil {
-				t.Errorf("failed to get loaded keys: %v", err)
-			}
-			blobs := loadedKeyBlobs(loaded)
-			if diff := cmp.Diff(blobs, tc.wantLoaded); diff != "" {
-				t.Errorf("incorrect loaded keys; -got +want: %s", diff)
-			}
+				// Unload the key
+				err = mgr.Unload(ctx, id)
+				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error; -got +want: %s", diff)
+				}
 
-			// Ensure correct keys stored in session
-			gotSessionKeys, err := sessionKeyIDs(mgr.sessionKeys)
-			if err != nil {
-				t.Errorf("failed to get session keys: %v", err)
-			}
-			if diff := cmp.Diff(gotSessionKeys, loadedKeyIDs(loaded), idSlice); diff != "" {
-				t.Errorf("incorrect session keys; -got +want: %s", diff)
-			}
+				// Ensure the correct keys are loaded at the end.
+				loaded, err := mgr.Loaded(ctx)
+				if err != nil {
+					t.Errorf("failed to get loaded keys: %v", err)
+				}
+				blobs := loadedKeyBlobs(loaded)
+				if diff := cmp.Diff(blobs, tc.wantLoaded); diff != "" {
+					t.Errorf("incorrect loaded keys; -got +want: %s", diff)
+				}
+
+				// Ensure correct keys stored in session
+				gotSessionKeys, err := sessionKeyIDs(ctx, mgr.sessionKeys)
+				if err != nil {
+					t.Errorf("failed to get session keys: %v", err)
+				}
+				if diff := cmp.Diff(gotSessionKeys, loadedKeyIDs(loaded), idSlice); diff != "" {
+					t.Errorf("incorrect session keys; -got +want: %s", diff)
+				}
+			})
 		})
 	}
 }
 
 func TestGetID(t *testing.T) {
-	// Create a manager with one configured key.  We load the key and
-	// ensure we can correctly extract the ID.
-	syncStorage := fakes.NewMem()
-	sessionStorage := fakes.NewMem()
-	agt := agent.NewKeyring()
-	mgr, err := newTestManager(agt, syncStorage, sessionStorage, []*initialKey{
-		{
-			Name:          "good-key",
-			PEMPrivateKey: testdata.WithPassphrase.Private,
-		},
-	})
-	if err != nil {
-		t.Fatalf("failed to initialize manager: %v", err)
-	}
-
-	// Locate the ID corresponding to the key we configured.
-	wantID, err := findKey(mgr, InvalidID, "good-key")
-	if err != nil {
-		t.Errorf("failed to find ID for good-key: %v", err)
-	}
-
-	// Load the key.
-	if err = syncLoad(mgr, wantID, testdata.WithPassphrase.Passphrase); err != nil {
-		t.Errorf("failed to load key: %v", err)
-	}
-
-	// Ensure that we can correctly read the ID from the key we loaded.
-	loaded, err := syncLoaded(mgr)
-	if err != nil {
-		t.Errorf("failed to enumerate loaded keys: %v", err)
-	}
-	if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != "" {
-		t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
-	}
-
-	// Now, also load a key into the agent directly (i.e., not through the
-	// manager). We will ensure that we get InvalidID back when we try
-	// to extract the ID from it.
-	priv, err := ssh.ParseRawPrivateKey([]byte(testdata.WithoutPassphrase.Private))
-	if err != nil {
-		t.Errorf("failed to parse private key: %v", err)
-	}
-	err = agt.Add(agent.AddedKey{
-		PrivateKey: priv,
-		Comment:    "some comment",
-	})
-	if err != nil {
-		t.Errorf("failed to load key into agent: %v", err)
-	}
-	loaded, err = syncLoaded(mgr)
-	if err != nil {
-		t.Errorf("failed to enumerate loaded keys: %v", err)
-	}
-	if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID, InvalidID}); diff != "" {
-		t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
-	}
-}
-
-func TestLoadFromSession(t *testing.T) {
-	// Storage peresists across multiple manager instances
-	syncStorage := fakes.NewMem()
-	sessionStorage := fakes.NewMem()
-
-	// First manager instance configures and loads a key.
-	var wantID ID
-	func() {
+	jut.DoSync(func(ctx jsutil.AsyncContext) {
+		// Create a manager with one configured key.  We load the key and
+		// ensure we can correctly extract the ID.
+		syncStorage := fakes.NewMem()
+		sessionStorage := fakes.NewMem()
 		agt := agent.NewKeyring()
-		mgr, err := newTestManager(agt, syncStorage, sessionStorage, []*initialKey{
+		mgr, err := newTestManager(ctx, agt, syncStorage, sessionStorage, []*initialKey{
 			{
 				Name:          "good-key",
 				PEMPrivateKey: testdata.WithPassphrase.Private,
@@ -765,56 +717,117 @@ func TestLoadFromSession(t *testing.T) {
 		}
 
 		// Locate the ID corresponding to the key we configured.
-		wantID, err = findKey(mgr, InvalidID, "good-key")
+		wantID, err := findKey(ctx, mgr, InvalidID, "good-key")
 		if err != nil {
 			t.Errorf("failed to find ID for good-key: %v", err)
 		}
 
 		// Load the key.
-		if err = syncLoad(mgr, wantID, testdata.WithPassphrase.Passphrase); err != nil {
+		if err = mgr.Load(ctx, wantID, testdata.WithPassphrase.Passphrase); err != nil {
 			t.Errorf("failed to load key: %v", err)
 		}
 
-		// Ensure key is loaded.
-		loaded, err := syncLoaded(mgr)
+		// Ensure that we can correctly read the ID from the key we loaded.
+		loaded, err := mgr.Loaded(ctx)
 		if err != nil {
 			t.Errorf("failed to enumerate loaded keys: %v", err)
 		}
 		if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != "" {
 			t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
 		}
-	}()
 
-	// Second manager instance loads keys from storage. We expect the
-	// loaded key to be loaded into the agent.
-	func() {
-		agt := agent.NewKeyring()
-		mgr, err := newTestManager(agt, syncStorage, sessionStorage, []*initialKey{
-			{
-				Name:          "good-key",
-				PEMPrivateKey: testdata.WithPassphrase.Private,
-			},
+		// Now, also load a key into the agent directly (i.e., not through the
+		// manager). We will ensure that we get InvalidID back when we try
+		// to extract the ID from it.
+		priv, err := ssh.ParseRawPrivateKey([]byte(testdata.WithoutPassphrase.Private))
+		if err != nil {
+			t.Errorf("failed to parse private key: %v", err)
+		}
+		err = agt.Add(agent.AddedKey{
+			PrivateKey: priv,
+			Comment:    "some comment",
 		})
 		if err != nil {
-			t.Fatalf("failed to initialize manager: %v", err)
+			t.Errorf("failed to load key into agent: %v", err)
 		}
-
-		// Restore keys from session.
-		errc := make(chan error, 1)
-		mgr.LoadFromSession(func(err error) {
-			errc <- err
-		})
-		if err = <-errc; err != nil {
-			t.Fatalf("failed to load keys from session: %v", err)
-		}
-
-		// Ensure key is loaded.
-		loaded, err := syncLoaded(mgr)
+		loaded, err = mgr.Loaded(ctx)
 		if err != nil {
 			t.Errorf("failed to enumerate loaded keys: %v", err)
 		}
-		if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != "" {
+		if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID, InvalidID}); diff != "" {
 			t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
 		}
-	}()
+	})
+}
+
+func TestLoadFromSession(t *testing.T) {
+	jut.DoSync(func(ctx jsutil.AsyncContext) {
+		// Storage peresists across multiple manager instances
+		syncStorage := fakes.NewMem()
+		sessionStorage := fakes.NewMem()
+
+		// First manager instance configures and loads a key.
+		var wantID ID
+		func() {
+			agt := agent.NewKeyring()
+			mgr, err := newTestManager(ctx, agt, syncStorage, sessionStorage, []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.WithPassphrase.Private,
+				},
+			})
+			if err != nil {
+				t.Fatalf("failed to initialize manager: %v", err)
+			}
+
+			// Locate the ID corresponding to the key we configured.
+			wantID, err = findKey(ctx, mgr, InvalidID, "good-key")
+			if err != nil {
+				t.Errorf("failed to find ID for good-key: %v", err)
+			}
+
+			// Load the key.
+			if err = mgr.Load(ctx, wantID, testdata.WithPassphrase.Passphrase); err != nil {
+				t.Errorf("failed to load key: %v", err)
+			}
+
+			// Ensure key is loaded.
+			loaded, err := mgr.Loaded(ctx)
+			if err != nil {
+				t.Errorf("failed to enumerate loaded keys: %v", err)
+			}
+			if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != "" {
+				t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
+			}
+		}()
+
+		// Second manager instance loads keys from storage. We expect the
+		// loaded key to be loaded into the agent.
+		func() {
+			agt := agent.NewKeyring()
+			mgr, err := newTestManager(ctx, agt, syncStorage, sessionStorage, []*initialKey{
+				{
+					Name:          "good-key",
+					PEMPrivateKey: testdata.WithPassphrase.Private,
+				},
+			})
+			if err != nil {
+				t.Fatalf("failed to initialize manager: %v", err)
+			}
+
+			// Restore keys from session.
+			if err = mgr.LoadFromSession(ctx); err != nil {
+				t.Fatalf("failed to load keys from session: %v", err)
+			}
+
+			// Ensure key is loaded.
+			loaded, err := mgr.Loaded(ctx)
+			if err != nil {
+				t.Errorf("failed to enumerate loaded keys: %v", err)
+			}
+			if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != "" {
+				t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
+			}
+		}()
+	})
 }

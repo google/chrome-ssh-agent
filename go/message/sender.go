@@ -35,10 +35,9 @@ var (
 
 // Sender specifies the interface for a type that sends messages.
 type Sender interface {
-	// Send sends a message. Callback is invoked with either the response
-	// or an error.  See:
+	// Send sends a message. Response (or an error) are returned. See:
 	//   https://developer.chrome.com/docs/extensions/reference/runtime/#method-sendMessage
-	Send(msg js.Value, callback func(rsp js.Value, err error))
+	Send(ctx jsutil.AsyncContext, msg js.Value) (js.Value, error)
 }
 
 // ExtSender sends messages to a single extension.
@@ -58,9 +57,6 @@ func NewLocalSender() *ExtSender {
 }
 
 // Send implements Sender.Send().
-func (e *ExtSender) Send(msg js.Value, callback func(rsp js.Value, err error)) {
-	jsutil.AsPromise(runtime.Call("sendMessage", e.extensionID, msg)).Then(
-		func(val js.Value) { callback(val, nil) },
-		func(err error) { callback(js.Undefined(), err) },
-	)
+func (e *ExtSender) Send(ctx jsutil.AsyncContext, msg js.Value) (js.Value, error) {
+	return jsutil.AsPromise(runtime.Call("sendMessage", e.extensionID, msg)).Await(ctx)
 }

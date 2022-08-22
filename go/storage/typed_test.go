@@ -19,6 +19,8 @@ import (
 	"syscall/js"
 	"testing"
 
+	"github.com/google/chrome-ssh-agent/go/jsutil"
+	jut "github.com/google/chrome-ssh-agent/go/jsutil/testing"
 	"github.com/google/chrome-ssh-agent/go/storage/fakes"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -30,16 +32,6 @@ var (
 	setError    = errors.New("Storage.Set failed")
 	deleteError = errors.New("Storage.Delete failed")
 )
-
-func syncSet(t *testing.T, store Area, data map[string]js.Value) {
-	errc := make(chan error, 1)
-	store.Set(data, func(err error) {
-		errc <- err
-	})
-	if err := <-errc; err != nil {
-		t.Fatalf("Set failed: %v", err)
-	}
-}
 
 const testKeyPrefix = "key:"
 
@@ -93,27 +85,23 @@ func TestTypedReadAll(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			store := fakes.NewMem()
-			syncSet(t, store, tc.init)
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				store := fakes.NewMem()
+				if err := store.Set(ctx, tc.init); err != nil {
+					t.Fatalf("Set failed: %v", err)
+				}
 
-			ts := NewTyped[myStruct](store, testKeyPrefix)
+				ts := NewTyped[myStruct](store, testKeyPrefix)
 
-			store.SetError(tc.errs)
-			gotc := make(chan []*myStruct, 1)
-			errc := make(chan error, 1)
-			ts.ReadAll(func(values []*myStruct, err error) {
-				gotc <- values
-				errc <- err
+				store.SetError(tc.errs)
+				got, err := ts.ReadAll(ctx)
+				if diff := cmp.Diff(got, tc.want, cmpopts.SortSlices(myStructLess)); diff != "" {
+					t.Errorf("incorrect result: -got +want: %s", diff)
+				}
+				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error: -got +want: %s", diff)
+				}
 			})
-			got := <-gotc
-			err := <-errc
-
-			if diff := cmp.Diff(got, tc.want, cmpopts.SortSlices(myStructLess)); diff != "" {
-				t.Errorf("incorrect result: -got +want: %s", diff)
-			}
-			if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("incorrect error: -got +want: %s", diff)
-			}
 		})
 	}
 }
@@ -158,27 +146,23 @@ func TestTypedRead(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			store := fakes.NewMem()
-			syncSet(t, store, tc.init)
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				store := fakes.NewMem()
+				if err := store.Set(ctx, tc.init); err != nil {
+					t.Fatalf("Set failed: %v", err)
+				}
 
-			ts := NewTyped[myStruct](store, testKeyPrefix)
+				ts := NewTyped[myStruct](store, testKeyPrefix)
 
-			store.SetError(tc.errs)
-			gotc := make(chan *myStruct, 1)
-			errc := make(chan error, 1)
-			ts.Read(tc.test, func(value *myStruct, err error) {
-				gotc <- value
-				errc <- err
+				store.SetError(tc.errs)
+				got, err := ts.Read(ctx, tc.test)
+				if diff := cmp.Diff(got, tc.want); diff != "" {
+					t.Errorf("incorrect result: -got +want: %s", diff)
+				}
+				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error: -got +want: %s", diff)
+				}
 			})
-			got := <-gotc
-			err := <-errc
-
-			if diff := cmp.Diff(got, tc.want); diff != "" {
-				t.Errorf("incorrect result: -got +want: %s", diff)
-			}
-			if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("incorrect error: -got +want: %s", diff)
-			}
 		})
 	}
 }
@@ -230,35 +214,29 @@ func TestTypedWrite(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			store := fakes.NewMem()
-			syncSet(t, store, tc.init)
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				store := fakes.NewMem()
+				if err := store.Set(ctx, tc.init); err != nil {
+					t.Fatalf("Set failed: %v", err)
+				}
 
-			ts := NewTyped[myStruct](store, testKeyPrefix)
+				ts := NewTyped[myStruct](store, testKeyPrefix)
 
-			store.SetError(tc.errs)
-			errc := make(chan error, 1)
-			ts.Write(tc.write, func(err error) {
-				errc <- err
+				store.SetError(tc.errs)
+				err := ts.Write(ctx, tc.write)
+				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error: -got +want: %s", diff)
+				}
+				store.SetError(fakes.Errs{})
+
+				got, err := ts.ReadAll(ctx)
+				if err != nil {
+					t.Fatalf("ReadAll failed: %v", err)
+				}
+				if diff := cmp.Diff(got, tc.want, cmpopts.SortSlices(myStructLess)); diff != "" {
+					t.Errorf("incorrect result: -got +want: %s", diff)
+				}
 			})
-			err := <-errc
-			if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("incorrect error: -got +want: %s", diff)
-			}
-			store.SetError(fakes.Errs{})
-
-			gotc := make(chan []*myStruct, 1)
-			errc = make(chan error, 1)
-			ts.ReadAll(func(values []*myStruct, err error) {
-				gotc <- values
-				errc <- err
-			})
-			got := <-gotc
-			if err := <-errc; err != nil {
-				t.Fatalf("ReadAll failed: %v", err)
-			}
-			if diff := cmp.Diff(got, tc.want, cmpopts.SortSlices(myStructLess)); diff != "" {
-				t.Errorf("incorrect result: -got +want: %s", diff)
-			}
 		})
 	}
 }
@@ -315,35 +293,29 @@ func TestTypedDelete(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			store := fakes.NewMem()
-			syncSet(t, store, tc.init)
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				store := fakes.NewMem()
+				if err := store.Set(ctx, tc.init); err != nil {
+					t.Fatalf("Set failed: %v", err)
+				}
 
-			ts := NewTyped[myStruct](store, testKeyPrefix)
+				ts := NewTyped[myStruct](store, testKeyPrefix)
 
-			store.SetError(tc.errs)
-			errc := make(chan error, 1)
-			ts.Delete(tc.test, func(err error) {
-				errc <- err
+				store.SetError(tc.errs)
+				err := ts.Delete(ctx, tc.test)
+				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error: -got +want: %s", diff)
+				}
+				store.SetError(fakes.Errs{})
+
+				got, err := ts.ReadAll(ctx)
+				if err != nil {
+					t.Fatalf("ReadAll failed: %v", err)
+				}
+				if diff := cmp.Diff(got, tc.want, cmpopts.SortSlices(myStructLess)); diff != "" {
+					t.Errorf("incorrect result: -got +want: %s", diff)
+				}
 			})
-			err := <-errc
-			if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("incorrect error: -got +want: %s", diff)
-			}
-			store.SetError(fakes.Errs{})
-
-			gotc := make(chan []*myStruct, 1)
-			errc = make(chan error, 1)
-			ts.ReadAll(func(values []*myStruct, err error) {
-				gotc <- values
-				errc <- err
-			})
-			got := <-gotc
-			if err := <-errc; err != nil {
-				t.Fatalf("ReadAll failed: %v", err)
-			}
-			if diff := cmp.Diff(got, tc.want, cmpopts.SortSlices(myStructLess)); diff != "" {
-				t.Errorf("incorrect result: -got +want: %s", diff)
-			}
 		})
 	}
 }

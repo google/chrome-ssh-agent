@@ -19,84 +19,18 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/chrome-ssh-agent/go/storage"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-func syncAdd(mgr Manager, name string, pemPrivateKey string) error {
-	errc := make(chan error, 1)
-	mgr.Add(name, pemPrivateKey, func(err error) {
-		errc <- err
-		close(errc)
-	})
-	return readErr(errc)
-}
-
-func syncRemove(mgr Manager, id ID) error {
-	errc := make(chan error, 1)
-	mgr.Remove(id, func(err error) {
-		errc <- err
-		close(errc)
-	})
-	return readErr(errc)
-}
-
-func syncConfigured(mgr Manager) ([]*ConfiguredKey, error) {
-	errc := make(chan error, 1)
-	var result []*ConfiguredKey
-	mgr.Configured(func(keys []*ConfiguredKey, err error) {
-		result = keys
-		errc <- err
-		close(errc)
-	})
-	err := readErr(errc)
-	return result, err
-}
-
-func syncLoad(mgr Manager, id ID, passphrase string) error {
-	errc := make(chan error, 1)
-	mgr.Load(id, passphrase, func(err error) {
-		errc <- err
-		close(errc)
-	})
-	return readErr(errc)
-}
-
-func syncLoaded(mgr Manager) ([]*LoadedKey, error) {
-	errc := make(chan error, 1)
-	var result []*LoadedKey
-	mgr.Loaded(func(keys []*LoadedKey, err error) {
-		result = keys
-		errc <- err
-		close(errc)
-	})
-	err := readErr(errc)
-	return result, err
-}
-
-func syncUnload(mgr Manager, id ID) error {
-	errc := make(chan error, 1)
-	mgr.Unload(id, func(err error) {
-		errc <- err
-		close(errc)
-	})
-	return readErr(errc)
-}
-
-func readErr(errc chan error) error {
-	for err := range errc {
-		return err
-	}
-	panic("no elements read from channel")
-}
-
-func findKey(mgr Manager, byID ID, byName string) (ID, error) {
+func findKey(ctx jsutil.AsyncContext, mgr Manager, byID ID, byName string) (ID, error) {
 	if byID != InvalidID {
 		return byID, nil
 	}
 
-	configured, err := syncConfigured(mgr)
+	configured, err := mgr.Configured(ctx)
 	if err != nil {
 		return InvalidID, err
 	}
@@ -143,15 +77,8 @@ func loadedKeyIDs(keys []*LoadedKey) []ID {
 	return res
 }
 
-func sessionKeyIDs(sessionKeys *storage.Typed[sessionKey]) ([]ID, error) {
-	keysc := make(chan []*sessionKey, 1)
-	errc := make(chan error, 1)
-	sessionKeys.ReadAll(func(keys []*sessionKey, err error) {
-		keysc <- keys
-		errc <- err
-	})
-	keys := <-keysc
-	err := <-errc
+func sessionKeyIDs(ctx jsutil.AsyncContext, sessionKeys *storage.Typed[sessionKey]) ([]ID, error) {
+	keys, err := sessionKeys.ReadAll(ctx)
 
 	var res []ID
 	for _, k := range keys {

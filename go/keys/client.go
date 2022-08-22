@@ -149,129 +149,103 @@ func makeErrStr(err error) string {
 	return err.Error()
 }
 
-// sendErrorResponse sends a generic error response to the client. This is used
-// in case a more specific error is not possible.
-func (s *Server) sendErrorResponse(err error, sendResponse func(js.Value)) {
-	jsutil.LogError("Server.sendErrorResponse: %v", err)
+// makeErrorResponse produces a generic error response that can be sent to the
+// client. This is used in case a more specific error is not possible.
+func (s *Server) makeErrorResponse(err error) js.Value {
+	jsutil.LogError("Server.makeErrorResponse: %v", err)
 	rsp := rspError{
 		Type: msgTypeErrorRsp,
 		Err:  makeErrStr(err),
 	}
-	sendResponse(vert.ValueOf(rsp).JSValue())
+	return vert.ValueOf(rsp).JSValue()
 }
 
 // OnMessage is the callback invoked when a message is received. It determines
 // the type of request received, invokes the appropriate method on the
-// underlying manager instance, and then sends a response with the result.
-//
-// This method is guaranteed to invoke sendReponse (aside from unexpected
-// panics). Context for why this important:
-//
-//   The caller is expected to be handling an OnMessage event from the browser,
-//   and it returns 'true' to the browser to indicate that the event will be
-//   handled asynchronously and the port must not yet be closed. Invoking
-//   sendResponse is the signal to the browser to close the port and free
-//   resources.
-func (s *Server) OnMessage(headerObj js.Value, sender js.Value, sendResponse func(js.Value)) {
+// underlying manager instance, and then returns the response to be sent to the
+// client.
+func (s *Server) OnMessage(ctx jsutil.AsyncContext, headerObj js.Value, sender js.Value) js.Value {
 	var header msgHeader
 	if err := vert.ValueOf(headerObj).AssignTo(&header); err != nil {
-		s.sendErrorResponse(fmt.Errorf("failed to parse message header: %v", err), sendResponse)
-		return
+		return s.makeErrorResponse(fmt.Errorf("failed to parse message header: %v", err))
 	}
 
 	jsutil.LogDebug("Server.OnMessage(type = %d)", header.Type)
 	switch header.Type {
 	case msgTypeConfigured:
 		jsutil.LogDebug("Server.OnMessage(Configured req)")
-		s.mgr.Configured(func(keys []*ConfiguredKey, err error) {
-			jsutil.LogDebug("Server.OnMessage(Configured rsp): %d keys, err=%v", len(keys), err)
-			rsp := rspConfigured{
-				Type: msgTypeConfiguredRsp,
-				Keys: keys,
-				Err:  makeErrStr(err),
-			}
-			sendResponse(vert.ValueOf(rsp).JSValue())
-		})
-		return
+		keys, err := s.mgr.Configured(ctx)
+		jsutil.LogDebug("Server.OnMessage(Configured rsp): %d keys, err=%v", len(keys), err)
+		rsp := rspConfigured{
+			Type: msgTypeConfiguredRsp,
+			Keys: keys,
+			Err:  makeErrStr(err),
+		}
+		return vert.ValueOf(rsp).JSValue()
 	case msgTypeLoaded:
 		jsutil.LogDebug("Server.OnMessage(Loaded req)")
-		s.mgr.Loaded(func(keys []*LoadedKey, err error) {
-			jsutil.LogDebug("Server.OnMessage(Loaded rsp): %d keys, err=%v", len(keys), err)
-			rsp := rspLoaded{
-				Type: msgTypeLoadedRsp,
-				Keys: keys,
-				Err:  makeErrStr(err),
-			}
-			sendResponse(vert.ValueOf(rsp).JSValue())
-		})
-		return
+		keys, err := s.mgr.Loaded(ctx)
+		jsutil.LogDebug("Server.OnMessage(Loaded rsp): %d keys, err=%v", len(keys), err)
+		rsp := rspLoaded{
+			Type: msgTypeLoadedRsp,
+			Keys: keys,
+			Err:  makeErrStr(err),
+		}
+		return vert.ValueOf(rsp).JSValue()
 	case msgTypeAdd:
 		var m msgAdd
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			s.sendErrorResponse(fmt.Errorf("failed to parse Add message: %v", err), sendResponse)
-			return
+			return s.makeErrorResponse(fmt.Errorf("failed to parse Add message: %v", err))
 		}
 		jsutil.LogDebug("Server.OnMessage(Add req): name=%s", m.Name)
-		s.mgr.Add(m.Name, m.PEMPrivateKey, func(err error) {
-			rsp := rspAdd{
-				Type: msgTypeAddRsp,
-				Err:  makeErrStr(err),
-			}
-			jsutil.LogDebug("Server.OnMessage(Add rsp): err=%v", err)
-			sendResponse(vert.ValueOf(rsp).JSValue())
-		})
-		return
+		err := s.mgr.Add(ctx, m.Name, m.PEMPrivateKey)
+		rsp := rspAdd{
+			Type: msgTypeAddRsp,
+			Err:  makeErrStr(err),
+		}
+		jsutil.LogDebug("Server.OnMessage(Add rsp): err=%v", err)
+		return vert.ValueOf(rsp).JSValue()
 	case msgTypeRemove:
 		var m msgRemove
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			s.sendErrorResponse(fmt.Errorf("failed to parse Remove message: %v", err), sendResponse)
-			return
+			return s.makeErrorResponse(fmt.Errorf("failed to parse Remove message: %v", err))
 		}
 		jsutil.LogDebug("Server.OnMessage(Remove req): id=%s", m.ID)
-		s.mgr.Remove(ID(m.ID), func(err error) {
-			rsp := rspRemove{
-				Type: msgTypeRemoveRsp,
-				Err:  makeErrStr(err),
-			}
-			jsutil.LogDebug("Server.OnMessage(Remove rsp): err=%v", err)
-			sendResponse(vert.ValueOf(rsp).JSValue())
-		})
-		return
+		err := s.mgr.Remove(ctx, ID(m.ID))
+		rsp := rspRemove{
+			Type: msgTypeRemoveRsp,
+			Err:  makeErrStr(err),
+		}
+		jsutil.LogDebug("Server.OnMessage(Remove rsp): err=%v", err)
+		return vert.ValueOf(rsp).JSValue()
 	case msgTypeLoad:
 		var m msgLoad
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			s.sendErrorResponse(fmt.Errorf("failed to parse Load message: %v", err), sendResponse)
-			return
+			return s.makeErrorResponse(fmt.Errorf("failed to parse Load message: %v", err))
 		}
 		jsutil.LogDebug("Server.OnMessage(Load req): id=%s", m.ID)
-		s.mgr.Load(ID(m.ID), m.Passphrase, func(err error) {
-			rsp := rspLoad{
-				Type: msgTypeLoadRsp,
-				Err:  makeErrStr(err),
-			}
-			jsutil.LogDebug("Server.OnMessage(Load rsp): err=%v", err)
-			sendResponse(vert.ValueOf(rsp).JSValue())
-		})
-		return
+		err := s.mgr.Load(ctx, ID(m.ID), m.Passphrase)
+		rsp := rspLoad{
+			Type: msgTypeLoadRsp,
+			Err:  makeErrStr(err),
+		}
+		jsutil.LogDebug("Server.OnMessage(Load rsp): err=%v", err)
+		return vert.ValueOf(rsp).JSValue()
 	case msgTypeUnload:
 		var m msgUnload
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			s.sendErrorResponse(fmt.Errorf("failed to parse Unload message: %v", err), sendResponse)
-			return
+			return s.makeErrorResponse(fmt.Errorf("failed to parse Unload message: %v", err))
 		}
 		jsutil.LogDebug("Server.OnMessage(Unload req): id=%s", m.ID)
-		s.mgr.Unload(ID(m.ID), func(err error) {
-			rsp := rspUnload{
-				Type: msgTypeUnloadRsp,
-				Err:  makeErrStr(err),
-			}
-			jsutil.LogDebug("Server.OnMessage(Unload rsp): err=%v", err)
-			sendResponse(vert.ValueOf(rsp).JSValue())
-		})
-		return
+		err := s.mgr.Unload(ctx, ID(m.ID))
+		rsp := rspUnload{
+			Type: msgTypeUnloadRsp,
+			Err:  makeErrStr(err),
+		}
+		jsutil.LogDebug("Server.OnMessage(Unload rsp): err=%v", err)
+		return vert.ValueOf(rsp).JSValue()
 	default:
-		s.sendErrorResponse(fmt.Errorf("received invalid message type: %d", header.Type), sendResponse)
-		return
+		return s.makeErrorResponse(fmt.Errorf("received invalid message type: %d", header.Type))
 	}
 }
 
@@ -286,127 +260,109 @@ func NewClient(msg message.Sender) Manager {
 }
 
 // Configured implements Manager.Configured.
-func (c *client) Configured(callback func(keys []*ConfiguredKey, err error)) {
+func (c *client) Configured(ctx jsutil.AsyncContext) ([]*ConfiguredKey, error) {
 	var msg msgConfigured
 	msg.Type = msgTypeConfigured
 	jsutil.LogDebug("Client.Configured(req)")
-	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
-		jsutil.LogDebug("Client.Configured(rsp)")
-		if err != nil {
-			callback(nil, fmt.Errorf("failed to send message: %v", err))
-			return
-		}
-		var rsp rspConfigured
-		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-			callback(nil, fmt.Errorf("failed to parse response: %v", err))
-			return
-		}
-		callback(rsp.Keys, makeErr(rsp.Err))
-	})
+	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
+	jsutil.LogDebug("Client.Configured(rsp)")
+	if err != nil {
+		return nil, fmt.Errorf("failed to send message: %v", err)
+	}
+	var rsp rspConfigured
+	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %v", err)
+	}
+	return rsp.Keys, makeErr(rsp.Err)
 }
 
 // Loaded implements Manager.Loaded.
-func (c *client) Loaded(callback func(keys []*LoadedKey, err error)) {
+func (c *client) Loaded(ctx jsutil.AsyncContext) ([]*LoadedKey, error) {
 	var msg msgLoaded
 	msg.Type = msgTypeLoaded
 	jsutil.LogDebug("Client.Loaded(req)")
-	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
-		jsutil.LogDebug("Client.Loaded(rsp)")
-		if err != nil {
-			callback(nil, fmt.Errorf("failed to send message: %v", err))
-			return
-		}
-		var rsp rspLoaded
-		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-			callback(nil, fmt.Errorf("failed to parse response: %v", err))
-			return
-		}
-		callback(rsp.Keys, makeErr(rsp.Err))
-	})
+	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
+	jsutil.LogDebug("Client.Loaded(rsp)")
+	if err != nil {
+		return nil, fmt.Errorf("failed to send message: %v", err)
+	}
+	var rsp rspLoaded
+	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %v", err)
+	}
+	return rsp.Keys, makeErr(rsp.Err)
 }
 
 // Add implements Manager.Add.
-func (c *client) Add(name string, pemPrivateKey string, callback func(err error)) {
+func (c *client) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error {
 	var msg msgAdd
 	msg.Type = msgTypeAdd
 	msg.Name = name
 	msg.PEMPrivateKey = pemPrivateKey
 	jsutil.LogDebug("Client.Add(req): name=%s", msg.Name)
-	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
-		jsutil.LogDebug("Client.Add(rsp)")
-		if err != nil {
-			callback(fmt.Errorf("failed to send message: %v", err))
-			return
-		}
-		var rsp rspAdd
-		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-			callback(fmt.Errorf("failed to parse response: %v", err))
-			return
-		}
-		callback(makeErr(rsp.Err))
-	})
+	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
+	jsutil.LogDebug("Client.Add(rsp)")
+	if err != nil {
+		return fmt.Errorf("failed to send message: %v", err)
+	}
+	var rsp rspAdd
+	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+		return fmt.Errorf("failed to parse response: %v", err)
+	}
+	return makeErr(rsp.Err)
 }
 
 // Remove implements Manager.Remove.
-func (c *client) Remove(id ID, callback func(err error)) {
+func (c *client) Remove(ctx jsutil.AsyncContext, id ID) error {
 	var msg msgRemove
 	msg.Type = msgTypeRemove
 	msg.ID = string(id)
 	jsutil.LogDebug("Client.Remove(req): id=%s", msg.ID)
-	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
-		jsutil.LogDebug("Client.Remove(rsp)")
-		if err != nil {
-			callback(fmt.Errorf("failed to send message: %v", err))
-			return
-		}
-		var rsp rspRemove
-		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-			callback(fmt.Errorf("failed to parse response: %v", err))
-			return
-		}
-		callback(makeErr(rsp.Err))
-	})
+	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
+	jsutil.LogDebug("Client.Remove(rsp)")
+	if err != nil {
+		return fmt.Errorf("failed to send message: %v", err)
+	}
+	var rsp rspRemove
+	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+		return fmt.Errorf("failed to parse response: %v", err)
+	}
+	return makeErr(rsp.Err)
 }
 
 // Load implements Manager.Load.
-func (c *client) Load(id ID, passphrase string, callback func(err error)) {
+func (c *client) Load(ctx jsutil.AsyncContext, id ID, passphrase string) error {
 	var msg msgLoad
 	msg.Type = msgTypeLoad
 	msg.ID = string(id)
 	msg.Passphrase = passphrase
 	jsutil.LogDebug("Client.Load(req): id=%s", msg.ID)
-	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
-		jsutil.LogDebug("Client.Load(rsp)")
-		if err != nil {
-			callback(fmt.Errorf("failed to send message: %v", err))
-			return
-		}
-		var rsp rspLoad
-		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-			callback(fmt.Errorf("failed to parse response: %v", err))
-			return
-		}
-		callback(makeErr(rsp.Err))
-	})
+	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
+	jsutil.LogDebug("Client.Load(rsp)")
+	if err != nil {
+		return fmt.Errorf("failed to send message: %v", err)
+	}
+	var rsp rspLoad
+	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+		return fmt.Errorf("failed to parse response: %v", err)
+	}
+	return makeErr(rsp.Err)
 }
 
 // Unload implements Manager.Unload.
-func (c *client) Unload(id ID, callback func(err error)) {
+func (c *client) Unload(ctx jsutil.AsyncContext, id ID) error {
 	var msg msgUnload
 	msg.Type = msgTypeUnload
 	msg.ID = string(id)
 	jsutil.LogDebug("Client.Unload(req): id=%s", msg.ID)
-	c.msg.Send(vert.ValueOf(msg).JSValue(), func(rspObj js.Value, err error) {
-		jsutil.LogDebug("Client.Unload(rsp)")
-		if err != nil {
-			callback(fmt.Errorf("failed to send message: %v", err))
-			return
-		}
-		var rsp rspUnload
-		if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-			callback(fmt.Errorf("failed to parse response: %v", err))
-			return
-		}
-		callback(makeErr(rsp.Err))
-	})
+	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
+	jsutil.LogDebug("Client.Unload(rsp)")
+	if err != nil {
+		return fmt.Errorf("failed to send message: %v", err)
+	}
+	var rsp rspUnload
+	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
+		return fmt.Errorf("failed to parse response: %v", err)
+	}
+	return makeErr(rsp.Err)
 }

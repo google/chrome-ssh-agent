@@ -20,6 +20,8 @@ package fakes
 
 import (
 	"syscall/js"
+
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
 // Errs contains errors that should be returned by the fake implementation.
@@ -53,38 +55,35 @@ func (m *Mem) SetError(err Errs) {
 }
 
 // Set implements Area.Set().
-func (m *Mem) Set(data map[string]js.Value, callback func(err error)) {
+func (m *Mem) Set(ctx jsutil.AsyncContext, data map[string]js.Value) error {
 	if m.err.Set != nil {
-		callback(m.err.Set)
-		return
+		return m.err.Set
 	}
 
 	for k, v := range data {
 		m.data[k] = v
 	}
-	callback(nil)
+	return nil
 }
 
 // Get implements Area.Get().
-func (m *Mem) Get(callback func(data map[string]js.Value, err error)) {
+func (m *Mem) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
 	if m.err.Get != nil {
-		callback(nil, m.err.Get)
-		return
+		return nil, m.err.Get
 	}
 
 	// TODO(ralimi) Make a copy.
-	callback(m.data, nil)
+	return m.data, nil
 }
 
 // Delete implements Area.Delete().
-func (m *Mem) Delete(keys []string, callback func(err error)) {
+func (m *Mem) Delete(ctx jsutil.AsyncContext, keys []string) error {
 	if m.err.Delete != nil {
-		callback(m.err.Delete)
-		return
+		return m.err.Delete
 	}
 
 	for _, k := range keys {
 		delete(m.data, k)
 	}
-	callback(nil)
+	return nil
 }

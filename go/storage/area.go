@@ -18,6 +18,8 @@ package storage
 
 import (
 	"syscall/js"
+
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
 // Area implementations provide access to underlying storage. The interface is
@@ -25,18 +27,17 @@ import (
 //   https://developer.chrome.com/docs/extensions/reference/storage/#type-StorageArea
 type Area interface {
 	// Set stores new data in storage. data is a map of key-value pairs to
-	// be stored. If a key already exists, it will be overwritten.  Callback
-	// will be invoked when complete.
-	Set(data map[string]js.Value, callback func(err error))
+	// be stored. If a key already exists, it will be overwritten.
+	Set(ctx jsutil.AsyncContext, data map[string]js.Value) error
 
 	// Get reads all the data items currently stored.  The callback will be
 	// invoked when complete, suppliing the items read and indicating any
-	// errors. The data suppiled with the callback is a map of key-value
-	// pairs, with each representing a distinct item from storage.
-	Get(callback func(data map[string]js.Value, err error))
+	// errors. The data returned is a map of key-value pairs, with each
+	// representing a distinct item from storage.
+	Get(ctx jsutil.AsyncContext) (map[string]js.Value, error)
 
 	// Delete removes the items from storage with the specified keys. If a
 	// key is not found in storage, it will be silently ignored (i.e., no
-	// error will be returned). Callback is invoked when complete.
-	Delete(keys []string, callback func(err error))
+	// error will be returned).
+	Delete(ctx jsutil.AsyncContext, keys []string) error
 }

@@ -46,104 +46,91 @@ func NewTyped[V any](store Area, keyPrefix string) *Typed[V] {
 	}
 }
 
-// readAllItems returns all the stored values, along with their keys. callback
-// is invoked with the result.
-func (t *Typed[V]) readAllItems(callback func(data map[string]*V, err error)) {
-	t.store.Get(func(data map[string]js.Value, err error) {
-		if err != nil {
-			callback(nil, err)
-			return
+// readAllItems returns all the stored values, along with their keys.
+func (t *Typed[V]) readAllItems(ctx jsutil.AsyncContext) (map[string]*V, error) {
+	data, err := t.store.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	values := map[string]*V{}
+	for k, v := range data {
+		if !strings.HasPrefix(k, t.keyPrefix) {
+			continue
 		}
 
-		values := map[string]*V{}
-		for k, v := range data {
-			if !strings.HasPrefix(k, t.keyPrefix) {
-				continue
-			}
-
-			var tv V
-			if err := vert.ValueOf(v).AssignTo(&tv); err != nil {
-				jsutil.LogError("failed to parse value %s; dropping", k)
-				continue
-			}
-
-			values[k] = &tv
+		var tv V
+		if err := vert.ValueOf(v).AssignTo(&tv); err != nil {
+			jsutil.LogError("failed to parse value %s; dropping", k)
+			continue
 		}
-		callback(values, nil)
-	})
+
+		values[k] = &tv
+	}
+	return values, nil
 }
 
-// ReadAll returns all the stored values. callback is invoked when complete.
-func (t *Typed[V]) ReadAll(callback func(values []*V, err error)) {
-	t.readAllItems(func(data map[string]*V, err error) {
-		if err != nil {
-			callback(nil, err)
-			return
-		}
+// ReadAll returns all the stored values.
+func (t *Typed[V]) ReadAll(ctx jsutil.AsyncContext) ([]*V, error) {
+	data, err := t.readAllItems(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-		var values []*V
-		for _, v := range data {
-			values = append(values, v)
-		}
-		callback(values, nil)
-	})
+	var values []*V
+	for _, v := range data {
+		values = append(values, v)
+	}
+	return values, nil
 }
 
 // Read returns a single value that matches the supplied test function. If
-// multiple values match, only the first is returned.  callback is invoked with
-// the returned value. If the value is not found, then the callback is invoked
-// with a nil value.
-func (t *Typed[V]) Read(test func(v *V) bool, callback func(value *V, err error)) {
-	t.ReadAll(func(values []*V, err error) {
-		if err != nil {
-			callback(nil, err)
-			return
-		}
+// multiple values match, only the first is returned. If the value is not found,
+// a nil value is returned.
+func (t *Typed[V]) Read(ctx jsutil.AsyncContext, test func(v *V) bool) (*V, error) {
+	values, err := t.ReadAll(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-		for _, v := range values {
-			if test(v) {
-				callback(v, nil)
-				return
-			}
+	for _, v := range values {
+		if test(v) {
+			return v, nil
 		}
+	}
 
-		callback(nil, nil)
-	})
+	return nil, nil
 }
 
-// Write writes a new value to storage. callback is invoked when complete.
-func (t *Typed[V]) Write(value *V, callback func(err error)) {
+// Write writes a new value to storage.
+func (t *Typed[V]) Write(ctx jsutil.AsyncContext, value *V) error {
 	// Generate a unique key under which value will be stored.
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
-		callback(fmt.Errorf("failed to generate new ID: %w", err))
-		return
+		return fmt.Errorf("failed to generate new ID: %w", err)
 	}
 	key := fmt.Sprintf("%s%s", t.keyPrefix, i)
 
 	data := map[string]js.Value{
 		key: vert.ValueOf(value).JSValue(),
 	}
-	t.store.Set(data, callback)
+	return t.store.Set(ctx, data)
 }
 
 // Delete removes the value that matches the supplied test function. If multiple
-// values match, all matching values are removed. callback is invoked upon
-// completion.
-func (t *Typed[V]) Delete(test func(v *V) bool, callback func(err error)) {
-	t.readAllItems(func(data map[string]*V, err error) {
-		if err != nil {
-			callback(fmt.Errorf("failed to enumerate values: %w", err))
-			return
-		}
+// values match, all matching values are removed.
+func (t *Typed[V]) Delete(ctx jsutil.AsyncContext, test func(v *V) bool) error {
+	data, err := t.readAllItems(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to enumerate values: %w", err)
+	}
 
-		var keys []string
-		for k, v := range data {
-			if test(v) {
-				keys = append(keys, k)
-			}
+	var keys []string
+	for k, v := range data {
+		if test(v) {
+			keys = append(keys, k)
 		}
+	}
 
-		t.store.Delete(keys, callback)
-	})
+	return t.store.Delete(ctx, keys)
 }

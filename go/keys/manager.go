@@ -105,38 +105,33 @@ func (k *LoadedKey) ID() ID {
 // Manager provides an API for managing configured keys and loading them into
 // an SSH agent.
 type Manager interface {
-	// Configured returns the full set of keys that are configured. The
-	// callback is invoked with the result.
-	Configured(callback func(keys []*ConfiguredKey, err error))
+	// Configured returns the full set of keys that are configured.
+	Configured(ctx jsutil.AsyncContext) ([]*ConfiguredKey, error)
 
 	// Add configures a new key.  name is a human-readable name describing
-	// the key, and pemPrivateKey is the PEM-encoded private key.  callback
-	// is invoked when complete.
-	Add(name string, pemPrivateKey string, callback func(err error))
+	// the key, and pemPrivateKey is the PEM-encoded private key.
+	Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error
 
-	// Remove removes the key with the specified ID.  callback is invoked
-	// when complete.
+	// Remove removes the key with the specified ID.
 	//
 	// Note that it might be nice to return an error here, but
 	// the underlying Chrome APIs don't make it trivial to determine
 	// if the requested key was removed, or ignored because it didn't
 	// exist.  This could be improved, but it doesn't seem worth it at
 	// the moment.
-	Remove(id ID, callback func(err error))
+	Remove(ctx jsutil.AsyncContext, id ID) error
 
-	// Loaded returns the full set of keys loaded into the agent. The
-	// callback is invoked with the result.
-	Loaded(callback func(keys []*LoadedKey, err error))
+	// Loaded returns the full set of keys loaded into the agent.
+	Loaded(ctx jsutil.AsyncContext) ([]*LoadedKey, error)
 
 	// Load loads a new key into to the agent, using the passphrase to
-	// decrypt the private key.  callback is invoked when complete.
+	// decrypt the private key.
 	//
 	// NOTE: Unencrypted private keys are not currently supported.
-	Load(id ID, passphrase string, callback func(err error))
+	Load(ctx jsutil.AsyncContext, id ID, passphrase string) error
 
-	// Unload unloads a key from the agent. callback is invoked when
-	// complete.
-	Unload(id ID, callback func(err error))
+	// Unload unloads a key from the agent.
+	Unload(ctx jsutil.AsyncContext, id ID) error
 }
 
 // NewManager returns a Manager implementation that can manage keys in the
@@ -232,24 +227,22 @@ const (
 )
 
 // Configured implements Manager.Configured.
-func (m *DefaultManager) Configured(callback func(keys []*ConfiguredKey, err error)) {
-	m.storedKeys.ReadAll(func(keys []*storedKey, err error) {
-		if err != nil {
-			callback(nil, fmt.Errorf("failed to read keys: %w", err))
-			return
-		}
+func (m *DefaultManager) Configured(ctx jsutil.AsyncContext) ([]*ConfiguredKey, error) {
+	keys, err := m.storedKeys.ReadAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read keys: %w", err)
+	}
 
-		var result []*ConfiguredKey
-		for _, k := range keys {
-			c := ConfiguredKey{
-				ID:        k.ID,
-				Name:      k.Name,
-				Encrypted: k.Encrypted(),
-			}
-			result = append(result, &c)
+	var result []*ConfiguredKey
+	for _, k := range keys {
+		c := ConfiguredKey{
+			ID:        k.ID,
+			Name:      k.Name,
+			Encrypted: k.Encrypted(),
 		}
-		callback(result, nil)
-	})
+		result = append(result, &c)
+	}
+	return result, nil
 }
 
 var (
@@ -257,16 +250,14 @@ var (
 )
 
 // Add implements Manager.Add.
-func (m *DefaultManager) Add(name string, pemPrivateKey string, callback func(err error)) {
+func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error {
 	if name == "" {
-		callback(fmt.Errorf("%w: name must not be empty", errInvalidName))
-		return
+		return fmt.Errorf("%w: name must not be empty", errInvalidName)
 	}
 
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
-		callback(fmt.Errorf("failed to generate new ID: %w", err))
-		return
+		return fmt.Errorf("failed to generate new ID: %w", err)
 	}
 
 	sk := &storedKey{
@@ -274,20 +265,19 @@ func (m *DefaultManager) Add(name string, pemPrivateKey string, callback func(er
 		Name:          name,
 		PEMPrivateKey: pemPrivateKey,
 	}
-	m.storedKeys.Write(sk, callback)
+	return m.storedKeys.Write(ctx, sk)
 }
 
 // Remove implements Manager.Remove.
-func (m *DefaultManager) Remove(id ID, callback func(err error)) {
-	m.storedKeys.Delete(func(sk *storedKey) bool { return ID(sk.ID) == id }, callback)
+func (m *DefaultManager) Remove(ctx jsutil.AsyncContext, id ID) error {
+	return m.storedKeys.Delete(ctx, func(sk *storedKey) bool { return ID(sk.ID) == id })
 }
 
 // Loaded implements Manager.Loaded.
-func (m *DefaultManager) Loaded(callback func(keys []*LoadedKey, err error)) {
+func (m *DefaultManager) Loaded(ctx jsutil.AsyncContext) ([]*LoadedKey, error) {
 	loaded, err := m.agent.List()
 	if err != nil {
-		callback(nil, fmt.Errorf("failed to list loaded keys: %w", err))
-		return
+		return nil, fmt.Errorf("failed to list loaded keys: %w", err)
 	}
 
 	var result []*LoadedKey
@@ -300,7 +290,7 @@ func (m *DefaultManager) Loaded(callback func(keys []*LoadedKey, err error)) {
 		result = append(result, &k)
 	}
 
-	callback(result, nil)
+	return result, nil
 }
 
 var (
@@ -311,25 +301,20 @@ var (
 )
 
 // LoadFromSession loads all keys for the current session into the agent.
-func (m *DefaultManager) LoadFromSession(callback func(err error)) {
+func (m *DefaultManager) LoadFromSession(ctx jsutil.AsyncContext) error {
 	// Read session keys. We'll load these into the agent.
-	m.sessionKeys.ReadAll(func(sessionKeys []*sessionKey, err error) {
-		if err != nil {
-			callback(fmt.Errorf("failed to read session keys: %w", err))
-			return
-		}
+	sessionKeys, err := m.sessionKeys.ReadAll(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to read session keys: %w", err)
+	}
 
-		// Attempt to load each into the agent.
-		for _, k := range sessionKeys {
-			m.addToAgent(ID(k.ID), decryptedKey(k.PrivateKey), func(err error) {
-				if err != nil {
-					jsutil.LogError("failed to load session key ID %s into agent: %v; skipping", k.ID, err)
-					return
-				}
-			})
+	// Attempt to load each into the agent.
+	for _, k := range sessionKeys {
+		if err := m.addToAgent(ID(k.ID), decryptedKey(k.PrivateKey)); err != nil {
+			jsutil.LogError("failed to load session key ID %s into agent: %v; skipping", k.ID, err)
 		}
-		callback(nil)
-	})
+	}
+	return nil
 }
 
 type decryptedKey string
@@ -393,11 +378,10 @@ func parseDecryptedKey(pemPrivateKey decryptedKey) (interface{}, error) {
 	return ssh.ParseRawPrivateKey([]byte(pemPrivateKey))
 }
 
-func (m *DefaultManager) addToAgent(id ID, key decryptedKey, callback func(err error)) {
+func (m *DefaultManager) addToAgent(id ID, key decryptedKey) error {
 	priv, err := parseDecryptedKey(key)
 	if err != nil {
-		callback(err)
-		return
+		return err
 	}
 
 	err = m.agent.Add(agent.AddedKey{
@@ -405,52 +389,39 @@ func (m *DefaultManager) addToAgent(id ID, key decryptedKey, callback func(err e
 		Comment:    fmt.Sprintf("%s%s", commentPrefix, id),
 	})
 	if err != nil {
-		callback(fmt.Errorf("failed to add key to agent: %w", err))
-		return
+		return fmt.Errorf("failed to add key to agent: %w", err)
 	}
-	callback(nil)
+	return nil
 }
 
 // Load implements Manager.Load.
-func (m *DefaultManager) Load(id ID, passphrase string, callback func(err error)) {
-	m.storedKeys.Read(
-		func(key *storedKey) bool { return ID(key.ID) == id },
-		func(key *storedKey, err error) {
-			if err != nil {
-				callback(fmt.Errorf("failed to read key: %w", err))
-				return
-			}
+func (m *DefaultManager) Load(ctx jsutil.AsyncContext, id ID, passphrase string) error {
+	key, err := m.storedKeys.Read(ctx, func(key *storedKey) bool { return ID(key.ID) == id })
+	if err != nil {
+		return fmt.Errorf("failed to read key: %w", err)
+	}
 
-			if key == nil {
-				callback(fmt.Errorf("%w: failed to find key with ID %s", errKeyNotFound, id))
-				return
-			}
+	if key == nil {
+		return fmt.Errorf("%w: failed to find key with ID %s", errKeyNotFound, id)
+	}
 
-			decrypted, err := decryptKey(key, passphrase)
-			if err != nil {
-				callback(fmt.Errorf("failed to decrypt key: %w", err))
-				return
-			}
+	decrypted, err := decryptKey(key, passphrase)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt key: %w", err)
+	}
 
-			m.addToAgent(id, decrypted, func(err error) {
-				if err != nil {
-					callback(err)
-					return
-				}
+	if err := m.addToAgent(id, decrypted); err != nil {
+		return err
+	}
 
-				sk := &sessionKey{
-					ID:         string(id),
-					PrivateKey: string(decrypted),
-				}
-				m.sessionKeys.Write(sk, func(err error) {
-					if err != nil {
-						callback(fmt.Errorf("failed to store loaded key to session: %w", err))
-						return
-					}
-					callback(nil)
-				})
-			})
-		})
+	sk := &sessionKey{
+		ID:         string(id),
+		PrivateKey: string(decrypted),
+	}
+	if err := m.sessionKeys.Write(ctx, sk); err != nil {
+		return fmt.Errorf("failed to store loaded key to session: %w", err)
+	}
+	return nil
 }
 
 var (
@@ -459,48 +430,38 @@ var (
 )
 
 // Unload implements Manager.Unload.
-func (m *DefaultManager) Unload(id ID, callback func(err error)) {
+func (m *DefaultManager) Unload(ctx jsutil.AsyncContext, id ID) error {
 	if id == InvalidID {
-		callback(fmt.Errorf("%w: invalid id", errAgentUnloadFailed))
-		return
+		return fmt.Errorf("%w: invalid id", errAgentUnloadFailed)
 	}
 
-	m.Loaded(func(loaded []*LoadedKey, err error) {
-		if err != nil {
-			callback(fmt.Errorf("%w: failed to enumerate loaded keys: %v", errAgentUnloadFailed, id))
-			return
-		}
+	loaded, err := m.Loaded(ctx)
+	if err != nil {
+		return fmt.Errorf("%w: failed to enumerate loaded keys: %v", errAgentUnloadFailed, id)
+	}
 
-		var lk *LoadedKey
-		for _, l := range loaded {
-			if l.ID() == id {
-				lk = l
-				break
-			}
+	var lk *LoadedKey
+	for _, l := range loaded {
+		if l.ID() == id {
+			lk = l
+			break
 		}
-		if lk == nil {
-			callback(fmt.Errorf("%w: invalid id: %s", errAgentUnloadFailed, id))
-			return
-		}
+	}
+	if lk == nil {
+		return fmt.Errorf("%w: invalid id: %s", errAgentUnloadFailed, id)
+	}
 
-		pub := &agent.Key{
-			Format: lk.Type,
-			Blob:   lk.Blob(),
-		}
-		if err := m.agent.Remove(pub); err != nil {
-			callback(fmt.Errorf("%w: %v", errAgentUnloadFailed, err))
-			return
-		}
+	pub := &agent.Key{
+		Format: lk.Type,
+		Blob:   lk.Blob(),
+	}
+	if err := m.agent.Remove(pub); err != nil {
+		return fmt.Errorf("%w: %v", errAgentUnloadFailed, err)
+	}
 
-		m.sessionKeys.Delete(
-			func(sk *sessionKey) bool { return ID(sk.ID) == id },
-			func(err error) {
-				if err != nil {
-					callback(fmt.Errorf("%w: %v", errStorageUnloadFailed, err))
-					return
-				}
+	if err := m.sessionKeys.Delete(ctx, func(sk *sessionKey) bool { return ID(sk.ID) == id }); err != nil {
+		return fmt.Errorf("%w: %v", errStorageUnloadFailed, err)
+	}
 
-				callback(nil)
-			})
-	})
+	return nil
 }

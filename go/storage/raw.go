@@ -61,37 +61,39 @@ func valueToData(val js.Value) (map[string]js.Value, error) {
 }
 
 // Set implements Area.Set().
-func (r *Raw) Set(data map[string]js.Value, callback func(err error)) {
-	jsutil.AsPromise(r.o.Call("set", dataToValue(data))).Then(
-		func(val js.Value) { callback(nil) },
-		func(err error) { callback(fmt.Errorf("failed to set data: %v", err)) },
-	)
+func (r *Raw) Set(ctx jsutil.AsyncContext, data map[string]js.Value) error {
+	_, err := jsutil.AsPromise(r.o.Call("set", dataToValue(data))).Await(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to set data: %v", err)
+	}
+	return nil
 }
 
 // Get implements Area.Get().
-func (r *Raw) Get(callback func(data map[string]js.Value, err error)) {
-	jsutil.AsPromise(r.o.Call("get", js.Null())).Then(
-		func(val js.Value) {
-			data, err := valueToData(val)
-			if err != nil {
-				callback(nil, fmt.Errorf("failed to parse data: %v", err))
-				return
-			}
-			callback(data, nil)
-		},
-		func(err error) { callback(nil, fmt.Errorf("failed to get data: %v", err)) },
-	)
+func (r *Raw) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
+	val, err := jsutil.AsPromise(r.o.Call("get", js.Null())).Await(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get data: %v", err)
+	}
+
+	data, err := valueToData(val)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse data: %v", err)
+	}
+
+	return data, nil
 }
 
 // Delete implements Area.Delete().
-func (r *Raw) Delete(keys []string, callback func(err error)) {
+func (r *Raw) Delete(ctx jsutil.AsyncContext, keys []string) error {
 	if len(keys) <= 0 {
-		callback(nil) // Nothing to do.
-		return
+		return nil // Nothing to do.
 	}
 
-	jsutil.AsPromise(r.o.Call("remove", vert.ValueOf(keys).JSValue())).Then(
-		func(val js.Value) { callback(nil) },
-		func(err error) { callback(fmt.Errorf("failed to delete data: %v", err)) },
-	)
+	_, err := jsutil.AsPromise(r.o.Call("remove", vert.ValueOf(keys).JSValue())).Await(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete data: %v", err)
+	}
+
+	return nil
 }
