@@ -17,6 +17,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/agentport"
@@ -35,35 +37,25 @@ var (
 	mgr = keys.NewManager(agt, storage.DefaultSync(), storage.DefaultSession())
 	svr = keys.NewServer(mgr)
 
-	// Reload any keys for the session into the agent.
-	_ = func() bool {
-		mgr.LoadFromSession(func(err error) {
-			if err != nil {
-				jsutil.LogError("failed to load keys into agent: %v", err)
-			}
-		})
-		return true // Dummy value.
-	}()
-
 	// Keep a set of ports that are open for communicating between
 	// clients and agents.
 	ports = agentport.AgentPorts{}
 )
 
-func onMessage(this js.Value, args []js.Value) interface{} {
+func onMessage(ctx jsutil.AsyncContext, this js.Value, args []js.Value) (js.Value, error) {
 	var message, sender, sendResponse js.Value
 	jsutil.ExpandArgs(args, &message, &sender, &sendResponse)
-	svr.OnMessage(message, sender, func(rsp js.Value) {
-		sendResponse.Invoke(rsp)
-	})
-	return nil
+	rsp := svr.OnMessage(ctx, message, sender)
+	sendResponse.Invoke(rsp)
+	return js.Undefined(), nil
 }
 
-func onConnectExternal(this js.Value, args []js.Value) interface{} {
+func onConnectExternal(ctx jsutil.AsyncContext, this js.Value, args []js.Value) (js.Value, error) {
 	port := jsutil.SingleArg(args)
 	if ports.Lookup(port) != nil {
-		jsutil.LogError("onConnectExternal: port already in use; ignoring")
-		return nil
+		err := errors.New("onConnectExternal: port already in use")
+		jsutil.LogError(err.Error())
+		return js.Undefined(), err
 	}
 
 	jsutil.LogDebug("onConnectExternal: connecting new port")
@@ -78,51 +70,65 @@ func onConnectExternal(this js.Value, args []js.Value) interface{} {
 			jsutil.LogDebug("ServeAgent: finished with error: %v", err)
 		}
 	}()
-	return nil
+	return js.Undefined(), nil
 }
 
-func onConnectionMessage(this js.Value, args []js.Value) interface{} {
+func onConnectionMessage(ctx jsutil.AsyncContext, this js.Value, args []js.Value) (js.Value, error) {
 	var port, msg js.Value
 	jsutil.ExpandArgs(args, &port, &msg)
 
 	ap := ports.Lookup(port)
 	if ap == nil {
-		jsutil.LogError("onConnectionMessage: connection for port not found; ignoring")
-		return nil
+		err := errors.New("onConnectionMessage: connection for port not found")
+		jsutil.LogError(err.Error())
+		return js.Undefined(), err
 	}
 
 	jsutil.LogDebug("onConnectionMessage: forwarding message")
 	ap.OnMessage(msg)
-	return nil
+	return js.Undefined(), nil
 }
 
-func onConnectionDisconnect(this js.Value, args []js.Value) interface{} {
+func onConnectionDisconnect(ctx jsutil.AsyncContext, this js.Value, args []js.Value) (js.Value, error) {
 	port := jsutil.SingleArg(args)
 
 	ap := ports.Lookup(port)
 	if ap == nil {
-		jsutil.LogError("onConnectionDisconnect: connection for port not found; ignoring")
-		return nil
+		err := errors.New("onConnectionDisconnect: connection for port not found")
+		jsutil.LogError(err.Error())
+		return js.Undefined(), err
 	}
 
 	jsutil.LogDebug("onConnectionDisconnect: disconnecting")
 	ap.OnDisconnect()
 	ports.Delete(port)
-	return nil
+	return js.Undefined(), nil
 }
 
 func main() {
 	jsutil.Log("Starting background worker")
 	defer jsutil.Log("Exiting background worker")
 
-	c1 := jsutil.DefineFunc(js.Global(), "handleOnMessage", onMessage)
-	defer c1()
-	c2 := jsutil.DefineFunc(js.Global(), "handleOnConnectExternal", onConnectExternal)
-	defer c2()
-	c3 := jsutil.DefineFunc(js.Global(), "handleConnectionMessage", onConnectionMessage)
-	defer c3()
-	c4 := jsutil.DefineFunc(js.Global(), "handleConnectionDisconnect", onConnectionDisconnect)
-	defer c4()
+	var cleanup jsutil.CleanupFuncs
+	defer cleanup.Do()
+
+	// Reload any keys for the session into the agent.
+	jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
+		if err := mgr.LoadFromSession(ctx); err != nil {
+			// Log error
+			jsutil.LogError("failed to load keys into agent: %v", err)
+		}
+		return js.Undefined(), nil
+	}).Then(
+		// Upon completion, attach our event handlers.
+		func(value js.Value) {
+			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleOnMessage", onMessage))
+			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleOnConnectExternal", onConnectExternal))
+			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleConnectionMessage", onConnectionMessage))
+			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleConnectionDisconnect", onConnectionDisconnect))
+		},
+		func(err error) { panic(fmt.Errorf("unexpected error: %v", err)) },
+	)
 
 	done := make(chan struct{}, 0)
 	<-done // Do not terminate immediately.

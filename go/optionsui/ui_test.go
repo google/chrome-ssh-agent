@@ -24,6 +24,8 @@ import (
 
 	"github.com/google/chrome-ssh-agent/go/dom"
 	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
+	jut "github.com/google/chrome-ssh-agent/go/jsutil/testing"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	mfakes "github.com/google/chrome-ssh-agent/go/message/fakes"
@@ -137,13 +139,13 @@ func equalizeIds(disp []*displayedKey) []*displayedKey {
 func TestUserActions(t *testing.T) {
 	testcases := []struct {
 		description   string
-		sequence      func(h *testHarness)
+		sequence      func(ctx jsutil.AsyncContext, h *testHarness)
 		wantDisplayed []*displayedKey
 		wantErr       string
 	}{
 		{
 			description: "add key",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, "private-key")
@@ -158,7 +160,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "add multiple keys",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key-1")
 				dom.SetValue(h.addKey, "private-key-1")
@@ -182,7 +184,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "add key cancelled by user",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, "private-key")
@@ -191,7 +193,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "add key fails",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "")
 				dom.SetValue(h.addKey, "private-key")
@@ -201,7 +203,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "remove key",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key-1")
 				dom.SetValue(h.addKey, "private-key-1")
@@ -225,7 +227,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "remove key cancelled by user",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key-1")
 				dom.SetValue(h.addKey, "private-key-1")
@@ -253,7 +255,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "remove key fails",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key-1")
 				dom.SetValue(h.addKey, "private-key-1")
@@ -264,7 +266,7 @@ func TestUserActions(t *testing.T) {
 				dom.SetValue(h.addKey, "private-key-2")
 				dom.DoClick(h.addOk)
 
-				h.UI.remove(keys.ID("bogus-id"))
+				h.UI.remove(ctx, keys.ID("bogus-id"))
 				dom.DoClick(h.removeYes)
 			},
 			wantDisplayed: []*displayedKey{
@@ -281,7 +283,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "load key with passphrase",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
@@ -304,7 +306,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "load key cancelled by user",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
@@ -324,7 +326,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "load key fails",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
@@ -346,7 +348,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "load unencrypted key",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithoutPassphrase.Private)
@@ -367,7 +369,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "unload key",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
@@ -391,7 +393,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "unload key fails",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
@@ -402,7 +404,7 @@ func TestUserActions(t *testing.T) {
 				dom.SetValue(h.passphraseInput, testdata.WithPassphrase.Passphrase)
 				dom.DoClick(h.passphraseOk)
 
-				h.UI.unload(keys.ID("bogus-id"))
+				h.UI.unload(ctx, keys.ID("bogus-id"))
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -417,7 +419,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "display non-configured keys",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				// Load an additional key directly into the agent.
 				directLoadKey(h.agent, testdata.WithoutPassphrase.Private)
 
@@ -451,7 +453,7 @@ func TestUserActions(t *testing.T) {
 		},
 		{
 			description: "display loaded key that was previously-configured, then removed",
-			sequence: func(h *testHarness) {
+			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
@@ -481,7 +483,9 @@ func TestUserActions(t *testing.T) {
 			h := newHarness()
 			defer h.Release()
 
-			tc.sequence(h)
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				tc.sequence(ctx, h)
+			})
 
 			displayed := equalizeIds(h.UI.displayedKeys())
 			if diff := cmp.Diff(displayed, tc.wantDisplayed, displayedKeyCmp); diff != "" {

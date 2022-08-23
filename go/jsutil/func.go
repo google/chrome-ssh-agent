@@ -64,6 +64,20 @@ func DefineFunc(o js.Value, name string, f func(this js.Value, args []js.Value) 
 	}
 }
 
+// DefineAsyncFunc defines a new async function and attaches it to the specified
+// object.  The defined function will return a promise that is resolved or
+// rejected when it completes. The returned cleanup function must be invoked to
+// detach the function and release it.
+//
+// FIXME: Add tests.
+func DefineAsyncFunc(o js.Value, name string, f func(ctx AsyncContext, this js.Value, args []js.Value) (js.Value, error)) CleanupFunc {
+	return DefineFunc(o, name, func(this js.Value, args []js.Value) interface{} {
+		return Async(func(ctx AsyncContext) (js.Value, error) {
+			return f(ctx, this, args)
+		}).JSValue()
+	})
+}
+
 // SetTimeout registers a callback to be invoked when the timeout has expired.
 func SetTimeout(timeout time.Duration, callback func()) {
 	cb := OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {

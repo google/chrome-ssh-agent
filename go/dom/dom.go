@@ -62,16 +62,23 @@ func (d *Doc) NewText(text string) js.Value {
 
 // OnDOMContentLoaded registers a callback to be invoked when the DOM has
 // finished loading.
-func (d *Doc) OnDOMContentLoaded(callback func()) jsutil.CleanupFunc {
+func (d *Doc) OnDOMContentLoaded(callback func(ctx jsutil.AsyncContext)) jsutil.CleanupFunc {
 	if d.doc.Get("readyState").String() != "loading" {
-		jsutil.SetTimeout(0, callback) // Event already fired. Invoke callback directly.
+		// Event already fired. Invoke callback directly.
+		jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
+			callback(ctx)
+			return js.Undefined(), nil
+		})
 		return func() {}
 	}
 
 	return addEventListener(
 		d.doc, "DOMContentLoaded",
 		func(this js.Value, args []js.Value) interface{} {
-			callback()
+			jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
+				callback(ctx)
+				return js.Undefined(), nil
+			})
 			return nil
 		})
 }
@@ -118,22 +125,28 @@ func addEventListener(o js.Value, event string, f func(this js.Value, args []js.
 
 // OnClick registers a callback to be invoked when the specified object is
 // clicked.
-func OnClick(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
+func OnClick(o js.Value, callback func(ctx jsutil.AsyncContext, evt Event)) jsutil.CleanupFunc {
 	return addEventListener(
 		o, "click",
 		func(this js.Value, args []js.Value) interface{} {
-			callback(Event{Value: jsutil.SingleArg(args)})
+			jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
+				callback(ctx, Event{Value: jsutil.SingleArg(args)})
+				return js.Undefined(), nil
+			})
 			return nil
 		})
 }
 
 // OnSubmit registers a callback to be invoked when the specified form is
 // submitted.
-func OnSubmit(o js.Value, callback func(evt Event)) jsutil.CleanupFunc {
+func OnSubmit(o js.Value, callback func(ctx jsutil.AsyncContext, evt Event)) jsutil.CleanupFunc {
 	return addEventListener(
 		o, "submit",
 		func(this js.Value, args []js.Value) interface{} {
-			callback(Event{Value: jsutil.SingleArg(args)})
+			jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
+				callback(ctx, Event{Value: jsutil.SingleArg(args)})
+				return js.Undefined(), nil
+			})
 			return nil
 		})
 }
@@ -212,7 +225,7 @@ func (d *Dialog) Close() {
 // OnClose registers the specified callback to be invoked when the dialog is
 // closed. The returned function must be invoked to cleanup when it is no longer
 // needed.
-func (d *Dialog) OnClose(callback func(evt Event)) jsutil.CleanupFunc {
+func (d *Dialog) OnClose(callback func(ctx jsutil.AsyncContext, evt Event)) jsutil.CleanupFunc {
 	if d.dialog.Get("close").IsUndefined() {
 		// jsdom (which is used in tests) does not support close. Store
 		// the OnClose event for a subsequent invocation of Close().
@@ -220,7 +233,10 @@ func (d *Dialog) OnClose(callback func(evt Event)) jsutil.CleanupFunc {
 			panic(fmt.Errorf("Multiple simulated OnClose handlers not supported"))
 		}
 		d.simOnClose = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-			callback(Event{Value: jsutil.SingleArg(args)})
+			jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
+				callback(ctx, Event{Value: jsutil.SingleArg(args)})
+				return js.Undefined(), nil
+			})
 			return nil
 		})
 		return d.simOnClose.Release
@@ -229,7 +245,10 @@ func (d *Dialog) OnClose(callback func(evt Event)) jsutil.CleanupFunc {
 	return addEventListener(
 		d.dialog, "close",
 		func(this js.Value, args []js.Value) interface{} {
-			callback(Event{Value: jsutil.SingleArg(args)})
+			jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
+				callback(ctx, Event{Value: jsutil.SingleArg(args)})
+				return js.Undefined(), nil
+			})
 			return nil
 		})
 }

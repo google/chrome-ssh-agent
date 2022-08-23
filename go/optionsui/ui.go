@@ -106,112 +106,123 @@ func (u *UI) setError(err error) {
 // add configures a new key.  It displays a dialog prompting the user for a name
 // and the corresponding private key.  If the user continues, the key is
 // added to the manager.
-func (u *UI) add(evt dom.Event) {
-	u.promptAdd(func(name, privateKey string) {
-		u.mgr.Add(name, privateKey, func(err error) {
-			if err != nil {
-				u.setError(fmt.Errorf("failed to add key: %v", err))
-				return
-			}
+func (u *UI) add(ctx jsutil.AsyncContext, evt dom.Event) {
+	ok, name, privateKey := u.promptAdd(ctx)
+	if !ok {
+		return
+	}
 
-			u.setError(nil)
-			u.updateKeys()
-		})
-	})
+	if err := u.mgr.Add(ctx, name, privateKey); err != nil {
+		u.setError(fmt.Errorf("failed to add key: %v", err))
+		return
+	}
+
+	u.setError(nil)
+	u.updateKeys(ctx)
 }
 
 // promptAdd displays a dialog prompting the user for a name and private key.
 // callback is invoked when user clicks OK.
-func (u *UI) promptAdd(onOk func(name, privateKey string)) {
+func (u *UI) promptAdd(ctx jsutil.AsyncContext) (ok bool, name, privateKey string) {
 	dialog := dom.NewDialog(u.dom.GetElement("addDialog"))
 	form := u.dom.GetElement("addForm")
-	name := u.dom.GetElement("addName")
-	key := u.dom.GetElement("addKey")
+	nameField := u.dom.GetElement("addName")
+	keyField := u.dom.GetElement("addKey")
 	cancel := u.dom.GetElement("addCancel")
 
+	sig := jsutil.NewSignal()
 	var cleanup jsutil.CleanupFuncs
-	cleanup.Add(dom.OnSubmit(form, func(evt dom.Event) {
-		onOk(dom.Value(name), dom.Value(key))
+	cleanup.Add(dom.OnSubmit(form, func(ctx jsutil.AsyncContext, evt dom.Event) {
+		ok = true
+		name = dom.Value(nameField)
+		privateKey = dom.Value(keyField)
 		dialog.Close()
+		sig.Notify()
 	}))
-	cleanup.Add(dom.OnClick(cancel, func(evt dom.Event) {
+	cleanup.Add(dom.OnClick(cancel, func(ctx jsutil.AsyncContext, evt dom.Event) {
 		dialog.Close()
+		sig.Notify()
 	}))
-	cleanup.Add(dialog.OnClose(func(evt dom.Event) {
-		dom.SetValue(name, "")
-		dom.SetValue(key, "")
+	cleanup.Add(dialog.OnClose(func(ctx jsutil.AsyncContext, evt dom.Event) {
+		dom.SetValue(nameField, "")
+		dom.SetValue(keyField, "")
 		cleanup.Do()
 	}))
 
 	dialog.ShowModal()
+	sig.Wait(ctx)
+	return
 }
 
 // load loads the key with the specified ID.  A dialog prompts the user for a
 // passphrase if the private key is encrypted.
-func (u *UI) load(id keys.ID) {
+func (u *UI) load(ctx jsutil.AsyncContext, id keys.ID) {
 	k := u.keyByID(id)
 	if k == nil {
 		u.setError(fmt.Errorf("failed to unload key ID %s: not found", id))
 		return
 	}
 
-	prompt := u.promptPassphrase
-	if !k.Encrypted {
-		// No passphrase required; use a dummy callback.
-		prompt = func(onOk func(passphrase string)) { onOk("") }
+	var ok bool
+	var passphrase string
+	if k.Encrypted {
+		ok, passphrase = u.promptPassphrase(ctx)
+		if !ok {
+			return
+		}
 	}
 
-	prompt(func(passphrase string) {
-		u.mgr.Load(id, passphrase, func(err error) {
-			if err != nil {
-				u.setError(fmt.Errorf("failed to load key: %v", err))
-				return
-			}
-			u.setError(nil)
-			u.updateKeys()
-		})
-	})
+	if err := u.mgr.Load(ctx, id, passphrase); err != nil {
+		u.setError(fmt.Errorf("failed to load key: %v", err))
+		return
+	}
+	u.setError(nil)
+	u.updateKeys(ctx)
 }
 
 // promptPassphrase displays a dialog prompting the user for a passphrase.
 // callback is invoked if user continues.
-func (u *UI) promptPassphrase(onOk func(passphrase string)) {
+func (u *UI) promptPassphrase(ctx jsutil.AsyncContext) (ok bool, passphrase string) {
 	dialog := dom.NewDialog(u.dom.GetElement("passphraseDialog"))
 	form := u.dom.GetElement("passphraseForm")
-	passphrase := u.dom.GetElement("passphrase")
+	passphraseField := u.dom.GetElement("passphrase")
 	cancel := u.dom.GetElement("passphraseCancel")
 
+	sig := jsutil.NewSignal()
 	var cleanup jsutil.CleanupFuncs
-	cleanup.Add(dom.OnSubmit(form, func(evt dom.Event) {
-		onOk(dom.Value(passphrase))
+	cleanup.Add(dom.OnSubmit(form, func(ctx jsutil.AsyncContext, evt dom.Event) {
+		ok = true
+		passphrase = dom.Value(passphraseField)
 		dialog.Close()
+		sig.Notify()
 	}))
-	cleanup.Add(dom.OnClick(cancel, func(evt dom.Event) {
+	cleanup.Add(dom.OnClick(cancel, func(ctx jsutil.AsyncContext, evt dom.Event) {
 		dialog.Close()
+		sig.Notify()
 	}))
-	cleanup.Add(dialog.OnClose(func(evt dom.Event) {
-		dom.SetValue(passphrase, "")
+	cleanup.Add(dialog.OnClose(func(ctx jsutil.AsyncContext, evt dom.Event) {
+		dom.SetValue(passphraseField, "")
 		cleanup.Do()
 	}))
 
 	dialog.ShowModal()
+	sig.Wait(ctx)
+	return
 }
 
 // unload unloads the specified key.
-func (u *UI) unload(id keys.ID) {
-	u.mgr.Unload(id, func(err error) {
-		if err != nil {
-			u.setError(fmt.Errorf("failed to unload key ID %s: %v", id, err))
-			return
-		}
-		u.setError(nil)
-		u.updateKeys()
-	})
+func (u *UI) unload(ctx jsutil.AsyncContext, id keys.ID) {
+	if err := u.mgr.Unload(ctx, id); err != nil {
+		u.setError(fmt.Errorf("failed to unload key ID %s: %v", id, err))
+		return
+	}
+	u.setError(nil)
+	u.updateKeys(ctx)
 }
 
 // promptRemove displays a dialog prompting the user to confirm that a key
 // should be removed. callback is invoked if the key should be removed.
-func (u *UI) promptRemove(id keys.ID, onYes func()) {
+func (u *UI) promptRemove(ctx jsutil.AsyncContext, id keys.ID) (yes bool) {
 	k := u.keyByID(id)
 	if k == nil {
 		u.setError(fmt.Errorf("failed to remove key ID %s: not found", id))
@@ -224,36 +235,40 @@ func (u *UI) promptRemove(id keys.ID, onYes func()) {
 	no := u.dom.GetElement("removeNo")
 	dom.AppendChild(name, u.dom.NewText(k.Name), nil)
 
+	sig := jsutil.NewSignal()
 	var cleanup jsutil.CleanupFuncs
-	cleanup.Add(dom.OnSubmit(form, func(evt dom.Event) {
-		onYes()
+	cleanup.Add(dom.OnSubmit(form, func(ctx jsutil.AsyncContext, evt dom.Event) {
+		yes = true
 		dialog.Close()
+		sig.Notify()
 	}))
-	cleanup.Add(dom.OnClick(no, func(evt dom.Event) {
+	cleanup.Add(dom.OnClick(no, func(ctx jsutil.AsyncContext, evt dom.Event) {
 		dialog.Close()
+		sig.Notify()
 	}))
-	cleanup.Add(dialog.OnClose(func(evt dom.Event) {
+	cleanup.Add(dialog.OnClose(func(ctx jsutil.AsyncContext, evt dom.Event) {
 		dom.RemoveChildren(name)
 		cleanup.Do()
 	}))
 
 	dialog.ShowModal()
+	sig.Wait(ctx)
+	return
 }
 
 // remove removes the key with the specified ID.  A dialog prompts the user to
 // confirm that the key should be removed.
-func (u *UI) remove(id keys.ID) {
-	u.promptRemove(id, func() {
-		u.mgr.Remove(id, func(err error) {
-			if err != nil {
-				u.setError(fmt.Errorf("failed to remove key ID %s: %v", id, err))
-				return
-			}
+func (u *UI) remove(ctx jsutil.AsyncContext, id keys.ID) {
+	if yes := u.promptRemove(ctx, id); !yes {
+		return
+	}
 
-			u.setError(nil)
-			u.updateKeys()
-		})
-	})
+	if err := u.mgr.Remove(ctx, id); err != nil {
+		u.setError(fmt.Errorf("failed to remove key ID %s: %v", id, err))
+		return
+	}
+	u.setError(nil)
+	u.updateKeys(ctx)
 }
 
 // displayedKey represents a key displayed in the UI.
@@ -385,8 +400,8 @@ func (u *UI) setKeys(newKeys []*displayedKey) {
 							btn.Set("type", "button")
 							btn.Set("id", buttonID(UnloadButton, k.ID))
 							dom.AppendChild(btn, u.dom.NewText("Unload"), nil)
-							k.cleanup.Add(dom.OnClick(btn, func(evt dom.Event) {
-								u.unload(k.ID)
+							k.cleanup.Add(dom.OnClick(btn, func(ctx jsutil.AsyncContext, evt dom.Event) {
+								u.unload(ctx, k.ID)
 							}))
 						})
 					} else {
@@ -395,8 +410,8 @@ func (u *UI) setKeys(newKeys []*displayedKey) {
 							btn.Set("type", "button")
 							btn.Set("id", buttonID(LoadButton, k.ID))
 							dom.AppendChild(btn, u.dom.NewText("Load"), nil)
-							k.cleanup.Add(dom.OnClick(btn, func(evt dom.Event) {
-								u.load(k.ID)
+							k.cleanup.Add(dom.OnClick(btn, func(ctx jsutil.AsyncContext, evt dom.Event) {
+								u.load(ctx, k.ID)
 							}))
 						})
 					}
@@ -406,8 +421,8 @@ func (u *UI) setKeys(newKeys []*displayedKey) {
 						btn.Set("type", "button")
 						btn.Set("id", buttonID(RemoveButton, k.ID))
 						dom.AppendChild(btn, u.dom.NewText("Remove"), nil)
-						k.cleanup.Add(dom.OnClick(btn, func(evt dom.Event) {
-							u.remove(k.ID)
+						k.cleanup.Add(dom.OnClick(btn, func(ctx jsutil.AsyncContext, evt dom.Event) {
+							u.remove(ctx, k.ID)
 						}))
 					})
 				})
@@ -510,23 +525,20 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 
 // updateKeys queries the manager for configured and loaded keys, then triggers
 // UI updates to reflect the current state.
-func (u *UI) updateKeys() {
-	u.mgr.Configured(func(configured []*keys.ConfiguredKey, err error) {
-		if err != nil {
-			u.setError(fmt.Errorf("failed to get configured keys: %v", err))
-			return
-		}
+func (u *UI) updateKeys(ctx jsutil.AsyncContext) {
+	configured, err := u.mgr.Configured(ctx)
+	if err != nil {
+		u.setError(fmt.Errorf("failed to get configured keys: %v", err))
+		return
+	}
 
-		u.mgr.Loaded(func(loaded []*keys.LoadedKey, err error) {
-			if err != nil {
-				u.setError(fmt.Errorf("failed to get loaded keys: %v", err))
-				return
-			}
-
-			u.setError(nil)
-			u.setKeys(mergeKeys(configured, loaded))
-		})
-	})
+	loaded, err := u.mgr.Loaded(ctx)
+	if err != nil {
+		u.setError(fmt.Errorf("failed to get loaded keys: %v", err))
+		return
+	}
+	u.setError(nil)
+	u.setKeys(mergeKeys(configured, loaded))
 }
 
 const (

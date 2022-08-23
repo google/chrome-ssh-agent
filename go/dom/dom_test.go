@@ -20,6 +20,7 @@ import (
 	"time"
 
 	dt "github.com/google/chrome-ssh-agent/go/dom/testing"
+	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -79,10 +80,16 @@ func TestClick(t *testing.T) {
 	d := New(dt.NewDocForTesting(`
 		<button id="btn"/>
 	`))
-	var clicked bool
-	OnClick(d.GetElement("btn"), func(evt Event) { clicked = true })
+
+	clicked := make(chan struct{})
+	cleanup := OnClick(d.GetElement("btn"), func(ctx jsutil.AsyncContext, evt Event) { close(clicked) })
+	defer cleanup()
+
 	DoClick(d.GetElement("btn"))
-	if !clicked {
+	select {
+	case <-clicked:
+		return
+	case <-time.After(5 * time.Second):
 		t.Errorf("clicked callback not invoked")
 	}
 }
@@ -93,7 +100,7 @@ func TestDOMContentLoaded(t *testing.T) {
 	`))
 
 	loaded := make(chan struct{}, 1)
-	cleanup := d.OnDOMContentLoaded(func() { loaded <- struct{}{} })
+	cleanup := d.OnDOMContentLoaded(func(ctx jsutil.AsyncContext) { loaded <- struct{}{} })
 	defer cleanup()
 
 	select {
