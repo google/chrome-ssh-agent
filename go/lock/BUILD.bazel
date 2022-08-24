@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("//build_defs:wasm.bzl", "go_wasm_test")
+
+go_library(
+    name = "lock",
+    srcs = ["lock.go"],
+    importpath = "github.com/google/chrome-ssh-agent/go/lock",
+    visibility = ["//visibility:public"],
+    deps = ["//go/jsutil"],
+)
+
+go_wasm_test(
+    name = "lock_test",
+    srcs = ["lock_test.go"],
+    embed = [":lock"],
+    deps = [
+        "//go/dom/testing",
+        "//go/jsutil",
+        "//go/jsutil/testing",
+        "@com_github_google_go_cmp//cmp",
+    ],
+    node_deps = [
+        "@npm//web-locks",
+    ],
+)

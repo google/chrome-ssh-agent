@@ -4,6 +4,7 @@
     "chrome-webstore-upload": "*",
     "@bazel/runfiles": "*",
     "jsdom": "*",
-    "url-search-params": "*"
+    "url-search-params": "*",
+    "web-locks": "*"
   }
 }

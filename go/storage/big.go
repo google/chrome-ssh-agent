@@ -24,6 +24,7 @@ import (
 	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
+	"github.com/google/chrome-ssh-agent/go/lock"
 	"github.com/norunners/vert"
 )
 
@@ -116,6 +117,15 @@ func isChunkKey(key string) bool {
 	return strings.HasPrefix(key, chunkKeyPrefix)
 }
 
+const (
+	// lockResourceID identifies the lock taken to protect against
+	// concurrent access during read-modify-write operations. For now, we
+	// have a single lock protecting all instances of Big.  We could have
+	// different locks for different instances, but the complexity doesn't
+	// seem worth it for now.
+	lockResourceID = "big-storage-lock"
+)
+
 // See PersistentStore.Set().
 func (b *Big) Set(ctx jsutil.AsyncContext, data map[string]js.Value) error {
 	maxEncodedChunkSize := b.maxChunkSize()
@@ -161,12 +171,26 @@ func (b *Big) Set(ctx jsutil.AsyncContext, data map[string]js.Value) error {
 		chunked[k] = vert.ValueOf(manifest).JSValue()
 	}
 
-	return b.s.Set(ctx, chunked)
+	var err error
+	_, aerr := lock.Async(lockResourceID, func(ctx jsutil.AsyncContext) {
+		err = b.s.Set(ctx, chunked)
+	}).Await(ctx)
+	if aerr != nil {
+		return aerr
+	}
+	return err
 }
 
 // See PersistentStore.Get().
 func (b *Big) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
-	data, err := b.s.Get(ctx)
+	var data map[string]js.Value
+	var err error
+	_, aerr := lock.Async(lockResourceID, func(ctx jsutil.AsyncContext) {
+		data, err = b.s.Get(ctx)
+	}).Await(ctx)
+	if aerr != nil {
+		return nil, aerr
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -209,47 +233,55 @@ func (b *Big) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
 
 // See PersistentStore.Delete().
 func (b *Big) Delete(ctx jsutil.AsyncContext, keys []string) error {
-	// Delete the requested keys.
-	err := b.s.Delete(ctx, keys)
-	if err != nil {
-		return err
-	}
+	var derr error
+	_, aerr := lock.Async(lockResourceID, func(ctx jsutil.AsyncContext) {
+		derr = func() error {
+			// Delete the requested keys.
+			if err := b.s.Delete(ctx, keys); err != nil {
+				return err
+			}
 
-	// Once successful, delete all chunks that are no longer
-	// referenced by any manifest. This takes care of those that
-	// were just deleted, as well as any dangling ones that may
-	// have been left over from before.
-	data, err := b.s.Get(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to query for dangling chunks: %v", err)
-	}
+			// Once successful, delete all chunks that are no longer
+			// referenced by any manifest. This takes care of those that
+			// were just deleted, as well as any dangling ones that may
+			// have been left over from before.
+			data, err := b.s.Get(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to query for dangling chunks: %v", err)
+			}
 
-	// Initially, consider all chunk keys as dangling.
-	danglingChunkKeys := map[string]bool{}
-	for k := range data {
-		if isChunkKey(k) {
-			danglingChunkKeys[k] = true
-		}
-	}
+			// Initially, consider all chunk keys as dangling.
+			danglingChunkKeys := map[string]bool{}
+			for k := range data {
+				if isChunkKey(k) {
+					danglingChunkKeys[k] = true
+				}
+			}
 
-	// Remove those that are referenced by a manifest.
-	for _, v := range data {
-		var manifest bigValueManifest
-		if err := vert.ValueOf(v).AssignTo(&manifest); err != nil || !manifest.Valid() {
-			continue // This is not a manifest.
-		}
-		for _, chunkKey := range manifest.ChunkKeys {
-			delete(danglingChunkKeys, chunkKey)
-		}
-	}
+			// Remove those that are referenced by a manifest.
+			for _, v := range data {
+				var manifest bigValueManifest
+				if err := vert.ValueOf(v).AssignTo(&manifest); err != nil || !manifest.Valid() {
+					continue // This is not a manifest.
+				}
+				for _, chunkKey := range manifest.ChunkKeys {
+					delete(danglingChunkKeys, chunkKey)
+				}
+			}
 
-	// Delete dangling chunk keys.
-	var dangling []string
-	for k := range danglingChunkKeys {
-		dangling = append(dangling, k)
+			// Delete dangling chunk keys.
+			var dangling []string
+			for k := range danglingChunkKeys {
+				dangling = append(dangling, k)
+			}
+			if err := b.s.Delete(ctx, dangling); err != nil {
+				return fmt.Errorf("failed to delete dangling chunks: %v", err)
+			}
+			return nil
+		}()
+	}).Await(ctx)
+	if aerr != nil {
+		return aerr
 	}
-	if err := b.s.Delete(ctx, dangling); err != nil {
-		return fmt.Errorf("failed to delete dangling chunks: %v", err)
-	}
-	return nil
+	return derr
 }

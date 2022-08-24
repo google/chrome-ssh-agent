@@ -14,6 +14,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//go/jsutil",
+        "//go/lock",
         "@com_github_norunners_vert//:vert",
     ],
 )
@@ -27,10 +28,14 @@ go_wasm_test(
     ],
     embed = [":storage"],
     deps = [
-        "//go/storage/fakes",
         "//go/jsutil/testing",
+        "//go/storage/fakes",
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",
         "@com_github_norunners_vert//:vert",
     ],
+    node_deps = [
+        "@npm//web-locks",
+    ],
+
 )
