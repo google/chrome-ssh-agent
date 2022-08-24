@@ -39,7 +39,10 @@ func main() {
 
 	qs := dom.NewURLSearchParams(dom.DefaultQueryString())
 	if qs.Has("test") {
-		testing.WriteResults(d, ui.EndToEndTest())
+		jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
+			testing.WriteResults(d, ui.EndToEndTest(ctx))
+			return js.Undefined(), nil
+		})
 	}
 
 	<-done // Do not terminate.

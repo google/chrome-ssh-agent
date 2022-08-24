@@ -553,18 +553,23 @@ func (u *UI) updateKeys(ctx jsutil.AsyncContext) {
 }
 
 const (
-	pollInterval = 100 * time.Millisecond
+	pollInterval = 10 * time.Millisecond
 	pollTimeout  = 5 * time.Second
 )
 
-func poll(done func() bool) {
+// poll checks a condition for up to a timeout.
+//
+// The AsyncContext ensures this is invoked within an async context where
+// blocking is acceptable.
+func poll(ctx jsutil.AsyncContext, done func() bool) bool {
 	timeout := time.Now().Add(pollTimeout)
 	for time.Now().Before(timeout) {
 		if done() {
-			return
+			return true
 		}
 		time.Sleep(pollInterval)
 	}
+	return false
 }
 
 // EndToEndTest runs a set of tests via the UI.  Failures are returned as a list
@@ -572,13 +577,16 @@ func poll(done func() bool) {
 //
 // No attempt is made to clean up from any intermediate state should the test
 // fail.
-func (u *UI) EndToEndTest() []error {
+func (u *UI) EndToEndTest(ctx jsutil.AsyncContext) []error {
+	addDialog := u.dom.GetElement("addDialog")
 	addButton := u.dom.GetElement("add")
 	addName := u.dom.GetElement("addName")
 	addKey := u.dom.GetElement("addKey")
 	addOk := u.dom.GetElement("addOk")
+	passphraseDialog := u.dom.GetElement("passphraseDialog")
 	passphraseInput := u.dom.GetElement("passphrase")
 	passphraseOk := u.dom.GetElement("passphraseOk")
+	removeDialog := u.dom.GetElement("removeDialog")
 	removeYes := u.dom.GetElement("removeYes")
 
 	var errs []error
@@ -593,6 +601,7 @@ func (u *UI) EndToEndTest() []error {
 
 	jsutil.Log("Configure a new key")
 	dom.DoClick(addButton)
+	poll(ctx, func() bool { return addDialog.Get("open").Bool() })
 	dom.SetValue(addName, keyName)
 	// Use the long key to exercise storage of large values in Chrome storage.
 	dom.SetValue(addKey, testdata.LongKeyWithPassphrase.Private)
@@ -600,7 +609,7 @@ func (u *UI) EndToEndTest() []error {
 
 	jsutil.Log("Validate configured keys; ensure new key is present")
 	var key *displayedKey
-	poll(func() bool {
+	poll(ctx, func() bool {
 		key = u.keyByName(keyName)
 		return key != nil
 	})
@@ -611,11 +620,12 @@ func (u *UI) EndToEndTest() []error {
 
 	jsutil.Log("Load the new key")
 	dom.DoClick(u.dom.GetElement(buttonID(LoadButton, key.ID)))
+	poll(ctx, func() bool { return passphraseDialog.Get("open").Bool() })
 	dom.SetValue(passphraseInput, testdata.LongKeyWithPassphrase.Passphrase)
 	dom.DoClick(passphraseOk)
 
 	jsutil.Log("Validate loaded keys; ensure new key is loaded")
-	poll(func() bool {
+	poll(ctx, func() bool {
 		key = u.keyByName(keyName)
 		return key != nil && key.Loaded
 	})
@@ -637,7 +647,7 @@ func (u *UI) EndToEndTest() []error {
 	dom.DoClick(u.dom.GetElement(buttonID(UnloadButton, key.ID)))
 
 	jsutil.Log("Validate loaded keys; ensure key is unloaded")
-	poll(func() bool {
+	poll(ctx, func() bool {
 		key = u.keyByName(keyName)
 		return key != nil && !key.Loaded
 	})
@@ -657,10 +667,11 @@ func (u *UI) EndToEndTest() []error {
 
 	jsutil.Log("Remove key")
 	dom.DoClick(u.dom.GetElement(buttonID(RemoveButton, key.ID)))
+	poll(ctx, func() bool { return removeDialog.Get("open").Bool() })
 	dom.DoClick(removeYes)
 
 	jsutil.Log("Validate configured keys; ensure key is removed")
-	poll(func() bool {
+	poll(ctx, func() bool {
 		key = u.keyByName(keyName)
 		return key == nil
 	})

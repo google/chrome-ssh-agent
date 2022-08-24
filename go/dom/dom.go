@@ -200,6 +200,8 @@ func (d *Dialog) ShowModal() {
 	if d.dialog.Get("showModal").IsUndefined() {
 		// jsdom (which is used in tests) does not support showModal.
 		jsutil.Log("showModal() not found")
+		// Simulate 'open' property.
+		d.dialog.Set("open", true)
 		return
 	}
 	d.dialog.Call("showModal")
@@ -210,6 +212,8 @@ func (d *Dialog) Close() {
 	if d.dialog.Get("close").IsUndefined() {
 		// jsdom (which is used in tests) does not support close.
 		jsutil.Log("close() not found")
+		// Simulate 'open' property.
+		d.dialog.Set("open", false)
 		// Simulate 'close' event; we need to ensure OnClose is triggered.
 		// Using Javascript's dispatchEvent(new Event('close')) doesn't
 		// work; it appears to send node.js into an infinite loop.

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"syscall/js"
 	"testing"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -54,20 +55,59 @@ type testHarness struct {
 	dom       *dom.Doc
 	UI        *UI
 
+	addDialog        js.Value
 	addButton        js.Value
 	addName          js.Value
 	addKey           js.Value
 	addOk            js.Value
 	addCancel        js.Value
+	passphraseDialog js.Value
 	passphraseInput  js.Value
 	passphraseOk     js.Value
 	passphraseCancel js.Value
+	removeDialog     js.Value
 	removeYes        js.Value
 	removeNo         js.Value
 }
 
 func (h *testHarness) Release() {
 	h.UI.Release()
+}
+
+func mustPoll(ctx jsutil.AsyncContext, done func() bool) {
+	if !poll(ctx, done) {
+		panic("timed out waiting for condition")
+	}
+}
+
+func (h *testHarness) waitDialogOpen(ctx jsutil.AsyncContext, dialog js.Value) {
+	mustPoll(ctx, func() bool { return dialog.Get("open").Bool() })
+}
+
+func (h *testHarness) waitDialogClosed(ctx jsutil.AsyncContext, dialog js.Value) {
+	mustPoll(ctx, func() bool { return !dialog.Get("open").Bool() })
+}
+
+func (h *testHarness) waitKeyConfigured(ctx jsutil.AsyncContext, name string) {
+	mustPoll(ctx, func() bool { return h.UI.keyByName(name) != nil })
+}
+
+func (h *testHarness) waitKeyRemoved(ctx jsutil.AsyncContext, name string) {
+	mustPoll(ctx, func() bool { return h.UI.keyByName(name) == nil })
+}
+
+func (h *testHarness) waitKeyLoaded(ctx jsutil.AsyncContext, name string) {
+	mustPoll(ctx, func() bool {
+		k := h.UI.keyByName(name)
+		return k != nil && k.Loaded
+	})
+}
+
+func (h *testHarness) waitKeyUnloaded(ctx jsutil.AsyncContext, name string) {
+	mustPoll(ctx, func() bool {
+		k := h.UI.keyByName(name)
+		return k != nil && !k.Loaded
+	})
 }
 
 func newHarness() *testHarness {
@@ -91,14 +131,17 @@ func newHarness() *testHarness {
 		Client:           cli,
 		dom:              domObj,
 		UI:               ui,
+		addDialog:        domObj.GetElement("addDialog"),
 		addButton:        domObj.GetElement("add"),
 		addName:          domObj.GetElement("addName"),
 		addKey:           domObj.GetElement("addKey"),
 		addOk:            domObj.GetElement("addOk"),
 		addCancel:        domObj.GetElement("addCancel"),
+		passphraseDialog: domObj.GetElement("passphraseDialog"),
 		passphraseInput:  domObj.GetElement("passphrase"),
 		passphraseOk:     domObj.GetElement("passphraseOk"),
 		passphraseCancel: domObj.GetElement("passphraseCancel"),
+		removeDialog:     domObj.GetElement("removeDialog"),
 		removeYes:        domObj.GetElement("removeYes"),
 		removeNo:         domObj.GetElement("removeNo"),
 	}
@@ -147,9 +190,12 @@ func TestUserActions(t *testing.T) {
 			description: "add key",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, "private-key")
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key")
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -162,14 +208,20 @@ func TestUserActions(t *testing.T) {
 			description: "add multiple keys",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key-1")
 				dom.SetValue(h.addKey, "private-key-1")
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key-1")
 
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key-2")
 				dom.SetValue(h.addKey, "private-key-2")
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key-2")
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -186,18 +238,22 @@ func TestUserActions(t *testing.T) {
 			description: "add key cancelled by user",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, "private-key")
 				dom.DoClick(h.addCancel)
+				h.waitDialogClosed(ctx, h.addDialog)
 			},
 		},
 		{
 			description: "add key fails",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "")
 				dom.SetValue(h.addKey, "private-key")
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
 			},
 			wantErr: "failed to add key: invalid name: name must not be empty",
 		},
@@ -205,18 +261,27 @@ func TestUserActions(t *testing.T) {
 			description: "remove key",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key-1")
 				dom.SetValue(h.addKey, "private-key-1")
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key-1")
 
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key-2")
 				dom.SetValue(h.addKey, "private-key-2")
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key-2")
 
 				id := findKey(h.UI.displayedKeys(), "new-key-1")
 				dom.DoClick(h.dom.GetElement(buttonID(RemoveButton, id)))
+				h.waitDialogOpen(ctx, h.removeDialog)
 				dom.DoClick(h.removeYes)
+				h.waitDialogClosed(ctx, h.removeDialog)
+				h.waitKeyRemoved(ctx, "new-key-1")
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -229,18 +294,26 @@ func TestUserActions(t *testing.T) {
 			description: "remove key cancelled by user",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key-1")
 				dom.SetValue(h.addKey, "private-key-1")
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key-1")
 
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key-2")
 				dom.SetValue(h.addKey, "private-key-2")
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key-2")
 
 				id := findKey(h.UI.displayedKeys(), "new-key-1")
 				dom.DoClick(h.dom.GetElement(buttonID(RemoveButton, id)))
+				h.waitDialogOpen(ctx, h.removeDialog)
 				dom.DoClick(h.removeNo)
+				h.waitDialogClosed(ctx, h.removeDialog)
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -257,17 +330,24 @@ func TestUserActions(t *testing.T) {
 			description: "remove key fails",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key-1")
 				dom.SetValue(h.addKey, "private-key-1")
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key-1")
 
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key-2")
 				dom.SetValue(h.addKey, "private-key-2")
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key-2")
 
 				h.UI.remove(ctx, keys.ID("bogus-id"))
 				dom.DoClick(h.removeYes)
+				h.waitDialogClosed(ctx, h.removeDialog)
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -285,14 +365,20 @@ func TestUserActions(t *testing.T) {
 			description: "load key with passphrase",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key")
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
+				h.waitDialogOpen(ctx, h.passphraseDialog)
 				dom.SetValue(h.passphraseInput, testdata.WithPassphrase.Passphrase)
 				dom.DoClick(h.passphraseOk)
+				h.waitDialogClosed(ctx, h.passphraseDialog)
+				h.waitKeyLoaded(ctx, "new-key")
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -308,13 +394,18 @@ func TestUserActions(t *testing.T) {
 			description: "load key cancelled by user",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key")
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
+				h.waitDialogOpen(ctx, h.passphraseDialog)
 				dom.DoClick(h.passphraseCancel)
+				h.waitDialogClosed(ctx, h.passphraseDialog)
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -328,14 +419,19 @@ func TestUserActions(t *testing.T) {
 			description: "load key fails",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key")
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
+				h.waitDialogOpen(ctx, h.passphraseDialog)
 				dom.SetValue(h.passphraseInput, "incorrect-passphrase")
 				dom.DoClick(h.passphraseOk)
+				h.waitDialogClosed(ctx, h.passphraseDialog)
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -350,9 +446,12 @@ func TestUserActions(t *testing.T) {
 			description: "load unencrypted key",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithoutPassphrase.Private)
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key")
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
@@ -371,16 +470,23 @@ func TestUserActions(t *testing.T) {
 			description: "unload key",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key")
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
+				h.waitDialogOpen(ctx, h.passphraseDialog)
 				dom.SetValue(h.passphraseInput, testdata.WithPassphrase.Passphrase)
 				dom.DoClick(h.passphraseOk)
+				h.waitDialogClosed(ctx, h.passphraseDialog)
+				h.waitKeyLoaded(ctx, "new-key")
 
 				dom.DoClick(h.dom.GetElement(buttonID(UnloadButton, id)))
+				h.waitKeyUnloaded(ctx, "new-key")
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -395,14 +501,20 @@ func TestUserActions(t *testing.T) {
 			description: "unload key fails",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key")
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
+				h.waitDialogOpen(ctx, h.passphraseDialog)
 				dom.SetValue(h.passphraseInput, testdata.WithPassphrase.Passphrase)
 				dom.DoClick(h.passphraseOk)
+				h.waitDialogClosed(ctx, h.passphraseDialog)
+				h.waitKeyLoaded(ctx, "new-key")
 
 				h.UI.unload(ctx, keys.ID("bogus-id"))
 			},
@@ -425,15 +537,21 @@ func TestUserActions(t *testing.T) {
 
 				// Configure a key of our own.
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key")
 
 				// Load the key we configured.
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
+				h.waitDialogOpen(ctx, h.passphraseDialog)
 				dom.SetValue(h.passphraseInput, testdata.WithPassphrase.Passphrase)
 				dom.DoClick(h.passphraseOk)
+				h.waitDialogClosed(ctx, h.passphraseDialog)
+				h.waitKeyLoaded(ctx, "new-key")
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -455,17 +573,26 @@ func TestUserActions(t *testing.T) {
 			description: "display loaded key that was previously-configured, then removed",
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
+				h.waitDialogOpen(ctx, h.addDialog)
 				dom.SetValue(h.addName, "new-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
 				dom.DoClick(h.addOk)
+				h.waitDialogClosed(ctx, h.addDialog)
+				h.waitKeyConfigured(ctx, "new-key")
 
 				id := findKey(h.UI.displayedKeys(), "new-key")
 				dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
+				h.waitDialogOpen(ctx, h.passphraseDialog)
 				dom.SetValue(h.passphraseInput, testdata.WithPassphrase.Passphrase)
 				dom.DoClick(h.passphraseOk)
+				h.waitDialogClosed(ctx, h.passphraseDialog)
+				h.waitKeyLoaded(ctx, "new-key")
 
 				dom.DoClick(h.dom.GetElement(buttonID(RemoveButton, id)))
+				h.waitDialogOpen(ctx, h.removeDialog)
 				dom.DoClick(h.removeYes)
+				h.waitDialogClosed(ctx, h.removeDialog)
+				h.waitKeyRemoved(ctx, "new-key")
 			},
 			wantDisplayed: []*displayedKey{
 				&displayedKey{
@@ -485,6 +612,9 @@ func TestUserActions(t *testing.T) {
 
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				tc.sequence(ctx, h)
+				// Give some buffer for any pending async
+				// operations to settle.
+				time.Sleep(50 * time.Millisecond)
 			})
 
 			displayed := equalizeIds(h.UI.displayedKeys())
