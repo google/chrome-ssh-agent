@@ -68,8 +68,6 @@ func DefineFunc(o js.Value, name string, f func(this js.Value, args []js.Value) 
 // object.  The defined function will return a promise that is resolved or
 // rejected when it completes. The returned cleanup function must be invoked to
 // detach the function and release it.
-//
-// FIXME: Add tests.
 func DefineAsyncFunc(o js.Value, name string, f func(ctx AsyncContext, this js.Value, args []js.Value) (js.Value, error)) CleanupFunc {
 	return DefineFunc(o, name, func(this js.Value, args []js.Value) interface{} {
 		return Async(func(ctx AsyncContext) (js.Value, error) {

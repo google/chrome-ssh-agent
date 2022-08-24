@@ -160,28 +160,3 @@ func (p *Promise) Await(ctx AsyncContext) (js.Value, error) {
 	<-done
 	return v, e
 }
-
-// FIXME: Add tests
-type Signal struct {
-	notified chan struct{}
-	p        *Promise
-}
-
-func NewSignal() *Signal {
-	notified := make(chan struct{})
-	return &Signal{
-		notified: notified,
-		p: Async(func(ctx AsyncContext) (js.Value, error) {
-			<-notified
-			return js.Undefined(), nil
-		}),
-	}
-}
-
-func (s *Signal) Notify() {
-	close(s.notified)
-}
-
-func (s *Signal) Wait(ctx AsyncContext) {
-	s.p.Await(ctx)
-}

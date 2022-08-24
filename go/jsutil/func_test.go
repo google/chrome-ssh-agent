@@ -43,6 +43,7 @@ func TestDefineFunc(t *testing.T) {
 	o := NewObject()
 
 	got := make(chan struct{}, 1)
+	defer close(got)
 	cleanup := DefineFunc(o, funcName, func(this js.Value, args []js.Value) interface{} {
 		got <- struct{}{}
 		return nil
@@ -68,6 +69,27 @@ func TestDefineFunc(t *testing.T) {
 	// After cleanup, function should not be defined.
 	if !o.Get(funcName).IsUndefined() {
 		t.Errorf("function still defined after cleanup")
+	}
+}
+
+func TestAsyncDefineFunc(t *testing.T) {
+	const funcName = "myFunc"
+
+	o := NewObject()
+
+	got := make(chan struct{}, 1)
+	defer close(got)
+	cleanup := DefineAsyncFunc(o, funcName, func(ctx AsyncContext, this js.Value, args []js.Value) (js.Value, error) {
+		got <- struct{}{}
+		return js.Undefined(), nil
+	})
+	defer cleanup()
+
+	o.Call(funcName)
+	select {
+	case <-got: // nothing to do.
+	case <-time.After(5 * time.Second):
+		t.Errorf("function not invoked")
 	}
 }
 

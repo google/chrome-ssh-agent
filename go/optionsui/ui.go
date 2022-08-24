@@ -25,6 +25,7 @@ import (
 	"math"
 	"math/big"
 	"sort"
+	"sync"
 	"syscall/js"
 	"time"
 
@@ -47,20 +48,30 @@ type UI struct {
 	cleanup   *jsutil.CleanupFuncs
 }
 
-type removeDialog struct {
-	*dom.Dialog
-
-	name js.Value
-	yes  js.Value
-	no   js.Value
+// signal is a primitive that allows one routine to block until notified.
+//
+// It is a simple wrapper around WaitGroup that ensures blocking is invoked
+// within an AsyncContext.
+type signal struct {
+	wg *sync.WaitGroup
 }
 
-type passphraseDialog struct {
-	*dom.Dialog
+// newSignal returns a new signal in the unnotified state.
+func newSignal() *signal {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	return &signal{wg: wg}
+}
 
-	passphrase js.Value
-	ok         js.Value
-	cancel     js.Value
+// Notify triggers any waiters to complete. Subsequent waits do not block.
+func (s *signal) Notify() {
+	s.wg.Done()
+}
+
+// Wait waits for the signal to be notified before returning. The AsyncContext
+// ensures this is invoked within an async context where blocking is acceptable.
+func (s *signal) Wait(ctx jsutil.AsyncContext) {
+	s.wg.Wait()
 }
 
 // New returns a new UI instance that manages keys using the supplied manager.
@@ -130,7 +141,7 @@ func (u *UI) promptAdd(ctx jsutil.AsyncContext) (ok bool, name, privateKey strin
 	keyField := u.dom.GetElement("addKey")
 	cancel := u.dom.GetElement("addCancel")
 
-	sig := jsutil.NewSignal()
+	sig := newSignal()
 	var cleanup jsutil.CleanupFuncs
 	cleanup.Add(dom.OnSubmit(form, func(ctx jsutil.AsyncContext, evt dom.Event) {
 		ok = true
@@ -188,7 +199,7 @@ func (u *UI) promptPassphrase(ctx jsutil.AsyncContext) (ok bool, passphrase stri
 	passphraseField := u.dom.GetElement("passphrase")
 	cancel := u.dom.GetElement("passphraseCancel")
 
-	sig := jsutil.NewSignal()
+	sig := newSignal()
 	var cleanup jsutil.CleanupFuncs
 	cleanup.Add(dom.OnSubmit(form, func(ctx jsutil.AsyncContext, evt dom.Event) {
 		ok = true
@@ -235,7 +246,7 @@ func (u *UI) promptRemove(ctx jsutil.AsyncContext, id keys.ID) (yes bool) {
 	no := u.dom.GetElement("removeNo")
 	dom.AppendChild(name, u.dom.NewText(k.Name), nil)
 
-	sig := jsutil.NewSignal()
+	sig := newSignal()
 	var cleanup jsutil.CleanupFuncs
 	cleanup.Add(dom.OnSubmit(form, func(ctx jsutil.AsyncContext, evt dom.Event) {
 		yes = true
