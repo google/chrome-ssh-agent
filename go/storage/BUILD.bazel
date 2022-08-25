@@ -9,6 +9,7 @@ go_library(
         "default.go",
         "raw.go",
         "typed.go",
+        "view.go",
     ],
     importpath = "github.com/google/chrome-ssh-agent/go/storage",
     visibility = ["//visibility:public"],
