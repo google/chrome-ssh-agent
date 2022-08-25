@@ -28,6 +28,9 @@ go_wasm_test(
         "manager_test.go",
     ],
     embed = [":keys"],
+    node_deps = [
+        "@npm//web-locks",
+    ],
     deps = [
         "//go/jsutil/testing",
         "//go/keys/testdata",
@@ -38,8 +41,4 @@ go_wasm_test(
         "@org_golang_x_crypto//ssh",
         "@org_golang_x_crypto//ssh/agent",
     ],
-    node_deps = [
-        "@npm//web-locks",
-    ],
-
 )
