@@ -133,7 +133,6 @@ func (u *UI) add(ctx jsutil.AsyncContext, evt dom.Event) {
 }
 
 // promptAdd displays a dialog prompting the user for a name and private key.
-// callback is invoked when user clicks OK.
 func (u *UI) promptAdd(ctx jsutil.AsyncContext) (ok bool, name, privateKey string) {
 	dialog := dom.NewDialog(u.dom.GetElement("addDialog"))
 	form := u.dom.GetElement("addForm")
@@ -192,7 +191,6 @@ func (u *UI) load(ctx jsutil.AsyncContext, id keys.ID) {
 }
 
 // promptPassphrase displays a dialog prompting the user for a passphrase.
-// callback is invoked if user continues.
 func (u *UI) promptPassphrase(ctx jsutil.AsyncContext) (ok bool, passphrase string) {
 	dialog := dom.NewDialog(u.dom.GetElement("passphraseDialog"))
 	form := u.dom.GetElement("passphraseForm")
@@ -232,7 +230,7 @@ func (u *UI) unload(ctx jsutil.AsyncContext, id keys.ID) {
 }
 
 // promptRemove displays a dialog prompting the user to confirm that a key
-// should be removed. callback is invoked if the key should be removed.
+// should be removed.
 func (u *UI) promptRemove(ctx jsutil.AsyncContext, id keys.ID) (yes bool) {
 	k := u.keyByID(id)
 	if k == nil {

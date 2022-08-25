@@ -30,10 +30,9 @@ type Area interface {
 	// be stored. If a key already exists, it will be overwritten.
 	Set(ctx jsutil.AsyncContext, data map[string]js.Value) error
 
-	// Get reads all the data items currently stored.  The callback will be
-	// invoked when complete, suppliing the items read and indicating any
-	// errors. The data returned is a map of key-value pairs, with each
-	// representing a distinct item from storage.
+	// Get reads all the data items currently stored. The data returned is a
+	// map of key-value pairs, with each representing a distinct item from
+	// storage.
 	Get(ctx jsutil.AsyncContext) (map[string]js.Value, error)
 
 	// Delete removes the items from storage with the specified keys. If a
