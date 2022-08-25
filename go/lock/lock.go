@@ -40,7 +40,7 @@ var (
 // granted. Access to the resource is released when the routine returns.
 func Async(resource string, f func(ctx jsutil.AsyncContext)) *jsutil.Promise {
 	return jsutil.AsPromise(locks.Call(
-		"request",
+		"request", resource,
 		// Return a promise encapsulating the supplied function.
 		jsutil.OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
 			return jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
