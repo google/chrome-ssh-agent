@@ -33,7 +33,7 @@ var (
 	deleteError = errors.New("Storage.Delete failed")
 )
 
-const testKeyPrefix = "key:"
+const testKeyPrefix = "key"
 
 func TestTypedReadAll(t *testing.T) {
 	testcases := []struct {
@@ -46,8 +46,8 @@ func TestTypedReadAll(t *testing.T) {
 		{
 			description: "parse values",
 			init: map[string]js.Value{
-				testKeyPrefix + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				testKeyPrefix + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
+				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
+				testKeyPrefix + "." + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			want: []*myStruct{
 				&myStruct{IntField: 42},
@@ -57,8 +57,8 @@ func TestTypedReadAll(t *testing.T) {
 		{
 			description: "skip unparseable values",
 			init: map[string]js.Value{
-				testKeyPrefix + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				testKeyPrefix + "2": js.ValueOf(42),
+				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
+				testKeyPrefix + "." + "2": js.ValueOf(42),
 			},
 			want: []*myStruct{
 				&myStruct{IntField: 42},
@@ -67,8 +67,8 @@ func TestTypedReadAll(t *testing.T) {
 		{
 			description: "skip unparseable values",
 			init: map[string]js.Value{
-				testKeyPrefix + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				"wrong:2":           vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
+				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
+				"wrong.2":                 vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			want: []*myStruct{
 				&myStruct{IntField: 42},
@@ -107,7 +107,6 @@ func TestTypedReadAll(t *testing.T) {
 }
 
 func TestTypedRead(t *testing.T) {
-	const testKeyPrefix = "key:"
 	testcases := []struct {
 		description string
 		init        map[string]js.Value
@@ -119,8 +118,8 @@ func TestTypedRead(t *testing.T) {
 		{
 			description: "value found",
 			init: map[string]js.Value{
-				testKeyPrefix + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				testKeyPrefix + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
+				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
+				testKeyPrefix + "." + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			test: func(v *myStruct) bool { return v.IntField == 42 },
 			want: &myStruct{IntField: 42},
@@ -128,8 +127,8 @@ func TestTypedRead(t *testing.T) {
 		{
 			description: "value not found",
 			init: map[string]js.Value{
-				testKeyPrefix + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				testKeyPrefix + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
+				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
+				testKeyPrefix + "." + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			test: func(v *myStruct) bool { return v.IntField == 1000 },
 			want: nil,
@@ -179,8 +178,8 @@ func TestTypedWrite(t *testing.T) {
 		{
 			description: "write unique value",
 			init: map[string]js.Value{
-				testKeyPrefix + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				testKeyPrefix + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
+				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
+				testKeyPrefix + "." + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			write: &myStruct{IntField: 100},
 			want: []*myStruct{
@@ -192,8 +191,8 @@ func TestTypedWrite(t *testing.T) {
 		{
 			description: "write duplicate value",
 			init: map[string]js.Value{
-				testKeyPrefix + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				testKeyPrefix + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
+				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
+				testKeyPrefix + "." + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			write: &myStruct{IntField: 42},
 			want: []*myStruct{
@@ -253,8 +252,8 @@ func TestTypedDelete(t *testing.T) {
 		{
 			description: "delete single value",
 			init: map[string]js.Value{
-				testKeyPrefix + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				testKeyPrefix + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
+				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
+				testKeyPrefix + "." + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			test: func(v *myStruct) bool { return v.IntField == 42 },
 			want: []*myStruct{
@@ -264,9 +263,9 @@ func TestTypedDelete(t *testing.T) {
 		{
 			description: "delete multiple values",
 			init: map[string]js.Value{
-				testKeyPrefix + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				testKeyPrefix + "2": vert.ValueOf(&myStruct{IntField: 100}).JSValue(),
-				testKeyPrefix + "3": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
+				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
+				testKeyPrefix + "." + "2": vert.ValueOf(&myStruct{IntField: 100}).JSValue(),
+				testKeyPrefix + "." + "3": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			test: func(v *myStruct) bool { return v.IntField > 0 },
 			want: []*myStruct{
@@ -276,8 +275,8 @@ func TestTypedDelete(t *testing.T) {
 		{
 			description: "passes through errors",
 			init: map[string]js.Value{
-				testKeyPrefix + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				testKeyPrefix + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
+				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
+				testKeyPrefix + "." + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			test: func(v *myStruct) bool { return v.IntField == 42 },
 			errs: fakes.Errs{

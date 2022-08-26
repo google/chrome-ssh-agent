@@ -218,8 +218,7 @@ type sessionKey struct {
 
 const (
 	// keyPrefix is the prefix for keys stored in persistent storage.
-	// The full key is of the form 'key.<id>'.
-	keyPrefix = "key."
+	keyPrefix = "key"
 	// commentPrefix is the prefix for the comment included when a
 	// configured key is loaded into the agent. The full comment is of the
 	// form 'chrome-ssh-agent:<id>'.

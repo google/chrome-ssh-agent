@@ -26,6 +26,7 @@ go_wasm_test(
         "big_test.go",
         "raw_test.go",
         "typed_test.go",
+	"view_test.go",
     ],
     embed = [":storage"],
     node_deps = [

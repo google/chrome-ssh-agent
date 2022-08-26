@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"strings"
 	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
@@ -32,8 +31,7 @@ import (
 // and deserialized upon reading.  If deserialization fails for a given value,
 // it is ignored.
 type Typed[V any] struct {
-	store     Area
-	keyPrefix string
+	store Area
 }
 
 // NewTyped returns a new Typed using the underlying persistent store.
@@ -41,8 +39,7 @@ type Typed[V any] struct {
 // underlying store.
 func NewTyped[V any](store Area, keyPrefix string) *Typed[V] {
 	return &Typed[V]{
-		store:     store,
-		keyPrefix: keyPrefix,
+		store: NewView(keyPrefix, store),
 	}
 }
 
@@ -55,10 +52,6 @@ func (t *Typed[V]) readAllItems(ctx jsutil.AsyncContext) (map[string]*V, error) 
 
 	values := map[string]*V{}
 	for k, v := range data {
-		if !strings.HasPrefix(k, t.keyPrefix) {
-			continue
-		}
-
 		var tv V
 		if err := vert.ValueOf(v).AssignTo(&tv); err != nil {
 			jsutil.LogError("failed to parse value %s; dropping", k)
@@ -105,14 +98,12 @@ func (t *Typed[V]) Read(ctx jsutil.AsyncContext, test func(v *V) bool) (*V, erro
 // Write writes a new value to storage.
 func (t *Typed[V]) Write(ctx jsutil.AsyncContext, value *V) error {
 	// Generate a unique key under which value will be stored.
-	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	key, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
 		return fmt.Errorf("failed to generate new ID: %w", err)
 	}
-	key := fmt.Sprintf("%s%s", t.keyPrefix, i)
-
 	data := map[string]js.Value{
-		key: vert.ValueOf(value).JSValue(),
+		key.String(): vert.ValueOf(value).JSValue(),
 	}
 	return t.store.Set(ctx, data)
 }

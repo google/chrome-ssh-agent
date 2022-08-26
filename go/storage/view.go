@@ -17,15 +17,10 @@
 package storage
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
-	"fmt"
 	"strings"
 	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
-	"github.com/google/chrome-ssh-agent/go/lock"
-	"github.com/norunners/vert"
 )
 
 // View supports storing and retrieving keys and values with particular key
@@ -47,8 +42,8 @@ type View struct {
 // NewView returns a view of a storage area with a given key prefix.
 func NewView(prefix string, store Area) *View {
 	return &View{
-		prefix: prefix,
-		s:            store,
+		prefix: prefix + ".",
+		s:      store,
 	}
 }
 
@@ -57,30 +52,30 @@ func (v *View) readKey(key string) (string, bool) {
 	return strings.TrimPrefix(key, v.prefix), strings.HasPrefix(key, v.prefix)
 }
 
-func (v *View) makeKey(key string) {
+func (v *View) makeKey(key string) string {
 	return v.prefix + key
 }
 
 // Set implements Area.Set().
 func (v *View) Set(ctx jsutil.AsyncContext, data map[string]js.Value) error {
 	ndata := map[string]js.Value{}
-	for k, v := range data {
-		ndata[makeKey(k)] = v
+	for k, val := range data {
+		ndata[v.makeKey(k)] = val
 	}
 	return v.s.Set(ctx, ndata)
 }
 
 // Get implements Area.Get().
 func (v *View) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
-	data, err = v.s.Get(ctx)
+	data, err := v.s.Get(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	ndata := map[string]js.Value{}
-	for k, v := range data {
-		if ok, sk := v.readKey(k); ok {
-			ndata[sk] = v
+	for k, val := range data {
+		if sk, ok := v.readKey(k); ok {
+			ndata[sk] = val
 		}
 	}
 	return ndata, nil
