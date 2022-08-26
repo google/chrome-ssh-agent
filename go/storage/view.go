@@ -28,8 +28,6 @@ import (
 // without them trampling on each other.
 //
 // It is the caller's responsibility to supply unique key prefixes as required.
-//
-// FIXME: Add tests.
 type View struct {
 	// prefix is the prefix prepended to each key. The prefix disambiguates
 	// entries for this view from entries for a different view.
