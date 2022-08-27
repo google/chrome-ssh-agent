@@ -576,8 +576,15 @@ func poll(ctx jsutil.AsyncContext, done func() bool) bool {
 // No attempt is made to clean up from any intermediate state should the test
 // fail.
 func (u *UI) EndToEndTest(ctx jsutil.AsyncContext) []error {
+	var errs []error
+
 	jsutil.Log("Starting test")
-	defer jsutil.Log("Finished test")
+	defer func() {
+		jsutil.Log("Finished test")
+		for _, err := range errs {
+			jsutil.Log("  Reported Error: %v", err)
+		}
+	}()
 
 	addDialog := u.dom.GetElement("addDialog")
 	addButton := u.dom.GetElement("add")
@@ -590,7 +597,6 @@ func (u *UI) EndToEndTest(ctx jsutil.AsyncContext) []error {
 	removeDialog := u.dom.GetElement("removeDialog")
 	removeYes := u.dom.GetElement("removeYes")
 
-	var errs []error
 
 	jsutil.Log("Generate random name to use for key")
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))

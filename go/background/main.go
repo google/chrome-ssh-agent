@@ -114,14 +114,18 @@ func main() {
 
 	// Reload any keys for the session into the agent.
 	jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
+		jsutil.Log("Loading keys from session")
 		if err := mgr.LoadFromSession(ctx); err != nil {
 			// Log error
 			jsutil.LogError("failed to load keys into agent: %v", err)
 		}
+		jsutil.Log("Finished loading keys from session")
 		return js.Undefined(), nil
 	}).Then(
 		// Upon completion, attach our event handlers.
 		func(value js.Value) {
+			jsutil.LogDebug("Attaching event handlers")
+			defer jsutil.LogDebug("Finished attaching event handlers")
 			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleOnMessage", onMessage))
 			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleOnConnectExternal", onConnectExternal))
 			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleConnectionMessage", onConnectionMessage))

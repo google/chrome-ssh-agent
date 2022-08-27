@@ -302,12 +302,14 @@ var (
 // LoadFromSession loads all keys for the current session into the agent.
 func (m *DefaultManager) LoadFromSession(ctx jsutil.AsyncContext) error {
 	// Read session keys. We'll load these into the agent.
+	jsutil.LogDebug("DefaultManager.LoadFromSession: Read session keys")
 	sessionKeys, err := m.sessionKeys.ReadAll(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to read session keys: %w", err)
 	}
 
 	// Attempt to load each into the agent.
+	jsutil.LogDebug("DefaultManager.LoadFromSession: Load session keys")
 	for _, k := range sessionKeys {
 		if err := m.addToAgent(ID(k.ID), decryptedKey(k.PrivateKey)); err != nil {
 			jsutil.LogError("failed to load session key ID %s into agent: %v; skipping", k.ID, err)

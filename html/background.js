@@ -16,10 +16,18 @@ wasmResult.then((result) => {
 // and then forward them into Go.
 console.debug('Installing event handlers');
 
+async function sleep(ms) {
+	return new Promise(done => setTimeout(done));
+}
+
 async function resolveFunc(func) {
 	console.debug(`resolveFunc ${func}: waiting for WASM`);
 	await wasmResult;
-	while (!this[func]) { await null; }  // Wait until defined.
+	// Wait until defined. We use a timeout to ensure that other events
+	// can proceed. This is important to avoid starving other event handlers
+	// to proceed, such as completion events for loading from storage (the
+	// background service worker does this at startup).
+	while (!this[func]) { await sleep(10); }
 	console.debug(`resolveFunc ${func}: available`);
 	return this[func];
 }
