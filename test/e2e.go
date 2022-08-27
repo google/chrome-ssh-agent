@@ -159,10 +159,10 @@ func TestWebApp(t *testing.T) {
 	}
 
 	t.Log("Waiting for results")
-	if err = wd.WaitWithTimeout(elementExists("failureCount"), 10*time.Second); err != nil {
+	if err = wd.WaitWithTimeout(elementExists("failureCount"), 30*time.Second); err != nil {
 		t.Fatalf("failed to wait for failure count: %v", err)
 	}
-	if err = wd.WaitWithTimeout(elementExists("failures"), 10*time.Second); err != nil {
+	if err = wd.WaitWithTimeout(elementExists("failures"), 30*time.Second); err != nil {
 		t.Fatalf("failed to wait for failures: %v", err)
 	}
 
