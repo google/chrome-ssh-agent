@@ -551,8 +551,8 @@ func (u *UI) updateKeys(ctx jsutil.AsyncContext) {
 }
 
 const (
-	pollInterval = 10 * time.Millisecond
-	pollTimeout  = 5 * time.Second
+	pollInterval = 100 * time.Millisecond
+	pollTimeout  = 10 * time.Second
 )
 
 // poll checks a condition for up to a timeout.
@@ -576,6 +576,9 @@ func poll(ctx jsutil.AsyncContext, done func() bool) bool {
 // No attempt is made to clean up from any intermediate state should the test
 // fail.
 func (u *UI) EndToEndTest(ctx jsutil.AsyncContext) []error {
+	jsutil.Log("Starting test")
+	defer jsutil.Log("Finished test")
+
 	addDialog := u.dom.GetElement("addDialog")
 	addButton := u.dom.GetElement("add")
 	addName := u.dom.GetElement("addName")
@@ -593,13 +596,16 @@ func (u *UI) EndToEndTest(ctx jsutil.AsyncContext) []error {
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
 		errs = append(errs, fmt.Errorf("failed to generate random number: %v", err))
-		return errs // Remaining tests have hard dependency on key name.
+		return errs
 	}
 	keyName := fmt.Sprintf("e2e-test-key-%s", i.String())
 
 	jsutil.Log("Configure a new key")
 	dom.DoClick(addButton)
-	poll(ctx, func() bool { return addDialog.Get("open").Bool() })
+	if !poll(ctx, func() bool { return addDialog.Get("open").Bool() }) {
+		errs = append(errs, fmt.Errorf("add dialog failed to open"))
+		return errs
+	}
 	dom.SetValue(addName, keyName)
 	// Use the long key to exercise storage of large values in Chrome storage.
 	dom.SetValue(addKey, testdata.LongKeyWithPassphrase.Private)
@@ -607,74 +613,77 @@ func (u *UI) EndToEndTest(ctx jsutil.AsyncContext) []error {
 
 	jsutil.Log("Validate configured keys; ensure new key is present")
 	var key *displayedKey
-	poll(ctx, func() bool {
+	if !poll(ctx, func() bool {
 		key = u.keyByName(keyName)
 		return key != nil
-	})
-	if key == nil {
+	}) {
 		errs = append(errs, fmt.Errorf("after added: failed to find key"))
-		return errs // Remaining tests have hard dependency on configured key.
+		return errs
 	}
 
 	jsutil.Log("Load the new key")
 	dom.DoClick(u.dom.GetElement(buttonID(LoadButton, key.ID)))
-	poll(ctx, func() bool { return passphraseDialog.Get("open").Bool() })
+	if !poll(ctx, func() bool { return passphraseDialog.Get("open").Bool() }) {
+		errs = append(errs, fmt.Errorf("passphrase dialog failed to open"))
+		return errs
+	}
 	dom.SetValue(passphraseInput, testdata.LongKeyWithPassphrase.Passphrase)
 	dom.DoClick(passphraseOk)
 
 	jsutil.Log("Validate loaded keys; ensure new key is loaded")
-	poll(ctx, func() bool {
+	if !poll(ctx, func() bool {
 		key = u.keyByName(keyName)
 		return key != nil && key.Loaded
-	})
-	if key != nil {
-		if diff := cmp.Diff(key.Loaded, true); diff != "" {
-			errs = append(errs, fmt.Errorf("after load: incorrect loaded state: %s", diff))
-		}
-		if diff := cmp.Diff(key.Type, testdata.LongKeyWithPassphrase.Type); diff != "" {
-			errs = append(errs, fmt.Errorf("after load: incorrect type: %s", diff))
-		}
-		if diff := cmp.Diff(key.Blob, testdata.LongKeyWithPassphrase.Blob); diff != "" {
-			errs = append(errs, fmt.Errorf("after load: incorrect blob: %s", diff))
-		}
-	} else if key == nil {
-		errs = append(errs, fmt.Errorf("after load: failed to find key"))
+	}) {
+		errs = append(errs, fmt.Errorf("after loaded: failed to find loaded key"))
+		return errs
+	}
+	if diff := cmp.Diff(key.Loaded, true); diff != "" {
+		errs = append(errs, fmt.Errorf("after load: incorrect loaded state: %s", diff))
+	}
+	if diff := cmp.Diff(key.Type, testdata.LongKeyWithPassphrase.Type); diff != "" {
+		errs = append(errs, fmt.Errorf("after load: incorrect type: %s", diff))
+	}
+	if diff := cmp.Diff(key.Blob, testdata.LongKeyWithPassphrase.Blob); diff != "" {
+		errs = append(errs, fmt.Errorf("after load: incorrect blob: %s", diff))
 	}
 
 	jsutil.Log("Unload key")
 	dom.DoClick(u.dom.GetElement(buttonID(UnloadButton, key.ID)))
 
 	jsutil.Log("Validate loaded keys; ensure key is unloaded")
-	poll(ctx, func() bool {
+	if !poll(ctx, func() bool {
 		key = u.keyByName(keyName)
 		return key != nil && !key.Loaded
-	})
-	if key != nil {
-		if diff := cmp.Diff(key.Loaded, false); diff != "" {
-			errs = append(errs, fmt.Errorf("after unload: incorrect loaded state: %s", diff))
-		}
-		if diff := cmp.Diff(key.Type, ""); diff != "" {
-			errs = append(errs, fmt.Errorf("after unload: incorrect type: %s", diff))
-		}
-		if diff := cmp.Diff(key.Blob, ""); diff != "" {
-			errs = append(errs, fmt.Errorf("after unload: incorrect blob: %s", diff))
-		}
-	} else if key == nil {
-		errs = append(errs, fmt.Errorf("after unload: failed to find key"))
+	}) {
+		errs = append(errs, fmt.Errorf("after unload: failed to find unloaded key"))
+		return errs // Remaining tests have hard dependency on unloaded key.
+	}
+	if diff := cmp.Diff(key.Loaded, false); diff != "" {
+		errs = append(errs, fmt.Errorf("after unload: incorrect loaded state: %s", diff))
+	}
+	if diff := cmp.Diff(key.Type, ""); diff != "" {
+		errs = append(errs, fmt.Errorf("after unload: incorrect type: %s", diff))
+	}
+	if diff := cmp.Diff(key.Blob, ""); diff != "" {
+		errs = append(errs, fmt.Errorf("after unload: incorrect blob: %s", diff))
 	}
 
 	jsutil.Log("Remove key")
 	dom.DoClick(u.dom.GetElement(buttonID(RemoveButton, key.ID)))
-	poll(ctx, func() bool { return removeDialog.Get("open").Bool() })
+	if !poll(ctx, func() bool { return removeDialog.Get("open").Bool() }) {
+		errs = append(errs, fmt.Errorf("remove dialog failed to open"))
+		return errs
+	}
 	dom.DoClick(removeYes)
 
 	jsutil.Log("Validate configured keys; ensure key is removed")
-	poll(ctx, func() bool {
+	if !poll(ctx, func() bool {
 		key = u.keyByName(keyName)
 		return key == nil
-	})
-	if key != nil {
-		errs = append(errs, fmt.Errorf("after removed: incorrectly found key"))
+	}) {
+		errs = append(errs, fmt.Errorf("after removed: failed to observe key as removed"))
+		return errs
 	}
 
 	return errs
