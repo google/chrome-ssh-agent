@@ -7,7 +7,7 @@ on:
   pull_request:
   # Nightly test.
   schedule:
-    - cron: '0 9 * * *'
+    - cron: '0 */2 * * *'
   # Manual trigger.
   workflow_dispatch:
 
