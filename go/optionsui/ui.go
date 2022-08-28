@@ -39,13 +39,14 @@ import (
 // UI implements the behavior underlying the user interface for the extension's
 // options.
 type UI struct {
-	mgr       keys.Manager
-	dom       *dom.Doc
-	addButton js.Value
-	errorText js.Value
-	keysData  js.Value
-	keys      []*displayedKey
-	cleanup   *jsutil.CleanupFuncs
+	mgr         keys.Manager
+	dom         *dom.Doc
+	addButton   js.Value
+	loadingText js.Value
+	errorText   js.Value
+	keysData    js.Value
+	keys        []*displayedKey
+	cleanup     *jsutil.CleanupFuncs
 }
 
 // signal is a primitive that allows one routine to block until notified.
@@ -79,12 +80,13 @@ func (s *signal) Wait(ctx jsutil.AsyncContext) {
 // UI is displayed.
 func New(mgr keys.Manager, domObj *dom.Doc) *UI {
 	result := &UI{
-		mgr:       mgr,
-		dom:       domObj,
-		addButton: domObj.GetElement("add"),
-		errorText: domObj.GetElement("errorMessage"),
-		keysData:  domObj.GetElement("keysData"),
-		cleanup:   &jsutil.CleanupFuncs{},
+		mgr:         mgr,
+		dom:         domObj,
+		addButton:   domObj.GetElement("add"),
+		loadingText: domObj.GetElement("loadingMessage"),
+		errorText:   domObj.GetElement("errorMessage"),
+		keysData:    domObj.GetElement("keysData"),
+		cleanup:     &jsutil.CleanupFuncs{},
 	}
 
 	// Add event handlers.
@@ -548,6 +550,9 @@ func (u *UI) updateKeys(ctx jsutil.AsyncContext) {
 	}
 	u.setError(nil)
 	u.setKeys(mergeKeys(configured, loaded))
+
+	// We have successfully loaded keys. No need for initial status.
+	dom.RemoveChildren(u.loadingText)
 }
 
 const (
@@ -596,7 +601,6 @@ func (u *UI) EndToEndTest(ctx jsutil.AsyncContext) []error {
 	passphraseOk := u.dom.GetElement("passphraseOk")
 	removeDialog := u.dom.GetElement("removeDialog")
 	removeYes := u.dom.GetElement("removeYes")
-
 
 	jsutil.Log("Generate random name to use for key")
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))

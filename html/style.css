@@ -47,6 +47,12 @@
   display: inline-block;
 }
 
+#loadingMessage {
+  color: #438bfe;
+  text-align: center;
+  padding-top: 0.5em;
+}
+
 #errorMessage {
   color: red;
 }
