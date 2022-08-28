@@ -42,11 +42,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	return true;  // sendResponse invoked asynchronously.
 });
 
-async function onConnectExternal(port) {
-	let f = await resolveFunc('handleOnConnectExternal');
-	return f(port);
-}
-
 async function onConnectionMessage(port, msg) {
 	let f = await resolveFunc('handleConnectionMessage');
 	return f(port, msg);
@@ -62,7 +57,6 @@ chrome.runtime.onConnectExternal.addListener((port) => {
 	// guarantee that installed event handlers are in place before the other
 	// side of the connection starts sending messages.  Without this, we can
 	// miss events.
-	onConnectExternal(port);
 	port.onMessage.addListener((msg) => onConnectionMessage(port, msg));
 	port.onDisconnect.addListener((p) => onConnectionDisconnect(p));
 });

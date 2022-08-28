@@ -50,38 +50,30 @@ func onMessage(ctx jsutil.AsyncContext, this js.Value, args []js.Value) (js.Valu
 	return js.Undefined(), nil
 }
 
-func onConnectExternal(ctx jsutil.AsyncContext, this js.Value, args []js.Value) (js.Value, error) {
-	port := jsutil.SingleArg(args)
-	if ports.Lookup(port) != nil {
-		err := errors.New("onConnectExternal: port already in use")
-		jsutil.LogError(err.Error())
-		return js.Undefined(), err
-	}
-
-	jsutil.LogDebug("onConnectExternal: connecting new port")
-	ap := agentport.New(port)
-	ports.Add(port, ap)
-
-	jsutil.LogDebug("onConnectExternal: serving in background")
-	go func() {
-		jsutil.LogDebug("ServeAgent: starting for new port")
-		defer jsutil.LogDebug("ServeAgent: finished")
-		if err := agent.ServeAgent(agt, ap); err != nil {
-			jsutil.LogDebug("ServeAgent: finished with error: %v", err)
-		}
-	}()
-	return js.Undefined(), nil
-}
-
 func onConnectionMessage(ctx jsutil.AsyncContext, this js.Value, args []js.Value) (js.Value, error) {
 	var port, msg js.Value
 	jsutil.ExpandArgs(args, &port, &msg)
 
 	ap := ports.Lookup(port)
 	if ap == nil {
-		err := errors.New("onConnectionMessage: connection for port not found")
-		jsutil.LogError(err.Error())
-		return js.Undefined(), err
+		// We spawn a new connection on-demand when we notice a new port.
+		// While a typical place to do this would have been in an
+		// OnConnectExternal event handler, both were asynchronously
+		// executed (in our model, anyways) and we don't have any
+		// guarantee that it will happen prior to receiving the first
+		// message.
+		jsutil.LogDebug("onConnectionMessage: existing connection not found; spawning")
+		ap = agentport.New(port)
+		ports.Add(port, ap)
+
+		jsutil.LogDebug("onConnectionMessage: serving in background")
+		go func() {
+			jsutil.LogDebug("ServeAgent: starting for new port")
+			defer jsutil.LogDebug("ServeAgent: finished")
+			if err := agent.ServeAgent(agt, ap); err != nil {
+				jsutil.LogDebug("ServeAgent: finished with error: %v", err)
+			}
+		}()
 	}
 
 	jsutil.LogDebug("onConnectionMessage: forwarding message")
@@ -127,7 +119,6 @@ func main() {
 			jsutil.LogDebug("Attaching event handlers")
 			defer jsutil.LogDebug("Finished attaching event handlers")
 			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleOnMessage", onMessage))
-			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleOnConnectExternal", onConnectExternal))
 			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleConnectionMessage", onConnectionMessage))
 			cleanup.Add(jsutil.DefineAsyncFunc(js.Global(), "handleConnectionDisconnect", onConnectionDisconnect))
 		},
