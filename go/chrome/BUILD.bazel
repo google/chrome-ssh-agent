@@ -1,9 +1,0 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//build_defs:wasm.bzl", "go_wasm_test")
-
-go_library(
-    name = "chrome",
-    srcs = ["chrome.go"],
-    importpath = "github.com/google/chrome-ssh-agent/go/chrome",
-    visibility = ["//visibility:public"],
-)

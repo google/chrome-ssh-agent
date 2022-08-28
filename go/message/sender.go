@@ -19,7 +19,6 @@ package message
 import (
 	"syscall/js"
 
-	"github.com/google/chrome-ssh-agent/go/chrome"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
@@ -40,23 +39,18 @@ type Sender interface {
 	Send(ctx jsutil.AsyncContext, msg js.Value) (js.Value, error)
 }
 
-// ExtSender sends messages to a single extension.
+// ExtSender sends messages within our own extension.
 //
 // ExtSender implements the Sender interface.
-type ExtSender struct {
-	// extensionID is the unique ID for the target extension.
-	extensionID string
-}
+type ExtSender struct {}
 
 // NewLocalSender returns a ExtSender for sending messages within our own
 // extension.
 func NewLocalSender() *ExtSender {
-	return &ExtSender{
-		extensionID: chrome.ExtensionID(),
-	}
+	return &ExtSender{}
 }
 
 // Send implements Sender.Send().
 func (e *ExtSender) Send(ctx jsutil.AsyncContext, msg js.Value) (js.Value, error) {
-	return jsutil.AsPromise(runtime.Call("sendMessage", e.extensionID, msg)).Await(ctx)
+	return jsutil.AsPromise(runtime.Call("sendMessage", msg)).Await(ctx)
 }
