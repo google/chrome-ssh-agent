@@ -1,0 +1,28 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//build_defs:wasm.bzl", "go_wasm_test")
+
+go_library(
+    name = "app",
+    srcs = [
+        "app.go",
+        "signal.go",
+    ],
+    importpath = "github.com/google/chrome-ssh-agent/go/app",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//go/jsutil",
+    ],
+)
+
+go_wasm_test(
+    name = "app_test",
+    srcs = [
+        "app_test.go",
+        "signal_test.go",
+    ],
+    embed = [":app"],
+    deps = [
+        "//go/jsutil/testing",
+        "@com_github_google_go_cmp//cmp",
+    ],
+)

@@ -9,6 +9,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//go/agentport",
+        "//go/app",
         "//go/jsutil",
         "//go/keys",
         "//go/storage",

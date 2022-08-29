@@ -20,6 +20,7 @@ import (
 	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/dom"
+	"github.com/google/chrome-ssh-agent/go/app"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/message"
@@ -27,23 +28,39 @@ import (
 	"github.com/google/chrome-ssh-agent/go/testing"
 )
 
-func main() {
-	jsutil.Log("Starting Options UI")
-	defer jsutil.Log("Exiting Options UI")
-	done := make(chan struct{}, 0)
+type options struct {
+	manager keys.Manager
+	doc *dom.Doc
+}
 
+func newOptions() *options {
 	mgr := keys.NewClient(message.NewLocalSender())
-	d := dom.New(js.Null())
-	ui := optionsui.New(mgr, d)
-	defer ui.Release()
+	doc := dom.New(js.Null())
+
+	return &options{
+		manager: mgr,
+		doc: doc,
+	}
+}
+
+func (a *options) Name() string {
+	return "OptionsUI"
+}
+
+func (a *options) Init(ctx jsutil.AsyncContext, cleanup *jsutil.CleanupFuncs) error {
+	ui := optionsui.New(a.manager, a.doc)
+	cleanup.Add(ui.Release)
 
 	qs := dom.NewURLSearchParams(dom.DefaultQueryString())
 	if qs.Has("test") {
-		jsutil.Async(func(ctx jsutil.AsyncContext) (js.Value, error) {
-			testing.WriteResults(d, ui.EndToEndTest(ctx))
-			return js.Undefined(), nil
-		})
+		testing.WriteResults(a.doc, ui.EndToEndTest(ctx))
 	}
 
-	<-done // Do not terminate.
+	return nil
+}
+
+func main() {
+	a := app.New(newOptions())
+	defer a.Release()
+	a.Run()
 }

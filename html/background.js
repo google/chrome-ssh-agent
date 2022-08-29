@@ -1,13 +1,6 @@
-importScripts('wasm_exec.js');
+importScripts('app.js');
 
-const go = new Go();
-console.debug('Loading WASM');
-wasmResult = WebAssembly.instantiateStreaming(fetch("../go/background/background.wasm"), go.importObject);
-wasmResult.then((result) => {
-	console.debug('Running WASM');
-	go.run(result.instance);
-});
-
+const app = new WASMApp("../go/background/background.wasm");
 
 // Workaround for https://github.com/w3c/ServiceWorker/issues/1499#issuecomment-578730536.
 // The cited issue illustrates limitation for Rust, but we have the same in Go.
@@ -16,25 +9,9 @@ wasmResult.then((result) => {
 // and then forward them into Go.
 console.debug('Installing event handlers');
 
-async function sleep(ms) {
-	return new Promise(done => setTimeout(done));
-}
-
-async function resolveFunc(func) {
-	console.debug(`resolveFunc ${func}: waiting for WASM`);
-	await wasmResult;
-	// Wait until defined. We use a timeout to ensure that other events
-	// can proceed. This is important to avoid starving other event handlers
-	// to proceed, such as completion events for loading from storage (the
-	// background service worker does this at startup).
-	while (!this[func]) { await sleep(10); }
-	console.debug(`resolveFunc ${func}: available`);
-	return this[func];
-}
-
 async function onMessageReceived(message, sender, sendResponse) {
-	let f = await resolveFunc('handleOnMessage');
-	return f(message, sender, sendResponse);
+	await app.waitInit()
+	return handleOnMessage(message, sender, sendResponse);
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -43,13 +20,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function onConnectionMessage(port, msg) {
-	let f = await resolveFunc('handleConnectionMessage');
-	return f(port, msg);
+	await app.waitInit()
+	return handleConnectionMessage(port, msg);
 }
 
 async function onConnectionDisconnect(port) {
-	let f = await resolveFunc('handleConnectionDisconnect');
-	return f(port);
+	await app.waitInit()
+	return handleConnectionDisconnect(port);
 }
 
 chrome.runtime.onConnectExternal.addListener((port) => {
