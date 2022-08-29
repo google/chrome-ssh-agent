@@ -1,14 +1,40 @@
+load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
+load("@npm//@bazel/typescript:index.bzl", "ts_project")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
+
+ts_project(
+    name = "wasm_exec",
+    srcs = ["@go_sdk//:misc/wasm/wasm_exec.js"],
+    allow_js = True,
+)
+
+ts_project(
+    name = "app",
+    srcs = ["app.ts"],
+    deps = [
+	    ":wasm_exec",
+    ],
+)
+
+ts_project(
+    name = "background",
+    srcs = ["background.ts"],
+    deps = [":app"],
+)
+
+ts_project(
+    name = "options",
+    srcs = ["options.ts"],
+    deps = [":app"],
+)
 
 filegroup(
     name = "optionsui",
     srcs = [
-        "app.js",
-        "background.js",
+	":background.js",
         "options.html",
-        "options.js",
+	":options.js",
         "style.css",
-        "@go_sdk//:misc/wasm/wasm_exec.js",
     ],
     visibility = ["//visibility:public"],
 )

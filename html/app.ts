@@ -1,12 +1,11 @@
 // Gather imports when running within a Web Worker.  In other contexts (e.g.,
 // loading in an HTML document), caller is responsible for importing.
-if ('function' === typeof importScripts) {
-	importScripts('wasm_exec.js');
-}
+
+import * from 'wasm_exec';
 
 const _global = this;
 
-WASMApp = class {
+class WASMApp {
 	// Go functions exposed for application lifecycle.
 	//
 	// Keep in sync with go/jsutil/app.go

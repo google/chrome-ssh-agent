@@ -1,4 +1,4 @@
-importScripts('app.js');
+import {WASMApp} from 'app';
 
 const app = new WASMApp("../go/background/background.wasm");
 
