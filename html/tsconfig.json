@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES6",
+    "allowJs": true,
+    "declaration": true,
+    "rootDirs": [
+      ".",
+      "../bazel-out/host/bin/html",
+      "../bazel-out/darwin-fastbuild/bin/html",
+      "../bazel-out/darwin_arm64-fastbuild/bin/html",
+      "../bazel-out/darwin-dbg/bin/html",
+      "../bazel-out/k8-fastbuild/bin/html",
+      "../bazel-out/k8-dbg/bin/html",
+      "../bazel-out/x64_windows-fastbuild/bin/html",
+      "../bazel-out/x64_windows-dbg/bin/html"
+    ]
+  }
+}

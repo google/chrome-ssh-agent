@@ -1,11 +1,19 @@
 load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
-load("@npm//@bazel/typescript:index.bzl", "ts_project")
+load("@npm//@bazel/typescript:index.bzl", "ts_project", "ts_config")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
+
+genrule(
+    name = "wasm_exec_copy",
+    srcs = ["@go_sdk//:misc/wasm/wasm_exec.js"],
+    outs = ["wasm_exec.js"],
+    cmd = "cat $(location @go_sdk//:misc/wasm/wasm_exec.js) > $@",
+)
 
 ts_project(
     name = "wasm_exec",
-    srcs = ["@go_sdk//:misc/wasm/wasm_exec.js"],
+    srcs = [":wasm_exec.js"],
     allow_js = True,
+    declaration = True,
 )
 
 ts_project(
