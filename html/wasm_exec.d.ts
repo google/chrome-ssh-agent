@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {WASMApp} from './app';
+// Minimal type declarations required for using wasm_exec.js supplied with Go.
 
-new WASMApp("../go/options/options.wasm");
+declare class Go {
+    public importObject: any;
+    public run(instance: WebAssembly.Instance): void;
+}

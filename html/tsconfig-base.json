@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "strict": true,
-    "target": "ES6",
-    "allowJs": true,
+    "target": "es2021",
     "declaration": true,
+    "sourceMap": true,
     "rootDirs": [
       ".",
       "../bazel-out/host/bin/html",
@@ -14,6 +14,9 @@
       "../bazel-out/k8-dbg/bin/html",
       "../bazel-out/x64_windows-fastbuild/bin/html",
       "../bazel-out/x64_windows-dbg/bin/html"
+    ],
+    "types": [
+      "chrome"
     ]
   }
 }

@@ -1,7 +1,14 @@
 load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
 load("@npm//@bazel/typescript:index.bzl", "ts_project", "ts_config")
+load("@npm//typescript:index.bzl", "tsc")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
 
+ts_config(
+    name = "tsconfig_base",
+    src = "tsconfig-base.json",
+)
+
+# Typescript compiler inputs must be within our package. Copy it over.
 genrule(
     name = "wasm_exec_copy",
     srcs = ["@go_sdk//:misc/wasm/wasm_exec.js"],
@@ -9,11 +16,13 @@ genrule(
     cmd = "cat $(location @go_sdk//:misc/wasm/wasm_exec.js) > $@",
 )
 
-ts_project(
-    name = "wasm_exec",
-    srcs = [":wasm_exec.js"],
-    allow_js = True,
-    declaration = True,
+# Treat wasm_exec and types as a library.
+js_library(
+	name = "wasm_exec",
+	srcs = [
+		":wasm_exec.js",
+		"wasm_exec.d.ts",
+	],
 )
 
 ts_project(
@@ -21,27 +30,63 @@ ts_project(
     srcs = ["app.ts"],
     deps = [
 	    ":wasm_exec",
+	    "@npm//@types/chrome:chrome",
     ],
+    declaration = True,
+    source_map = True,
+    tsconfig = ":tsconfig_base",
 )
 
 ts_project(
     name = "background",
     srcs = ["background.ts"],
-    deps = [":app"],
+    deps = [
+    ":app",
+	    "@npm//@types/chrome:chrome",
+    ],
+    declaration = True,
+    source_map = True,
+    tsconfig = ":tsconfig_base",
+)
+
+tsc(
+  name = "background_all",
+  outs = ["background-all.js"],
+  args = [
+	  "--project", "$(execpath :tsconfig_base)",
+	  # $(RULEDIR) is a shorthand for the dist/bin directory where Bazel requires we write outputs
+	  "--outFile", "$(RULEDIR)/$@",
+  ],
+  data = [
+	  ":background.ts",
+	  ":app.ts",
+	  ":wasm_exec.js",
+	  ":wasm_exec.d.ts",
+	  ":tsconfig_base",
+	    "@npm//@types/chrome:chrome",
+    ],
 )
 
 ts_project(
     name = "options",
     srcs = ["options.ts"],
-    deps = [":app"],
+    deps = [
+    ":app",
+	    "@npm//@types/chrome:chrome",
+    ],
+    declaration = True,
+    source_map = True,
+    tsconfig = ":tsconfig_base",
 )
 
 filegroup(
     name = "optionsui",
     srcs = [
 	":background.js",
+	":background.js.map",  # For easier debugging
         "options.html",
 	":options.js",
+	":options.js.map",  # For easier debugging
         "style.css",
     ],
     visibility = ["//visibility:public"],
