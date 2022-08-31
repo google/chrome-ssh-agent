@@ -1,5 +1,5 @@
 load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
-load("@npm//@bazel/typescript:index.bzl", "ts_project", "ts_config")
+load("@npm//@bazel/typescript:index.bzl", "ts_config", "ts_project")
 load("@npm//@bazel/esbuild:index.bzl", "esbuild")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
 
@@ -13,47 +13,47 @@ genrule(
 
 # Treat wasm_exec and types as a library.
 js_library(
-	name = "wasm_exec",
-	srcs = [
-		":wasm_exec.js",
-		"wasm_exec.d.ts",
-	],
+    name = "wasm_exec",
+    srcs = [
+        "wasm_exec.d.ts",
+        ":wasm_exec.js",
+    ],
 )
 
 ts_project(
     name = "app",
     srcs = ["app.ts"],
-    deps = [
-	    ":wasm_exec",
-	    "@npm//@types/chrome:chrome",
-    ],
     declaration = True,
+    deps = [
+        ":wasm_exec",
+        "@npm//@types/chrome",
+    ],
 )
 
 ts_project(
     name = "background",
     srcs = ["background.ts"],
-    deps = [
-    ":app",
-	    "@npm//@types/chrome:chrome",
-    ],
     declaration = True,
+    deps = [
+        ":app",
+        "@npm//@types/chrome",
+    ],
 )
 
 esbuild(
-	name = "background-bundle",
-	entry_point = "background.ts",
-	deps = [":background"],
+    name = "background-bundle",
+    entry_point = "background.ts",
+    deps = [":background"],
 )
 
 ts_project(
     name = "options",
     srcs = ["options.ts"],
-    deps = [
-    ":app",
-	    "@npm//@types/chrome:chrome",
-    ],
     declaration = True,
+    deps = [
+        ":app",
+        "@npm//@types/chrome",
+    ],
 )
 
 # See https://esbuild.github.io/content-types/#typescript-caveats for additional
@@ -61,20 +61,20 @@ ts_project(
 #  isolatedModules = true
 #  esModuleInterop = true
 esbuild(
-	name = "options-bundle",
-	entry_point = "options.ts",
-	deps = [":options"],
+    name = "options-bundle",
+    entry_point = "options.ts",
+    deps = [":options"],
 )
 
 filegroup(
     name = "optionsui",
     srcs = [
-	":background-bundle.js",
-	":background-bundle.js.map",
         "options.html",
-	":options-bundle.js",
-	":options-bundle.js.map",
         "style.css",
+        ":background-bundle.js",
+        ":background-bundle.js.map",
+        ":options-bundle.js",
+        ":options-bundle.js.map",
     ],
     visibility = ["//visibility:public"],
 )
