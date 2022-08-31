@@ -142,6 +142,11 @@ npm_install(
     package_lock_json = "//:package-lock.json",
 )
 
+# Enable esbuild for merging Javascript/Typescript.
+load("@build_bazel_rules_nodejs//toolchains/esbuild:esbuild_repositories.bzl", "esbuild_repositories")
+
+esbuild_repositories(npm_repository = "npm")
+
 # Skylib for helpful utilities in custom rules.
 
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")

@@ -7,7 +7,7 @@
     "128": "img/icon128.png"
   },
   "background": {
-    "service_worker": "html/background.js"
+    "service_worker": "html/background-bundle.js"
   },
   "options_page": "html/options.html",
   "options_ui": {

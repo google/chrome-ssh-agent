@@ -3,7 +3,8 @@
     "strict": true,
     "target": "es2021",
     "declaration": true,
-    "sourceMap": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
     "rootDirs": [
       ".",
       "../bazel-out/host/bin/html",

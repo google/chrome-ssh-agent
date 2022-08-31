@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@bazel/typescript": "*",
+    "@bazel/esbuild": "*",
     "@types/chrome": "*",
     "typescript": "*"
   }

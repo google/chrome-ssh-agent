@@ -1,12 +1,7 @@
 load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
 load("@npm//@bazel/typescript:index.bzl", "ts_project", "ts_config")
-load("@npm//typescript:index.bzl", "tsc")
+load("@npm//@bazel/esbuild:index.bzl", "esbuild")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
-
-ts_config(
-    name = "tsconfig_base",
-    src = "tsconfig-base.json",
-)
 
 # Typescript compiler inputs must be within our package. Copy it over.
 genrule(
@@ -33,8 +28,6 @@ ts_project(
 	    "@npm//@types/chrome:chrome",
     ],
     declaration = True,
-    source_map = True,
-    tsconfig = ":tsconfig_base",
 )
 
 ts_project(
@@ -45,26 +38,12 @@ ts_project(
 	    "@npm//@types/chrome:chrome",
     ],
     declaration = True,
-    source_map = True,
-    tsconfig = ":tsconfig_base",
 )
 
-tsc(
-  name = "background_all",
-  outs = ["background-all.js"],
-  args = [
-	  "--project", "$(execpath :tsconfig_base)",
-	  # $(RULEDIR) is a shorthand for the dist/bin directory where Bazel requires we write outputs
-	  "--outFile", "$(RULEDIR)/$@",
-  ],
-  data = [
-	  ":background.ts",
-	  ":app.ts",
-	  ":wasm_exec.js",
-	  ":wasm_exec.d.ts",
-	  ":tsconfig_base",
-	    "@npm//@types/chrome:chrome",
-    ],
+esbuild(
+	name = "background-bundle",
+	entry_point = "background.ts",
+	deps = [":background"],
 )
 
 ts_project(
@@ -75,18 +54,26 @@ ts_project(
 	    "@npm//@types/chrome:chrome",
     ],
     declaration = True,
-    source_map = True,
-    tsconfig = ":tsconfig_base",
+)
+
+# See https://esbuild.github.io/content-types/#typescript-caveats for additional
+# settings that we tweak in tsconfig.json. Specifically:
+#  isolatedModules = true
+#  esModuleInterop = true
+esbuild(
+	name = "options-bundle",
+	entry_point = "options.ts",
+	deps = [":options"],
 )
 
 filegroup(
     name = "optionsui",
     srcs = [
-	":background.js",
-	":background.js.map",  # For easier debugging
+	":background-bundle.js",
+	":background-bundle.js.map",
         "options.html",
-	":options.js",
-	":options.js.map",  # For easier debugging
+	":options-bundle.js",
+	":options-bundle.js.map",
         "style.css",
     ],
     visibility = ["//visibility:public"],

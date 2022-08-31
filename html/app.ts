@@ -14,8 +14,6 @@
 
 import './wasm_exec';
 
-const _global = this;
-
 export class WASMApp {
 	// Go functions exposed for application lifecycle.
 	//
@@ -43,11 +41,13 @@ export class WASMApp {
 		// Wait until defined. We use a timeout to ensure that other
 		// events can proceed. This is important to avoid starving other
 		// event handlers that may happen during app initialization.
-		while (_global === undefined || _global[func] === undefined) {
+		// @ts-ignore
+		while (self[func] === undefined) {
 			await new Promise(done => setTimeout(done, 5));
 		}
 		console.debug(`resolveFunc ${func}: function definition available`);
-		return _global[func];
+		// @ts-ignore
+		return self[func];
 	}
 
 	async waitInit() {
