@@ -19,6 +19,8 @@ import (
 	"testing"
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
+	jut "github.com/google/chrome-ssh-agent/go/jsutil/testing"
+	st "github.com/google/chrome-ssh-agent/go/storage/testing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/norunners/vert"
 )
@@ -36,14 +38,7 @@ type myStruct struct {
 	StringField string `js:"stringField"`
 }
 
-func myStructLess(a *myStruct, b *myStruct) bool {
-	if a.IntField != b.IntField {
-		return a.IntField < b.IntField
-	}
-	return a.StringField < b.StringField
-}
-
-func TestDataEncodeAndDecode(t *testing.T) {
+func TestRawSetAndGet(t *testing.T) {
 	testcases := []struct {
 		description string
 		data        map[string]js.Value
@@ -78,15 +73,19 @@ func TestDataEncodeAndDecode(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			val := dataToValue(tc.data)
-			got, err := valueToData(val)
-			if err != nil {
-				t.Fatalf("parsing failed: %v", err)
-			}
-
-			if diff := cmp.Diff(dataToJSON(got), dataToJSON(tc.data)); diff != "" {
-				t.Errorf("incorrect data; -got +want: %s", diff)
-			}
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				s := NewRaw(st.NewMemArea())
+				if err := s.Set(ctx, tc.data); err != nil {
+					t.Fatalf("Set failed: %v", err)
+				}
+				got, err := s.Get(ctx)
+				if err != nil {
+					t.Fatalf("Get failed: %v", err)
+				}
+				if diff := cmp.Diff(dataToJSON(got), dataToJSON(tc.data)); diff != "" {
+					t.Errorf("incorrect data; -got +want: %s", diff)
+				}
+			})
 		})
 	}
 }
