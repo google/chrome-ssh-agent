@@ -21,10 +21,10 @@ import (
 	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/agentport"
+	"github.com/google/chrome-ssh-agent/go/app"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/storage"
-	"github.com/google/chrome-ssh-agent/go/app"
 	"golang.org/x/crypto/ssh/agent"
 )
 
@@ -43,10 +43,10 @@ func newBackground() *background {
 	agt := agent.NewKeyring()
 	mgr := keys.NewManager(agt, storage.DefaultSync(), storage.DefaultSession())
 	return &background{
-		agent: agt,
-		ports: agentport.AgentPorts{},
-		manager:mgr,
-		server: keys.NewServer(mgr),
+		agent:   agt,
+		ports:   agentport.AgentPorts{},
+		manager: mgr,
+		server:  keys.NewServer(mgr),
 	}
 }
 

@@ -25,7 +25,7 @@ import (
 	jut "github.com/google/chrome-ssh-agent/go/jsutil/testing"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	"github.com/google/chrome-ssh-agent/go/storage"
-	"github.com/google/chrome-ssh-agent/go/storage/fakes"
+	st "github.com/google/chrome-ssh-agent/go/storage/testing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"golang.org/x/crypto/ssh"
@@ -72,7 +72,6 @@ func TestAdd(t *testing.T) {
 		initial        []*initialKey
 		name           string
 		pemPrivateKey  string
-		storageErr     fakes.Errs
 		wantConfigured []string
 		wantErr        error
 	}{
@@ -112,38 +111,24 @@ func TestAdd(t *testing.T) {
 			pemPrivateKey: testdata.WithPassphrase.Private,
 			wantErr:       errInvalidName,
 		},
-		{
-			description:   "fail to write to storage",
-			name:          "new-key",
-			pemPrivateKey: testdata.WithPassphrase.Private,
-			storageErr: fakes.Errs{
-				Set: storageSetErr,
-			},
-			wantErr: storageSetErr,
-		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 
-				syncStorage := fakes.NewMem()
-				sessionStorage := fakes.NewMem()
+				syncStorage := storage.NewRaw(st.NewMemArea())
+				sessionStorage := storage.NewRaw(st.NewMemArea())
 				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 				if err != nil {
 					t.Fatalf("failed to initialize manager: %v", err)
 				}
 
 				// Add the key.
-				func() {
-					syncStorage.SetError(tc.storageErr)
-					defer syncStorage.SetError(fakes.Errs{})
-
-					ferr := mgr.Add(ctx, tc.name, tc.pemPrivateKey)
-					if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-						t.Errorf("incorrect error; -got +want: %s", diff)
-					}
-				}()
+				err = mgr.Add(ctx, tc.name, tc.pemPrivateKey)
+				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error; -got +want: %s", diff)
+				}
 
 				// Ensure the correct keys are configured at the end.
 				configured, err := mgr.Configured(ctx)
@@ -165,7 +150,6 @@ func TestRemove(t *testing.T) {
 		initial        []*initialKey
 		byName         string
 		byID           ID
-		storageErr     fakes.Errs
 		wantConfigured []string
 		wantErr        error
 	}{
@@ -191,43 +175,13 @@ func TestRemove(t *testing.T) {
 			byID:           ID("bogus-id"),
 			wantConfigured: []string{"new-key"},
 		},
-		{
-			description: "fail to read from storage",
-			initial: []*initialKey{
-				{
-					Name:          "new-key",
-					PEMPrivateKey: testdata.WithPassphrase.Private,
-				},
-			},
-			byName: "new-key",
-			storageErr: fakes.Errs{
-				Get: storageGetErr,
-			},
-			wantConfigured: []string{"new-key"},
-			wantErr:        storageGetErr,
-		},
-		{
-			description: "fail to write to storage",
-			initial: []*initialKey{
-				{
-					Name:          "new-key",
-					PEMPrivateKey: testdata.WithPassphrase.Private,
-				},
-			},
-			byName: "new-key",
-			storageErr: fakes.Errs{
-				Delete: storageDeleteErr,
-			},
-			wantConfigured: []string{"new-key"},
-			wantErr:        storageDeleteErr,
-		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				syncStorage := fakes.NewMem()
-				sessionStorage := fakes.NewMem()
+				syncStorage := storage.NewRaw(st.NewMemArea())
+				sessionStorage := storage.NewRaw(st.NewMemArea())
 				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 				if err != nil {
 					t.Fatalf("failed to initialize manager: %v", err)
@@ -240,15 +194,10 @@ func TestRemove(t *testing.T) {
 				}
 
 				// Remove the key
-				func() {
-					syncStorage.SetError(tc.storageErr)
-					defer syncStorage.SetError(fakes.Errs{})
-
-					ferr := mgr.Remove(ctx, id)
-					if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-						t.Errorf("incorrect error; -got +want: %s", diff)
-					}
-				}()
+				err = mgr.Remove(ctx, id)
+				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error; -got +want: %s", diff)
+				}
 
 				// Ensure the correct keys are configured at the end.
 				configured, err := mgr.Configured(ctx)
@@ -268,7 +217,6 @@ func TestConfigured(t *testing.T) {
 	testcases := []struct {
 		description    string
 		initial        []*initialKey
-		storageErr     fakes.Errs
 		wantConfigured []string
 		wantErr        error
 	}{
@@ -289,45 +237,27 @@ func TestConfigured(t *testing.T) {
 			},
 			wantConfigured: []string{"new-key-1", "new-key-2"},
 		},
-		{
-			description: "fail to read from storage",
-			initial: []*initialKey{
-				{
-					Name:          "new-key",
-					PEMPrivateKey: testdata.WithPassphrase.Private,
-				},
-			},
-			storageErr: fakes.Errs{
-				Get: storageGetErr,
-			},
-			wantErr: storageGetErr,
-		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				syncStorage := fakes.NewMem()
-				sessionStorage := fakes.NewMem()
+				syncStorage := storage.NewRaw(st.NewMemArea())
+				sessionStorage := storage.NewRaw(st.NewMemArea())
 				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 				if err != nil {
 					t.Fatalf("failed to initialize manager: %v", err)
 				}
 
 				// Enumerate the keys.
-				func() {
-					syncStorage.SetError(tc.storageErr)
-					defer syncStorage.SetError(fakes.Errs{})
-
-					configured, err := mgr.Configured(ctx)
-					if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-						t.Errorf("incorrect error; -got +want: %s", diff)
-					}
-					names := configuredKeyNames(configured)
-					if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
-						t.Errorf("incorrect configured keys; -got +want: %s", diff)
-					}
-				}()
+				configured, err := mgr.Configured(ctx)
+				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error; -got +want: %s", diff)
+				}
+				names := configuredKeyNames(configured)
+				if diff := cmp.Diff(names, tc.wantConfigured); diff != "" {
+					t.Errorf("incorrect configured keys; -got +want: %s", diff)
+				}
 			})
 		})
 	}
@@ -340,7 +270,6 @@ func TestLoadAndLoaded(t *testing.T) {
 		byName      string
 		byID        ID
 		passphrase  string
-		storageErr  fakes.Errs
 		wantLoaded  []string
 		wantErr     error
 	}{
@@ -533,28 +462,13 @@ func TestLoadAndLoaded(t *testing.T) {
 			passphrase: "some passphrase",
 			wantErr:    errKeyNotFound,
 		},
-		{
-			description: "fail to read from storage",
-			initial: []*initialKey{
-				{
-					Name:          "good-key",
-					PEMPrivateKey: testdata.WithPassphrase.Private,
-				},
-			},
-			byName:     "good-key",
-			passphrase: testdata.WithPassphrase.Passphrase,
-			storageErr: fakes.Errs{
-				Get: storageGetErr,
-			},
-			wantErr: storageGetErr,
-		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				syncStorage := fakes.NewMem()
-				sessionStorage := fakes.NewMem()
+				syncStorage := storage.NewRaw(st.NewMemArea())
+				sessionStorage := storage.NewRaw(st.NewMemArea())
 				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 				if err != nil {
 					t.Fatalf("failed to initialize manager: %v", err)
@@ -567,15 +481,10 @@ func TestLoadAndLoaded(t *testing.T) {
 				}
 
 				// Load the key
-				func() {
-					syncStorage.SetError(tc.storageErr)
-					defer syncStorage.SetError(fakes.Errs{})
-
-					ferr := mgr.Load(ctx, id, tc.passphrase)
-					if diff := cmp.Diff(ferr, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
-						t.Errorf("incorrect error; -got +want: %s", diff)
-					}
-				}()
+				err = mgr.Load(ctx, id, tc.passphrase)
+				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
+					t.Errorf("incorrect error; -got +want: %s", diff)
+				}
 
 				// Ensure the correct keys are loaded at the end.
 				loaded, err := mgr.Loaded(ctx)
@@ -654,8 +563,8 @@ func TestUnload(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				syncStorage := fakes.NewMem()
-				sessionStorage := fakes.NewMem()
+				syncStorage := storage.NewRaw(st.NewMemArea())
+				sessionStorage := storage.NewRaw(st.NewMemArea())
 				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)
 				if err != nil {
 					t.Fatalf("failed to initialize manager: %v", err)
@@ -703,8 +612,8 @@ func TestGetID(t *testing.T) {
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		// Create a manager with one configured key.  We load the key and
 		// ensure we can correctly extract the ID.
-		syncStorage := fakes.NewMem()
-		sessionStorage := fakes.NewMem()
+		syncStorage := storage.NewRaw(st.NewMemArea())
+		sessionStorage := storage.NewRaw(st.NewMemArea())
 		agt := agent.NewKeyring()
 		mgr, err := newTestManager(ctx, agt, syncStorage, sessionStorage, []*initialKey{
 			{
@@ -763,8 +672,8 @@ func TestGetID(t *testing.T) {
 func TestLoadFromSession(t *testing.T) {
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		// Storage peresists across multiple manager instances
-		syncStorage := fakes.NewMem()
-		sessionStorage := fakes.NewMem()
+		syncStorage := storage.NewRaw(st.NewMemArea())
+		sessionStorage := storage.NewRaw(st.NewMemArea())
 
 		// First manager instance configures and loads a key.
 		var wantID ID

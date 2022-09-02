@@ -30,7 +30,8 @@ import (
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/keys/testdata"
 	mfakes "github.com/google/chrome-ssh-agent/go/message/fakes"
-	sfakes "github.com/google/chrome-ssh-agent/go/storage/fakes"
+	"github.com/google/chrome-ssh-agent/go/storage"
+	st "github.com/google/chrome-ssh-agent/go/storage/testing"
 	"github.com/google/chrome-ssh-agent/go/testutil"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -111,8 +112,8 @@ func (h *testHarness) waitKeyUnloaded(ctx jsutil.AsyncContext, name string) {
 }
 
 func newHarness() *testHarness {
-	syncStorage := sfakes.NewMem()
-	sessionStorage := sfakes.NewMem()
+	syncStorage := storage.NewRaw(st.NewMemArea())
+	sessionStorage := storage.NewRaw(st.NewMemArea())
 	msg := mfakes.NewHub()
 
 	agt := agent.NewKeyring()

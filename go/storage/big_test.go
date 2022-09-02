@@ -22,7 +22,7 @@ import (
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	jut "github.com/google/chrome-ssh-agent/go/jsutil/testing"
-	"github.com/google/chrome-ssh-agent/go/storage/fakes"
+	st "github.com/google/chrome-ssh-agent/go/storage/testing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/norunners/vert"
 )
@@ -131,7 +131,7 @@ func TestSetAndGet(t *testing.T) {
 			}
 
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				b := NewBig(tc.maxItemBytes, fakes.NewMem())
+				b := NewBig(tc.maxItemBytes, NewRaw(st.NewMemArea()))
 				if err := b.Set(ctx, tc.set); err != nil {
 					t.Fatalf("set failed: %v", err)
 				}
@@ -235,7 +235,7 @@ func TestDelete(t *testing.T) {
 			}
 
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				b := NewBig(tc.maxItemBytes, fakes.NewMem())
+				b := NewBig(tc.maxItemBytes, NewRaw(st.NewMemArea()))
 				if err := b.Set(ctx, tc.set); err != nil {
 					t.Fatalf("set failed: %v", err)
 				}

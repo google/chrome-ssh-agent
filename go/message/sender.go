@@ -42,7 +42,7 @@ type Sender interface {
 // ExtSender sends messages within our own extension.
 //
 // ExtSender implements the Sender interface.
-type ExtSender struct {}
+type ExtSender struct{}
 
 // NewLocalSender returns a ExtSender for sending messages within our own
 // extension.

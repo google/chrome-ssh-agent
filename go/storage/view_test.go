@@ -20,7 +20,7 @@ import (
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	jut "github.com/google/chrome-ssh-agent/go/jsutil/testing"
-	"github.com/google/chrome-ssh-agent/go/storage/fakes"
+	st "github.com/google/chrome-ssh-agent/go/storage/testing"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -93,7 +93,7 @@ func TestViewSet(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				raw := fakes.NewMem()
+				raw := NewRaw(st.NewMemArea())
 				if err := raw.Set(ctx, tc.initRaw); err != nil {
 					t.Fatalf("initial Set failed: %v", err)
 				}
@@ -162,7 +162,7 @@ func TestViewGet(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				raw := fakes.NewMem()
+				raw := NewRaw(st.NewMemArea())
 				if err := raw.Set(ctx, tc.initRaw); err != nil {
 					t.Fatalf("initial Set failed: %v", err)
 				}
@@ -240,7 +240,7 @@ func TestViewDelete(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				raw := fakes.NewMem()
+				raw := NewRaw(st.NewMemArea())
 				if err := raw.Set(ctx, tc.initRaw); err != nil {
 					t.Fatalf("initial Set failed: %v", err)
 				}
@@ -265,7 +265,7 @@ func TestViewDelete(t *testing.T) {
 
 func TestMultipleViews(t *testing.T) {
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
-		raw := fakes.NewMem()
+		raw := NewRaw(st.NewMemArea())
 		v1 := NewView("foo", raw)
 		v2 := NewView("bar", raw)
 

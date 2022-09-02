@@ -30,12 +30,13 @@ go_wasm_test(
     embed = [":keys"],
     node_deps = [
         "@npm//web-locks",
+        "@npm//mem-storage-area",
     ],
     deps = [
         "//go/jsutil/testing",
         "//go/keys/testdata",
         "//go/message/fakes",
-        "//go/storage/fakes",
+        "//go/storage/testing",
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",
         "@org_golang_x_crypto//ssh",

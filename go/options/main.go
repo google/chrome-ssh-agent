@@ -19,8 +19,8 @@ package main
 import (
 	"syscall/js"
 
-	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/app"
+	"github.com/google/chrome-ssh-agent/go/dom"
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/google/chrome-ssh-agent/go/keys"
 	"github.com/google/chrome-ssh-agent/go/message"
@@ -30,7 +30,7 @@ import (
 
 type options struct {
 	manager keys.Manager
-	doc *dom.Doc
+	doc     *dom.Doc
 }
 
 func newOptions() *options {
@@ -39,7 +39,7 @@ func newOptions() *options {
 
 	return &options{
 		manager: mgr,
-		doc: doc,
+		doc:     doc,
 	}
 }
 

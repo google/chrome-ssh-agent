@@ -24,6 +24,7 @@ go_wasm_test(
     embed = [":optionsui"],
     node_deps = [
         "@npm//web-locks",
+        "@npm//mem-storage-area",
         "@npm//jsdom",
     ],
     deps = [
@@ -33,7 +34,8 @@ go_wasm_test(
         "//go/keys",
         "//go/keys/testdata",
         "//go/message/fakes",
-        "//go/storage/fakes",
+        "//go/storage",
+        "//go/storage/testing",
         "//go/testutil",
         "@com_github_google_go_cmp//cmp",
         "@com_github_google_go_cmp//cmp/cmpopts",

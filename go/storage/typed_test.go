@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	jut "github.com/google/chrome-ssh-agent/go/jsutil/testing"
-	"github.com/google/chrome-ssh-agent/go/storage/fakes"
+	st "github.com/google/chrome-ssh-agent/go/storage/testing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/norunners/vert"
@@ -39,7 +39,6 @@ func TestTypedReadAll(t *testing.T) {
 	testcases := []struct {
 		description string
 		init        map[string]js.Value
-		errs        fakes.Errs
 		want        []*myStruct
 		wantErr     error
 	}{
@@ -74,26 +73,18 @@ func TestTypedReadAll(t *testing.T) {
 				&myStruct{IntField: 42},
 			},
 		},
-		{
-			description: "passes through errors",
-			errs: fakes.Errs{
-				Get: getError,
-			},
-			wantErr: getError,
-		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				store := fakes.NewMem()
+				store := NewRaw(st.NewMemArea())
 				if err := store.Set(ctx, tc.init); err != nil {
 					t.Fatalf("Set failed: %v", err)
 				}
 
 				ts := NewTyped[myStruct](store, testKeyPrefix)
 
-				store.SetError(tc.errs)
 				got, err := ts.ReadAll(ctx)
 				if diff := cmp.Diff(got, tc.want, cmpopts.SortSlices(myStructLess)); diff != "" {
 					t.Errorf("incorrect result: -got +want: %s", diff)
@@ -111,7 +102,6 @@ func TestTypedRead(t *testing.T) {
 		description string
 		init        map[string]js.Value
 		test        func(v *myStruct) bool
-		errs        fakes.Errs
 		want        *myStruct
 		wantErr     error
 	}{
@@ -133,27 +123,18 @@ func TestTypedRead(t *testing.T) {
 			test: func(v *myStruct) bool { return v.IntField == 1000 },
 			want: nil,
 		},
-		{
-			description: "passes through errors",
-			errs: fakes.Errs{
-				Get: getError,
-			},
-			test:    func(v *myStruct) bool { return v.IntField == 42 },
-			wantErr: getError,
-		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				store := fakes.NewMem()
+				store := NewRaw(st.NewMemArea())
 				if err := store.Set(ctx, tc.init); err != nil {
 					t.Fatalf("Set failed: %v", err)
 				}
 
 				ts := NewTyped[myStruct](store, testKeyPrefix)
 
-				store.SetError(tc.errs)
 				got, err := ts.Read(ctx, tc.test)
 				if diff := cmp.Diff(got, tc.want); diff != "" {
 					t.Errorf("incorrect result: -got +want: %s", diff)
@@ -171,7 +152,6 @@ func TestTypedWrite(t *testing.T) {
 		description string
 		init        map[string]js.Value
 		write       *myStruct
-		errs        fakes.Errs
 		want        []*myStruct
 		wantErr     error
 	}{
@@ -201,32 +181,22 @@ func TestTypedWrite(t *testing.T) {
 				&myStruct{StringField: "foo"},
 			},
 		},
-		{
-			description: "passes through errors",
-			write:       &myStruct{IntField: 100},
-			errs: fakes.Errs{
-				Set: setError,
-			},
-			wantErr: setError,
-		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				store := fakes.NewMem()
+				store := NewRaw(st.NewMemArea())
 				if err := store.Set(ctx, tc.init); err != nil {
 					t.Fatalf("Set failed: %v", err)
 				}
 
 				ts := NewTyped[myStruct](store, testKeyPrefix)
 
-				store.SetError(tc.errs)
 				err := ts.Write(ctx, tc.write)
 				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
 					t.Errorf("incorrect error: -got +want: %s", diff)
 				}
-				store.SetError(fakes.Errs{})
 
 				got, err := ts.ReadAll(ctx)
 				if err != nil {
@@ -245,7 +215,6 @@ func TestTypedDelete(t *testing.T) {
 		description string
 		init        map[string]js.Value
 		test        func(v *myStruct) bool
-		errs        fakes.Errs
 		want        []*myStruct
 		wantErr     error
 	}{
@@ -272,40 +241,22 @@ func TestTypedDelete(t *testing.T) {
 				&myStruct{StringField: "foo"},
 			},
 		},
-		{
-			description: "passes through errors",
-			init: map[string]js.Value{
-				testKeyPrefix + "." + "1": vert.ValueOf(&myStruct{IntField: 42}).JSValue(),
-				testKeyPrefix + "." + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
-			},
-			test: func(v *myStruct) bool { return v.IntField == 42 },
-			errs: fakes.Errs{
-				Delete: deleteError,
-			},
-			want: []*myStruct{
-				&myStruct{IntField: 42},
-				&myStruct{StringField: "foo"},
-			},
-			wantErr: deleteError,
-		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-				store := fakes.NewMem()
+				store := NewRaw(st.NewMemArea())
 				if err := store.Set(ctx, tc.init); err != nil {
 					t.Fatalf("Set failed: %v", err)
 				}
 
 				ts := NewTyped[myStruct](store, testKeyPrefix)
 
-				store.SetError(tc.errs)
 				err := ts.Delete(ctx, tc.test)
 				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
 					t.Errorf("incorrect error: -got +want: %s", diff)
 				}
-				store.SetError(fakes.Errs{})
 
 				got, err := ts.ReadAll(ctx)
 				if err != nil {
