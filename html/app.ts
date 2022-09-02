@@ -14,15 +14,19 @@
 
 import './wasm_exec';
 
-export class WASMApp {
-	// Go functions exposed for application lifecycle.
-	//
-	// Keep in sync with go/jsutil/app.go
-	static _INIT_WAIT_FUNC = 'appInitWaitImpl';
-	static _TERMINATE_FUNC = 'appTerminateImpl';
+// Go functions exposed for application lifecycle.
+//
+// Keep names in sync with go/jsutil/app.go
+interface appHandlers {
+	appInitWaitImpl: () => Promise<void>;
+	appTerminateImpl: () => Promise<void>;
+}
 
+// Manage a Go WASM app.
+export class WASMApp {
 	private _running: Promise<boolean>;
 
+	// Path is the path to compiled WebAssembly program.
 	constructor(path: string) {
 		console.debug("Loading WASM app");
 		const go = new Go();
@@ -34,30 +38,38 @@ export class WASMApp {
 			});
 	}
 
-	async _resolveFunc(func: string): Promise<() => void> {
-		console.debug(`resolveFunc ${func}: waiting for app to run`);
+	// Object to which Go application installs handlers.
+	private get handlers(): appHandlers {
+		return self as unknown as appHandlers;
+	}
+
+	// Wait for app to initialize, and for a particular condition.
+	private async waitForAppInit(cond: () => boolean): Promise<void> {
+		console.debug("waitForAppInit: waiting for app to run");
 		await this._running;
-		console.debug(`resolveFunc ${func}: waiting for function definition`);
-		// Wait until defined. We use a timeout to ensure that other
+		
+		// Wait for condition. We use a timeout to ensure that other
 		// events can proceed. This is important to avoid starving other
 		// event handlers that may happen during app initialization.
-		// @ts-ignore
-		while (self[func] === undefined) {
+		console.debug("waitForAppInit: waiting for condition");
+		while (!cond()) {
 			await new Promise(done => setTimeout(done, 5));
 		}
-		console.debug(`resolveFunc ${func}: function definition available`);
-		// @ts-ignore
-		return self[func];
+		
+		console.debug("waitForAppInit: finished");
 	}
 
-	async waitInit() {
-		const f = await this._resolveFunc(WASMApp._INIT_WAIT_FUNC);
-		return f();
+	// Wait for application initialization to complete.
+	public async waitInit() {
+		await this.waitForAppInit(() => this.handlers.appInitWaitImpl !== undefined);
+		return this.handlers.appInitWaitImpl();
 	}
 
-	async terminate() {
-		const f = await this._resolveFunc(WASMApp._TERMINATE_FUNC);
-		return f();
+	// Terminate the application.  This initiates the termination, but does
+	// not wait for termination to complete.
+	public async terminate() {
+		await this.waitForAppInit(() => this.handlers.appTerminateImpl !== undefined);
+		return this.handlers.appTerminateImpl();
 	}
 }
 
