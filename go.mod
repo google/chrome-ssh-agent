@@ -13,6 +13,7 @@ require (
 require (
 	github.com/bazelbuild/rules_go v0.34.0
 	github.com/norunners/vert v0.0.0-20211229045251-b4c39e2856da
+	golang.org/x/tools v0.0.0-20190624190245-7f2218787638
 )
 
 require (
