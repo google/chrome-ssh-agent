@@ -96,3 +96,80 @@ func TestRawSetAndGet(t *testing.T) {
 		})
 	}
 }
+
+func TestRawDelete(t *testing.T) {
+	testcases := []struct {
+		description string
+		init        map[string]js.Value
+		del         []string
+		want        map[string]js.Value
+	}{
+		{
+			description: "delete single entry",
+			init: map[string]js.Value{
+				"key1": js.ValueOf(1),
+				"key2": js.ValueOf(2),
+				"key3": js.ValueOf(3),
+			},
+			del: []string{"key2"},
+			want: map[string]js.Value{
+				"key1": js.ValueOf(1),
+				"key3": js.ValueOf(3),
+			},
+		},
+		{
+			description: "delete multiple entries",
+			init: map[string]js.Value{
+				"key1": js.ValueOf(1),
+				"key2": js.ValueOf(2),
+				"key3": js.ValueOf(3),
+			},
+			del: []string{"key2", "key3"},
+			want: map[string]js.Value{
+				"key1": js.ValueOf(1),
+			},
+		},
+		{
+			description: "delete missing entry",
+			init: map[string]js.Value{
+				"key": js.ValueOf(2),
+			},
+			del: []string{"missing"},
+			want: map[string]js.Value{
+				"key": js.ValueOf(2),
+			},
+		},
+		{
+			description: "delete no entry",
+			init: map[string]js.Value{
+				"key": js.ValueOf(2),
+			},
+			del: []string{},
+			want: map[string]js.Value{
+				"key": js.ValueOf(2),
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.description, func(t *testing.T) {
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				s := NewRaw(st.NewMemArea())
+				if err := s.Set(ctx, tc.init); err != nil {
+					t.Fatalf("Set failed: %v", err)
+				}
+				if err := s.Delete(ctx, tc.del); err != nil {
+					t.Fatalf("Delete failed: %v", err)
+				}
+
+				got, err := s.Get(ctx)
+				if err != nil {
+					t.Fatalf("Get failed: %v", err)
+				}
+				if diff := cmp.Diff(dataToJSON(got), dataToJSON(tc.want)); diff != "" {
+					t.Errorf("incorrect data; -got +want: %s", diff)
+				}
+			})
+		})
+	}
+}
