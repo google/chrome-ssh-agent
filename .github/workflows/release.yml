@@ -29,9 +29,10 @@ jobs:
           files: |
             bazel-bin/chrome-ssh-agent.zip
       - name: Publish to Webstore
-        run: bazel run release:publish
-        env:
-          EXTENSION_ID: eechpbnaifiimgajnomdipfaamobdfha
-          WEBSTORE_CLIENT_ID: ${{ secrets.WEBSTORE_CLIENT_ID }}
-          WEBSTORE_CLIENT_SECRET: ${{ secrets.WEBSTORE_CLIENT_SECRET }}
-          WEBSTORE_REFRESH_TOKEN: ${{ secrets.WEBSTORE_REFRESH_TOKEN }}
+        uses: mnao305/chrome-extension-upload@3.0.0
+        with:
+          file-path;: bazel-bin/chrome-ssh-agent.zip
+          extension-id: eechpbnaifiimgajnomdipfaamobdfha
+          client-id: ${{ secrets.WEBSTORE_CLIENT_ID }}
+          client-secret: ${{ secrets.WEBSTORE_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.WEBSTORE_REFRESH_TOKEN }}
