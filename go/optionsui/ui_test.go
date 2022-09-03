@@ -56,6 +56,7 @@ type testHarness struct {
 	dom       *dom.Doc
 	UI        *UI
 
+	loadingText      js.Value
 	addDialog        js.Value
 	addButton        js.Value
 	addName          js.Value
@@ -79,6 +80,10 @@ func mustPoll(ctx jsutil.AsyncContext, done func() bool) {
 	if !poll(ctx, done) {
 		panic("timed out waiting for condition")
 	}
+}
+
+func (h *testHarness) waitLoaded(ctx jsutil.AsyncContext) {
+	mustPoll(ctx, func() bool { return dom.TextContent(h.loadingText) == "" })
 }
 
 func (h *testHarness) waitDialogOpen(ctx jsutil.AsyncContext, dialog js.Value) {
@@ -132,6 +137,7 @@ func newHarness() *testHarness {
 		Client:           cli,
 		dom:              domObj,
 		UI:               ui,
+		loadingText:      domObj.GetElement("loadingMessage"),
 		addDialog:        domObj.GetElement("addDialog"),
 		addButton:        domObj.GetElement("add"),
 		addName:          domObj.GetElement("addName"),
@@ -612,6 +618,7 @@ func TestUserActions(t *testing.T) {
 			defer h.Release()
 
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				h.waitLoaded(ctx)
 				tc.sequence(ctx, h)
 				// Give some buffer for any pending async
 				// operations to settle.
