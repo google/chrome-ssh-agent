@@ -26,7 +26,7 @@ func init() {
 	// tests, which run under node.js.  It is available by default when
 	// running inside of browsers.
 	js.Global().Call("eval", `
-		var URLSearchParams = require('url-search-params');
+		var URLSearchParams = require('@ungap/url-search-params');
 	`)
 }
 

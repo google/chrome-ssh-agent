@@ -21,7 +21,7 @@ go_wasm_test(
     embed = [":dom"],
     node_deps = [
         "@npm//jsdom",
-        "@npm//url-search-params",
+        "@npm//@ungap/url-search-params",
     ],
     deps = [
         "//go/dom/testing",
