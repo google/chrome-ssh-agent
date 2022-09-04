@@ -392,7 +392,6 @@ func TestDeleteViewPrefixes(t *testing.T) {
 				"bar.some-key":  "4",
 			},
 		},
-
 	}
 
 	for _, tc := range testcases {
