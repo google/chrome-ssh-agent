@@ -1,7 +1,6 @@
 {
   "name": "chrome-ssh-agent",
   "dependencies": {
-    "@bazel/runfiles": "*",
     "jsdom": "*",
     "mem-storage-area": "*",
     "@ungap/url-search-params": "*",
