@@ -139,8 +139,8 @@ type Manager interface {
 func NewManager(agt agent.Agent, syncStorage, sessionStorage storage.Area) *DefaultManager {
 	return &DefaultManager{
 		agent:       agt,
-		storedKeys:  storage.NewTyped[storedKey](syncStorage, keyPrefix),
-		sessionKeys: storage.NewTyped[sessionKey](sessionStorage, keyPrefix),
+		storedKeys:  storage.NewTyped[storedKey](syncStorage, storedKeyPrefixes),
+		sessionKeys: storage.NewTyped[sessionKey](sessionStorage, sessionKeyPrefixes),
 	}
 }
 
@@ -216,9 +216,15 @@ type sessionKey struct {
 	PrivateKey string `js:"privateKey"`
 }
 
+var (
+	// storedKeyPrefix is the prefix for keys stored in persistent storage.
+	storedKeyPrefixes = []string{"key"}
+	// sessionKeyPrefix is the prefix for key material stored in-memory
+	// for our current session.
+	sessionKeyPrefixes = []string{"key"}
+)
+
 const (
-	// keyPrefix is the prefix for keys stored in persistent storage.
-	keyPrefix = "key"
 	// commentPrefix is the prefix for the comment included when a
 	// configured key is loaded into the agent. The full comment is of the
 	// form 'chrome-ssh-agent:<id>'.

@@ -27,14 +27,14 @@ import (
 func TestViewSet(t *testing.T) {
 	testcases := []struct {
 		description string
-		prefix      string
+		prefixes    []string
 		initRaw     map[string]js.Value
 		set         map[string]js.Value
 		wantRaw     map[string]string
 	}{
 		{
 			description: "simple set",
-			prefix:      "foo",
+			prefixes:    []string{"foo"},
 			set: map[string]js.Value{
 				"my-key": js.ValueOf(2),
 			},
@@ -44,7 +44,7 @@ func TestViewSet(t *testing.T) {
 		},
 		{
 			description: "multiple values",
-			prefix:      "foo",
+			prefixes:    []string{"foo"},
 			set: map[string]js.Value{
 				"my-key":    js.ValueOf(2),
 				"other-key": js.ValueOf("some-val"),
@@ -55,8 +55,22 @@ func TestViewSet(t *testing.T) {
 			},
 		},
 		{
+			description: "multiple prefixes",
+			prefixes:    []string{"foo-new", "foo-old"},
+			set: map[string]js.Value{
+				"my-key":    js.ValueOf(2),
+				"other-key": js.ValueOf("some-val"),
+			},
+			wantRaw: map[string]string{
+				"foo-old.my-key":    "2",
+				"foo-old.other-key": `"some-val"`,
+				"foo-new.my-key":    "2",
+				"foo-new.other-key": `"some-val"`,
+			},
+		},
+		{
 			description: "overwrite same prefix",
-			prefix:      "foo",
+			prefixes:    []string{"foo"},
 			initRaw: map[string]js.Value{
 				"foo.my-key":    js.ValueOf(3),
 				"foo.other-key": js.ValueOf("other-val"),
@@ -72,7 +86,7 @@ func TestViewSet(t *testing.T) {
 		},
 		{
 			description: "don't overwrite other prefixes",
-			prefix:      "foo",
+			prefixes:    []string{"foo"},
 			initRaw: map[string]js.Value{
 				"bar.my-key":    js.ValueOf(3),
 				"bar.other-key": js.ValueOf("other-val"),
@@ -98,7 +112,7 @@ func TestViewSet(t *testing.T) {
 					t.Fatalf("initial Set failed: %v", err)
 				}
 
-				view := NewView(tc.prefix, raw)
+				view := NewView(tc.prefixes, raw)
 				if err := view.Set(ctx, tc.set); err != nil {
 					t.Fatalf("View.Set failed: %v", err)
 				}
@@ -119,13 +133,13 @@ func TestViewSet(t *testing.T) {
 func TestViewGet(t *testing.T) {
 	testcases := []struct {
 		description string
-		prefix      string
+		prefixes    []string
 		initRaw     map[string]js.Value
 		want        map[string]string
 	}{
 		{
 			description: "simple get",
-			prefix:      "foo",
+			prefixes:    []string{"foo"},
 			initRaw: map[string]js.Value{
 				"foo.my-key": js.ValueOf(2),
 			},
@@ -135,7 +149,7 @@ func TestViewGet(t *testing.T) {
 		},
 		{
 			description: "multiple values",
-			prefix:      "foo",
+			prefixes:    []string{"foo"},
 			initRaw: map[string]js.Value{
 				"foo.my-key":    js.ValueOf(2),
 				"foo.other-key": js.ValueOf("some-val"),
@@ -146,8 +160,33 @@ func TestViewGet(t *testing.T) {
 			},
 		},
 		{
+			description: "multiple prefixes",
+			prefixes:    []string{"foo-new", "foo-old"},
+			initRaw: map[string]js.Value{
+				"foo-new.my-key":    js.ValueOf(2),
+				"foo-old.other-key": js.ValueOf("some-val"),
+			},
+			want: map[string]string{
+				"my-key":    "2",
+				"other-key": `"some-val"`,
+			},
+		},
+		{
+			description: "earlier prefix takes precedence",
+			prefixes:    []string{"foo-new", "foo-old"},
+			initRaw: map[string]js.Value{
+				"foo-new.my-key":    js.ValueOf(4),
+				"foo-old.my-key":    js.ValueOf(2),
+				"foo-new.other-key": js.ValueOf("some-val"),
+			},
+			want: map[string]string{
+				"my-key":    "4",
+				"other-key": `"some-val"`,
+			},
+		},
+		{
 			description: "ignore other prefixes",
-			prefix:      "foo",
+			prefixes:    []string{"foo"},
 			initRaw: map[string]js.Value{
 				"my-key":        js.ValueOf("my-val"), // No prefix
 				"bar.my-key":    js.ValueOf(3),        // Different prefix
@@ -167,7 +206,7 @@ func TestViewGet(t *testing.T) {
 					t.Fatalf("initial Set failed: %v", err)
 				}
 
-				view := NewView(tc.prefix, raw)
+				view := NewView(tc.prefixes, raw)
 				got, err := getJSON(ctx, view)
 				if err != nil {
 					t.Fatalf("View.Get failed: %v", err)
@@ -184,14 +223,14 @@ func TestViewGet(t *testing.T) {
 func TestViewDelete(t *testing.T) {
 	testcases := []struct {
 		description string
-		prefix      string
+		prefixes    []string
 		initRaw     map[string]js.Value
 		del         []string
 		wantRaw     map[string]string
 	}{
 		{
 			description: "simple delete",
-			prefix:      "foo",
+			prefixes:    []string{"foo"},
 			initRaw: map[string]js.Value{
 				"foo.my-key":    js.ValueOf(2),
 				"foo.other-key": js.ValueOf("some-val"),
@@ -205,7 +244,7 @@ func TestViewDelete(t *testing.T) {
 		},
 		{
 			description: "multiple values",
-			prefix:      "foo",
+			prefixes:    []string{"foo"},
 			initRaw: map[string]js.Value{
 				"foo.my-key":          js.ValueOf(2),
 				"foo.other-key":       js.ValueOf("some-val"),
@@ -220,8 +259,24 @@ func TestViewDelete(t *testing.T) {
 			},
 		},
 		{
+			description: "multiple prefixes",
+			prefixes:    []string{"foo-new", "foo-old"},
+			initRaw: map[string]js.Value{
+				"foo-new.my-key":          js.ValueOf(2),
+				"foo-old.other-key":       js.ValueOf("some-val"),
+				"foo-new.yet-another-key": js.ValueOf("some-other-val"),
+			},
+			del: []string{
+				"my-key",
+				"other-key",
+			},
+			wantRaw: map[string]string{
+				"foo-new.yet-another-key": `"some-other-val"`,
+			},
+		},
+		{
 			description: "ignore other prefixes",
-			prefix:      "foo",
+			prefixes:    []string{"foo"},
 			initRaw: map[string]js.Value{
 				"my-key":        js.ValueOf("my-val"), // No prefix
 				"bar.my-key":    js.ValueOf(3),        // Different prefix
@@ -245,7 +300,7 @@ func TestViewDelete(t *testing.T) {
 					t.Fatalf("initial Set failed: %v", err)
 				}
 
-				view := NewView(tc.prefix, raw)
+				view := NewView(tc.prefixes, raw)
 				if err := view.Delete(ctx, tc.del); err != nil {
 					t.Fatalf("View.Delete failed: %v", err)
 				}
@@ -266,8 +321,8 @@ func TestViewDelete(t *testing.T) {
 func TestMultipleViews(t *testing.T) {
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		raw := NewRaw(st.NewMemArea())
-		v1 := NewView("foo", raw)
-		v2 := NewView("bar", raw)
+		v1 := NewView([]string{"foo"}, raw)
+		v2 := NewView([]string{"bar"}, raw)
 
 		if err := v1.Set(ctx, map[string]js.Value{"my-key": js.ValueOf(2)}); err != nil {
 			t.Fatalf("Set failed: %v", err)
@@ -292,4 +347,59 @@ func TestMultipleViews(t *testing.T) {
 			t.Errorf("incorrect view2: -got +want: %s", diff)
 		}
 	})
+}
+
+func TestDeleteViewPrefixes(t *testing.T) {
+	testcases := []struct {
+		description string
+		prefixes    []string
+		initRaw     map[string]js.Value
+		wantRaw     map[string]string
+	}{
+		{
+			description: "simple delete",
+			prefixes:    []string{"foo"},
+			initRaw: map[string]js.Value{
+				"foo.my-key":    js.ValueOf(2),
+				"foo.other-key": js.ValueOf("some-val"),
+				"bar.some-key":  js.ValueOf(4),
+			},
+			wantRaw: map[string]string{
+				"bar.some-key": "4",
+			},
+		},
+		{
+			description: "multiple prefixes",
+			prefixes:    []string{"foo", "bar"},
+			initRaw: map[string]js.Value{
+				"foo.my-key":    js.ValueOf(2),
+				"foo.other-key": js.ValueOf("some-val"),
+				"bar.some-key":  js.ValueOf(4),
+			},
+			wantRaw: map[string]string{},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.description, func(t *testing.T) {
+			jut.DoSync(func(ctx jsutil.AsyncContext) {
+				raw := NewRaw(st.NewMemArea())
+				if err := raw.Set(ctx, tc.initRaw); err != nil {
+					t.Fatalf("initial Set failed: %v", err)
+				}
+				if err := DeleteViewPrefixes(ctx, tc.prefixes, raw); err != nil {
+					t.Fatalf("DeleteViewPrefixes failed: %v", err)
+				}
+
+				got, err := getJSON(ctx, raw)
+				if err != nil {
+					t.Fatalf("Get failed: %v", err)
+				}
+
+				if diff := cmp.Diff(got, tc.wantRaw); diff != "" {
+					t.Errorf("incorrect result; -got +want: %s", diff)
+				}
+			})
+		})
+	}
 }
