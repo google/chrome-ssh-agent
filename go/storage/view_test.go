@@ -378,6 +378,21 @@ func TestDeleteViewPrefixes(t *testing.T) {
 			},
 			wantRaw: map[string]string{},
 		},
+		{
+			description: "no prefixes",
+			prefixes:    []string{},
+			initRaw: map[string]js.Value{
+				"foo.my-key":    js.ValueOf(2),
+				"foo.other-key": js.ValueOf("some-val"),
+				"bar.some-key":  js.ValueOf(4),
+			},
+			wantRaw: map[string]string{
+				"foo.my-key":    "2",
+				"foo.other-key": `"some-val"`,
+				"bar.some-key":  "4",
+			},
+		},
+
 	}
 
 	for _, tc := range testcases {
