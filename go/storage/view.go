@@ -92,16 +92,16 @@ func (v *View) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
 	}
 
 	ndata := map[string]js.Value{}
-	for k, val := range data {
-		for _, prefix := range v.prefixes {
+	for _, prefix := range v.prefixes {
+		for k, val := range data {
 			sk, ok := v.readKey(prefix, k)
 			if !ok {
 				continue
 			}
 
+			// Don't overwrite; first prefix takes precedence.
 			if _, present := ndata[sk]; !present {
 				ndata[sk] = val
-				continue // First takes precedence; stop.
 			}
 		}
 	}
