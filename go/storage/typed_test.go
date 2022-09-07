@@ -35,6 +35,8 @@ var (
 
 const testKeyPrefix = "key"
 
+var testKeyPrefixes = []string{testKeyPrefix}
+
 func TestTypedReadAll(t *testing.T) {
 	testcases := []struct {
 		description string
@@ -83,7 +85,7 @@ func TestTypedReadAll(t *testing.T) {
 					t.Fatalf("Set failed: %v", err)
 				}
 
-				ts := NewTyped[myStruct](store, testKeyPrefix)
+				ts := NewTyped[myStruct](store, testKeyPrefixes)
 
 				got, err := ts.ReadAll(ctx)
 				if diff := cmp.Diff(got, tc.want, cmpopts.SortSlices(myStructLess)); diff != "" {
@@ -133,7 +135,7 @@ func TestTypedRead(t *testing.T) {
 					t.Fatalf("Set failed: %v", err)
 				}
 
-				ts := NewTyped[myStruct](store, testKeyPrefix)
+				ts := NewTyped[myStruct](store, testKeyPrefixes)
 
 				got, err := ts.Read(ctx, tc.test)
 				if diff := cmp.Diff(got, tc.want); diff != "" {
@@ -191,7 +193,7 @@ func TestTypedWrite(t *testing.T) {
 					t.Fatalf("Set failed: %v", err)
 				}
 
-				ts := NewTyped[myStruct](store, testKeyPrefix)
+				ts := NewTyped[myStruct](store, testKeyPrefixes)
 
 				err := ts.Write(ctx, tc.write)
 				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
@@ -251,7 +253,7 @@ func TestTypedDelete(t *testing.T) {
 					t.Fatalf("Set failed: %v", err)
 				}
 
-				ts := NewTyped[myStruct](store, testKeyPrefix)
+				ts := NewTyped[myStruct](store, testKeyPrefixes)
 
 				err := ts.Delete(ctx, tc.test)
 				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {

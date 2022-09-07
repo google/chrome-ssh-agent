@@ -138,17 +138,21 @@ type Manager interface {
 // supplied agent, and store configured keys in the supplied storage.
 func NewManager(agt agent.Agent, syncStorage, sessionStorage storage.Area) *DefaultManager {
 	return &DefaultManager{
-		agent:       agt,
-		storedKeys:  storage.NewTyped[storedKey](syncStorage, keyPrefix),
-		sessionKeys: storage.NewTyped[sessionKey](sessionStorage, keyPrefix),
+		agent:          agt,
+		syncStorage:    syncStorage,
+		sessionStorage: sessionStorage,
+		storedKeys:     storage.NewTyped[storedKey](syncStorage, storedKeyPrefixes),
+		sessionKeys:    storage.NewTyped[sessionKey](sessionStorage, sessionKeyPrefixes),
 	}
 }
 
 // DefaultManager is an implementation of Manager.
 type DefaultManager struct {
-	agent       agent.Agent
-	storedKeys  *storage.Typed[storedKey]
-	sessionKeys *storage.Typed[sessionKey]
+	agent          agent.Agent
+	syncStorage    storage.Area
+	sessionStorage storage.Area
+	storedKeys     *storage.Typed[storedKey]
+	sessionKeys    *storage.Typed[sessionKey]
 }
 
 // storedKey is the raw object stored in persistent storage for a configured
@@ -216,9 +220,45 @@ type sessionKey struct {
 	PrivateKey string `js:"privateKey"`
 }
 
+var (
+	// storedKeyPrefix is the prefix for keys stored in persistent storage.
+	storedKeyPrefixes = []string{"key"}
+	// sessionKeyPrefix is the prefix for key material stored in-memory
+	// for our current session.
+	sessionKeyPrefixes = []string{"key"}
+
+	// oldStoredKeyPrefixes are the prefixes for stored keys that we
+	// previously used which are safe to delete from storage.
+	//
+	// WARNING: Only add a prefix to this list *after* the following
+	// sequence of events:
+	// (a) A replacement prefix has been added to the storedKeyPrefixes.
+	// (b) Release including (a) has been deployed for 3 months.
+	//     NOTE: At this point, we should be writing data to the new prefix
+	//     and should be assured that data for both prefixes is equivalent.
+	// (c) The old prefix has been removed from the above list.
+	// (d) Release including (b) has been deployed for at least 3 weeks
+	//     without any reported issues of data loss.
+	//     NOTE: At this point, it is safe to add the prefix back to
+	//     storedKeyPrefixes; the data is present, but we just aren't
+	//     reading it.
+	//
+	// This sequence of events is important to support rollbacks without
+	// incorrectly deleting data.
+	//
+	// For tracking, comments should track the progression of these events
+	// for each prefix slated for deletion.
+	oldStoredKeyPrefixes = []string{}
+
+	// oldSessionKeyPrefixes are the prefixes for session key material
+	// that are safe to delete from storage.
+	//
+	// WARNING: See warning for oldStoredKeyPrefixes above; the same applies
+	// here.
+	oldSessionKeyPrefixes = []string{}
+)
+
 const (
-	// keyPrefix is the prefix for keys stored in persistent storage.
-	keyPrefix = "key"
 	// commentPrefix is the prefix for the comment included when a
 	// configured key is loaded into the agent. The full comment is of the
 	// form 'chrome-ssh-agent:<id>'.
@@ -298,6 +338,27 @@ var (
 	errParseFailed   = errors.New("key parse failed")
 	errMarshalFailed = errors.New("key marshalling failed")
 )
+
+// CleanupOldData removes storage data that is no longer required.
+func (m *DefaultManager) CleanupOldData(ctx jsutil.AsyncContext) {
+	jsutil.LogDebug("DefaultManager.CleanupOldData: Cleaning up stored keys")
+
+	areas := []storage.Area{
+		m.syncStorage,
+		m.sessionStorage,
+	}
+	prefixesLists := [][]string{
+		oldStoredKeyPrefixes,
+		oldSessionKeyPrefixes,
+	}
+	for _, area := range areas {
+		for _, prefixes := range prefixesLists {
+			if err := storage.DeleteViewPrefixes(ctx, prefixes, area); err != nil {
+				jsutil.LogError("failed to delete old prefixes '%s': %v", oldStoredKeyPrefixes, err)
+			}
+		}
+	}
+}
 
 // LoadFromSession loads all keys for the current session into the agent.
 func (m *DefaultManager) LoadFromSession(ctx jsutil.AsyncContext) error {
