@@ -1,14 +1,14 @@
 {
   "name": "chrome-ssh-agent",
   "dependencies": {
+    "@ungap/url-search-params": "*",
     "jsdom": "*",
     "mem-storage-area": "*",
-    "@ungap/url-search-params": "*",
     "web-locks": "*"
   },
   "devDependencies": {
-    "@bazel/typescript": "*",
     "@bazel/esbuild": "*",
+    "@bazel/typescript": "*",
     "@types/chrome": "*",
     "typescript": "*"
   }
