@@ -36,6 +36,8 @@ export class WASMApp {
 				go.run(result.instance);
 				return true;
 			});
+
+		self.addEventListener('beforeunload', async (evt) => this.terminate());
 	}
 
 	// Object to which Go application installs handlers.
@@ -72,4 +74,5 @@ export class WASMApp {
 		return this.handlers.appTerminateImpl();
 	}
 }
+
 
