@@ -36,8 +36,8 @@ type Typed[V any] struct {
 
 // NewTyped returns a new Typed using the underlying persistent store.
 // keyPrefix is the prefix used to distinguish values from others in the same
-// underlying store.
-func NewTyped[V any](store Area, keyPrefix string) *Typed[V] {
+// underlying store; multiple may be supplied to support migration scenarios.
+func NewTyped[V any](store Area, keyPrefix []string) *Typed[V] {
 	return &Typed[V]{
 		store: NewView(keyPrefix, store),
 	}

@@ -55,6 +55,9 @@ func (a *background) Name() string {
 }
 
 func (a *background) Init(ctx jsutil.AsyncContext, cleanup *jsutil.CleanupFuncs) error {
+	jsutil.Log("Cleaning up old data")
+	a.manager.CleanupOldData(ctx)
+
 	jsutil.Log("Loading keys from session")
 	if err := a.manager.LoadFromSession(ctx); err != nil {
 		jsutil.LogError("failed to load keys into agent: %v", err)

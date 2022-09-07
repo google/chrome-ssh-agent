@@ -17,6 +17,7 @@
 package storage
 
 import (
+	"fmt"
 	"strings"
 	"syscall/js"
 
@@ -29,36 +30,56 @@ import (
 //
 // It is the caller's responsibility to supply unique key prefixes as required.
 type View struct {
-	// prefix is the prefix prepended to each key. The prefix disambiguates
+	// prefixes are the prefix prepended to each key. The prefix disambiguates
 	// entries for this view from entries for a different view.
-	prefix string
+	//
+	// When there is more than one prefix, we always apply an operation to
+	// each prefix. This helps support migration of data between prefixes:
+	//   Step 0: Read/write data under only the old prefix.
+	//   Step 1: Read/write data under old and new prefixes. This supports
+	//     older and newer versions concurrently.
+	//   [let sufficient time pass for older version to go away]
+	//   Step 2: Read/write data under new prefix.
+	//   Step 3: Delete data under old prefix to free up space.
+	//
+	// Prefixes are in preference order. That is, when reading, if a key is
+	// present under multiple prefixes, the first-appearing prefix in this
+	// list takes precedence.
+	prefixes []string
 
 	// s is the underlying storage area.
 	s Area
 }
 
-// NewView returns a view of a storage area with a given key prefix.
-func NewView(prefix string, store Area) *View {
+// NewView returns a view of a storage area with a given set of key prefixes.
+func NewView(prefixes []string, store Area) *View {
+	var prefixesAdj []string
+	for _, p := range prefixes {
+		prefixesAdj = append(prefixesAdj, p+".")
+	}
+
 	return &View{
-		prefix: prefix + ".",
-		s:      store,
+		prefixes: prefixesAdj,
+		s:        store,
 	}
 }
 
-// isViewKey detects if the key belongs to our view.
-func (v *View) readKey(key string) (string, bool) {
-	return strings.TrimPrefix(key, v.prefix), strings.HasPrefix(key, v.prefix)
+// readKey detects if the key belongs to our view.
+func (v *View) readKey(prefix, key string) (string, bool) {
+	return strings.TrimPrefix(key, prefix), strings.HasPrefix(key, prefix)
 }
 
-func (v *View) makeKey(key string) string {
-	return v.prefix + key
+func (v *View) makeKey(prefix, key string) string {
+	return prefix + key
 }
 
 // Set implements Area.Set().
 func (v *View) Set(ctx jsutil.AsyncContext, data map[string]js.Value) error {
 	ndata := map[string]js.Value{}
 	for k, val := range data {
-		ndata[v.makeKey(k)] = val
+		for _, prefix := range v.prefixes {
+			ndata[v.makeKey(prefix, k)] = val
+		}
 	}
 	return v.s.Set(ctx, ndata)
 }
@@ -71,9 +92,17 @@ func (v *View) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
 	}
 
 	ndata := map[string]js.Value{}
-	for k, val := range data {
-		if sk, ok := v.readKey(k); ok {
-			ndata[sk] = val
+	for _, prefix := range v.prefixes {
+		for k, val := range data {
+			sk, ok := v.readKey(prefix, k)
+			if !ok {
+				continue
+			}
+
+			// Don't overwrite; first prefix takes precedence.
+			if _, present := ndata[sk]; !present {
+				ndata[sk] = val
+			}
 		}
 	}
 	return ndata, nil
@@ -83,7 +112,31 @@ func (v *View) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
 func (v *View) Delete(ctx jsutil.AsyncContext, keys []string) error {
 	var nkeys []string
 	for _, k := range keys {
-		nkeys = append(nkeys, v.makeKey(k))
+		for _, prefix := range v.prefixes {
+			nkeys = append(nkeys, v.makeKey(prefix, k))
+		}
 	}
 	return v.s.Delete(ctx, nkeys)
+}
+
+// DeleteViewPrefixes deletes all storage entries for views with the given prefixes.
+func DeleteViewPrefixes(ctx jsutil.AsyncContext, prefixes []string, store Area) error {
+	v := NewView(prefixes, store)
+
+	// Gather all of the keys.
+	data, err := v.Get(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get keys: %v", err)
+	}
+	var keys []string
+	for k := range data {
+		keys = append(keys, k)
+	}
+
+	// Remove them all.
+	if err := v.Delete(ctx, keys); err != nil {
+		return fmt.Errorf("failed to delete keys: %v", err)
+	}
+
+	return nil
 }
