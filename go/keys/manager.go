@@ -54,6 +54,9 @@ type ConfiguredKey struct {
 	// Encrypted indicates if the key is encrypted and requires a passphrase
 	// to load.
 	Encrypted bool `js:"encrypted"`
+	// AutoLoad indicates if the key will be automatically loaded on startup.
+	// Only applies to unencrypted keys.
+	AutoLoad bool `js:"autoload"`
 }
 
 // LoadedKey is a key loaded into the agent.
@@ -102,6 +105,13 @@ func (k *LoadedKey) ID() ID {
 	return ID(strings.TrimPrefix(k.Comment, commentPrefix))
 }
 
+// KeyOptions are additional options that can be configured for a key.
+type KeyOptions struct {
+	// AutoLoad indicates that the key will be automatically loaded at
+	// startup. Only applies to unencrypted keys.
+	AutoLoad bool `js:"autoLoad"`
+}
+
 // Manager provides an API for managing configured keys and loading them into
 // an SSH agent.
 type Manager interface {
@@ -110,7 +120,7 @@ type Manager interface {
 
 	// Add configures a new key.  name is a human-readable name describing
 	// the key, and pemPrivateKey is the PEM-encoded private key.
-	Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error
+	Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string, options KeyOptions) error
 
 	// Remove removes the key with the specified ID.
 	//
@@ -161,6 +171,7 @@ type storedKey struct {
 	ID            string `js:"id"`
 	Name          string `js:"name"`
 	PEMPrivateKey string `js:"pemPrivateKey"`
+	AutoLoad      bool   `js:"autoLoad"`
 }
 
 // EncryptedPKCS8 determines if the private key is an encrypted PKCS#8 formatted
@@ -289,7 +300,7 @@ var (
 )
 
 // Add implements Manager.Add.
-func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error {
+func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string, options KeyOptions) error {
 	if name == "" {
 		return fmt.Errorf("%w: name must not be empty", errInvalidName)
 	}
@@ -303,6 +314,7 @@ func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey
 		ID:            i.String(),
 		Name:          name,
 		PEMPrivateKey: pemPrivateKey,
+		AutoLoad:      options.AutoLoad,
 	}
 	return m.storedKeys.Write(ctx, sk)
 }

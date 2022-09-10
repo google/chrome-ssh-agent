@@ -172,6 +172,11 @@ func TextContent(o js.Value) string {
 	return o.Get("textContent").String()
 }
 
+// Checked returns true if a checkbox is checked, and false otherwise.
+func Checked(o js.Value) bool {
+	return o.Get("checked").Truthy()
+}
+
 // AppendChild adds the child object.  If non-nil, the populate() function is
 // invoked on the child to initialize it.
 func AppendChild(parent, child js.Value, populate func(child js.Value)) {
