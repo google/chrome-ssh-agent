@@ -10,6 +10,7 @@ go_library(
         "raw.go",
         "typed.go",
         "view.go",
+        "value.go",
     ],
     importpath = "github.com/google/chrome-ssh-agent/go/storage",
     visibility = ["//visibility:public"],
@@ -27,6 +28,7 @@ go_wasm_test(
         "raw_test.go",
         "typed_test.go",
         "view_test.go",
+        "value_test.go",
     ],
     embed = [":storage"],
     node_deps = [
