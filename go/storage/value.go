@@ -17,8 +17,8 @@
 package storage
 
 import (
-	"syscall/js"
 	"errors"
+	"syscall/js"
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 	"github.com/norunners/vert"

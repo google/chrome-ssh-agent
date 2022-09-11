@@ -35,7 +35,7 @@ func TestValueGet(t *testing.T) {
 	}{
 		{
 			description: "no value present",
-			want: myStruct{},
+			want:        myStruct{},
 		},
 		{
 			description: "parse values",
@@ -84,8 +84,8 @@ func TestValueSet(t *testing.T) {
 	}{
 		{
 			description: "write initial value",
-			write: myStruct{IntField: 100},
-			want:myStruct{IntField: 100},
+			write:       myStruct{IntField: 100},
+			want:        myStruct{IntField: 100},
 		},
 		{
 			description: "overwrite previous value",
@@ -93,7 +93,7 @@ func TestValueSet(t *testing.T) {
 				testKeyPrefix + "." + valueKey: vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			write: myStruct{IntField: 42},
-			want: myStruct{IntField: 42},
+			want:  myStruct{IntField: 42},
 		},
 	}
 
@@ -122,4 +122,3 @@ func TestValueSet(t *testing.T) {
 		})
 	}
 }
-

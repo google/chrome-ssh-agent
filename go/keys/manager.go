@@ -153,6 +153,7 @@ func NewManager(agt agent.Agent, syncStorage, sessionStorage storage.Area) *Defa
 		sessionStorage: sessionStorage,
 		storedKeys:     storage.NewTyped[storedKey](syncStorage, storedKeyPrefixes),
 		sessionKeys:    storage.NewTyped[sessionKey](sessionStorage, sessionKeyPrefixes),
+		lifecycleState: storage.NewValue[lifecycleState](sessionStorage, lifecycleStatePrefixes),
 	}
 }
 
@@ -163,6 +164,7 @@ type DefaultManager struct {
 	sessionStorage storage.Area
 	storedKeys     *storage.Typed[storedKey]
 	sessionKeys    *storage.Typed[sessionKey]
+	lifecycleState *storage.Value[lifecycleState]
 }
 
 // storedKey is the raw object stored in persistent storage for a configured
@@ -231,7 +233,17 @@ type sessionKey struct {
 	PrivateKey string `js:"privateKey"`
 }
 
+// lifecycleState is the raw object stored in persistent storage to keep track
+// of the extension's lifecycle.
+type lifecycleState struct {
+	sessionStarted bool `js:"sessionStarted"`
+}
+
 var (
+	// lifecycleStatePrefixes are the prefixes used to store lifecycle
+	// state in storage.
+	lifecycleStatePrefixes = []string{"managerLifecycle"}
+
 	// storedKeyPrefix is the prefix for keys stored in persistent storage.
 	storedKeyPrefixes = []string{"key"}
 	// sessionKeyPrefix is the prefix for key material stored in-memory
@@ -351,9 +363,42 @@ var (
 	errMarshalFailed = errors.New("key marshalling failed")
 )
 
-// CleanupOldData removes storage data that is no longer required.
-func (m *DefaultManager) CleanupOldData(ctx jsutil.AsyncContext) {
-	jsutil.LogDebug("DefaultManager.CleanupOldData: Cleaning up stored keys")
+// Init initializes the manager state from storage.
+func (m *DefaultManager) Init(ctx jsutil.AsyncContext) error {
+	jsutil.Log("DefaultManager.Init: cleaning up old data")
+	m.cleanupOldData(ctx)
+
+	lifecycle, err := m.lifecycleState.Get(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to read current lifecycle state: %v", err)
+	}
+
+	if !lifecycle.sessionStarted {
+		jsutil.Log("DefaultManager.Init: auto-loading keys")
+		if err := m.autoLoadKeys(ctx); err != nil {
+			// Continue on error.
+			jsutil.LogError("failed to auto-load keys: %v", err)
+		}
+
+		// Startup successful; update lifecycle.
+		lifecycle.sessionStarted = true
+		if err := m.lifecycleState.Set(ctx, lifecycle); err != nil {
+			return fmt.Errorf("failed to update lifecycle state: %v", err)
+		}
+	}
+
+	jsutil.Log("DefaultManager.Init: loading keys from session")
+	if err := m.loadFromSession(ctx); err != nil {
+		// Continue on error.
+		jsutil.LogError("failed to load keys into agent: %v", err)
+	}
+
+	return nil
+}
+
+// cleanupOldData removes storage data that is no longer required.
+func (m *DefaultManager) cleanupOldData(ctx jsutil.AsyncContext) {
+	jsutil.LogDebug("DefaultManager.cleanupOldData: Cleaning up stored keys")
 
 	areas := []storage.Area{
 		m.syncStorage,
@@ -372,8 +417,13 @@ func (m *DefaultManager) CleanupOldData(ctx jsutil.AsyncContext) {
 	}
 }
 
-// LoadFromSession loads all keys for the current session into the agent.
-func (m *DefaultManager) LoadFromSession(ctx jsutil.AsyncContext) error {
+// autoLoadKeys loads all keys that were configured to auto-load.
+func (m *DefaultManager) autoLoadKeys(ctx jsutil.AsyncContext) error {
+
+}
+
+// loadFromSession loads all keys for the current session into the agent.
+func (m *DefaultManager) loadFromSession(ctx jsutil.AsyncContext) error {
 	// Read session keys. We'll load these into the agent.
 	jsutil.LogDebug("DefaultManager.LoadFromSession: Read session keys")
 	sessionKeys, err := m.sessionKeys.ReadAll(ctx)
