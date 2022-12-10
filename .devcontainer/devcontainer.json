@@ -1,0 +1,33 @@
+{
+	"name": "Bazel (Community)",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": {
+			"BAZELISK_VERSION": "v1.10.1",
+			"BAZELISK_DOWNLOAD_SHA": "4cb534c52cdd47a6223d4596d530e7c9c785438ab3b0a49ff347e991c210b2cd"
+		}
+	},
+	"remoteUser": "vscode",
+	"features": {
+		"ghcr.io/devcontainers/features/common-utils:1": {
+			"installZsh": false,
+			"installOhMyZsh": false,
+			"upgradePackages": true	
+		},
+		"ghcr.io/devcontainers/features/go:1": {},
+		"ghcr.io/devcontainers/features/node:1": {}
+	},
+
+	"settings": {
+	},
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"dbaeumer.vscode-eslint",
+				"bazelbuild.vscode-bazel",
+				"golang.go"
+			]
+		}
+	}
+}
