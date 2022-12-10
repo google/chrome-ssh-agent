@@ -54,6 +54,9 @@ type ConfiguredKey struct {
 	// Encrypted indicates if the key is encrypted and requires a passphrase
 	// to load.
 	Encrypted bool `js:"encrypted"`
+	// AutoLoad indicates if the key will be automatically loaded on startup.
+	// Only applies to unencrypted keys.
+	AutoLoad bool `js:"autoload"`
 }
 
 // LoadedKey is a key loaded into the agent.
@@ -102,6 +105,13 @@ func (k *LoadedKey) ID() ID {
 	return ID(strings.TrimPrefix(k.Comment, commentPrefix))
 }
 
+// KeyOptions are additional options that can be configured for a key.
+type KeyOptions struct {
+	// AutoLoad indicates that the key will be automatically loaded at
+	// startup. Only applies to unencrypted keys.
+	AutoLoad bool `js:"autoLoad"`
+}
+
 // Manager provides an API for managing configured keys and loading them into
 // an SSH agent.
 type Manager interface {
@@ -110,7 +120,7 @@ type Manager interface {
 
 	// Add configures a new key.  name is a human-readable name describing
 	// the key, and pemPrivateKey is the PEM-encoded private key.
-	Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error
+	Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string, options KeyOptions) error
 
 	// Remove removes the key with the specified ID.
 	//
@@ -143,6 +153,7 @@ func NewManager(agt agent.Agent, syncStorage, sessionStorage storage.Area) *Defa
 		sessionStorage: sessionStorage,
 		storedKeys:     storage.NewTyped[storedKey](syncStorage, storedKeyPrefixes),
 		sessionKeys:    storage.NewTyped[sessionKey](sessionStorage, sessionKeyPrefixes),
+		lifecycleState: storage.NewValue[lifecycleState](sessionStorage, lifecycleStatePrefixes),
 	}
 }
 
@@ -153,6 +164,7 @@ type DefaultManager struct {
 	sessionStorage storage.Area
 	storedKeys     *storage.Typed[storedKey]
 	sessionKeys    *storage.Typed[sessionKey]
+	lifecycleState *storage.Value[lifecycleState]
 }
 
 // storedKey is the raw object stored in persistent storage for a configured
@@ -161,6 +173,7 @@ type storedKey struct {
 	ID            string `js:"id"`
 	Name          string `js:"name"`
 	PEMPrivateKey string `js:"pemPrivateKey"`
+	AutoLoad      bool   `js:"autoLoad"`
 }
 
 // EncryptedPKCS8 determines if the private key is an encrypted PKCS#8 formatted
@@ -220,7 +233,17 @@ type sessionKey struct {
 	PrivateKey string `js:"privateKey"`
 }
 
+// lifecycleState is the raw object stored in persistent storage to keep track
+// of the extension's lifecycle.
+type lifecycleState struct {
+	sessionStarted bool `js:"sessionStarted"`
+}
+
 var (
+	// lifecycleStatePrefixes are the prefixes used to store lifecycle
+	// state in storage.
+	lifecycleStatePrefixes = []string{"managerLifecycle"}
+
 	// storedKeyPrefix is the prefix for keys stored in persistent storage.
 	storedKeyPrefixes = []string{"key"}
 	// sessionKeyPrefix is the prefix for key material stored in-memory
@@ -289,7 +312,7 @@ var (
 )
 
 // Add implements Manager.Add.
-func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error {
+func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string, options KeyOptions) error {
 	if name == "" {
 		return fmt.Errorf("%w: name must not be empty", errInvalidName)
 	}
@@ -303,6 +326,7 @@ func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey
 		ID:            i.String(),
 		Name:          name,
 		PEMPrivateKey: pemPrivateKey,
+		AutoLoad:      options.AutoLoad,
 	}
 	return m.storedKeys.Write(ctx, sk)
 }
@@ -339,9 +363,42 @@ var (
 	errMarshalFailed = errors.New("key marshalling failed")
 )
 
-// CleanupOldData removes storage data that is no longer required.
-func (m *DefaultManager) CleanupOldData(ctx jsutil.AsyncContext) {
-	jsutil.LogDebug("DefaultManager.CleanupOldData: Cleaning up stored keys")
+// Init initializes the manager state from storage.
+func (m *DefaultManager) Init(ctx jsutil.AsyncContext) error {
+	jsutil.Log("DefaultManager.Init: cleaning up old data")
+	m.cleanupOldData(ctx)
+
+	lifecycle, err := m.lifecycleState.Get(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to read current lifecycle state: %v", err)
+	}
+
+	if !lifecycle.sessionStarted {
+		jsutil.Log("DefaultManager.Init: auto-loading keys")
+		if err := m.autoLoadKeys(ctx); err != nil {
+			// Continue on error.
+			jsutil.LogError("failed to auto-load keys: %v", err)
+		}
+
+		// Startup successful; update lifecycle.
+		lifecycle.sessionStarted = true
+		if err := m.lifecycleState.Set(ctx, lifecycle); err != nil {
+			return fmt.Errorf("failed to update lifecycle state: %v", err)
+		}
+	}
+
+	jsutil.Log("DefaultManager.Init: loading keys from session")
+	if err := m.loadFromSession(ctx); err != nil {
+		// Continue on error.
+		jsutil.LogError("failed to load keys into agent: %v", err)
+	}
+
+	return nil
+}
+
+// cleanupOldData removes storage data that is no longer required.
+func (m *DefaultManager) cleanupOldData(ctx jsutil.AsyncContext) {
+	jsutil.LogDebug("DefaultManager.cleanupOldData: Cleaning up stored keys")
 
 	areas := []storage.Area{
 		m.syncStorage,
@@ -360,8 +417,13 @@ func (m *DefaultManager) CleanupOldData(ctx jsutil.AsyncContext) {
 	}
 }
 
-// LoadFromSession loads all keys for the current session into the agent.
-func (m *DefaultManager) LoadFromSession(ctx jsutil.AsyncContext) error {
+// autoLoadKeys loads all keys that were configured to auto-load.
+func (m *DefaultManager) autoLoadKeys(ctx jsutil.AsyncContext) error {
+
+}
+
+// loadFromSession loads all keys for the current session into the agent.
+func (m *DefaultManager) loadFromSession(ctx jsutil.AsyncContext) error {
 	// Read session keys. We'll load these into the agent.
 	jsutil.LogDebug("DefaultManager.LoadFromSession: Read session keys")
 	sessionKeys, err := m.sessionKeys.ReadAll(ctx)

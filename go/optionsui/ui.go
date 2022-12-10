@@ -120,12 +120,12 @@ func (u *UI) setError(err error) {
 // and the corresponding private key.  If the user continues, the key is
 // added to the manager.
 func (u *UI) add(ctx jsutil.AsyncContext, evt dom.Event) {
-	ok, name, privateKey := u.promptAdd(ctx)
+	ok, name, privateKey, autoLoad := u.promptAdd(ctx)
 	if !ok {
 		return
 	}
 
-	if err := u.mgr.Add(ctx, name, privateKey); err != nil {
+	if err := u.mgr.Add(ctx, name, privateKey, autoLoad); err != nil {
 		u.setError(fmt.Errorf("failed to add key: %v", err))
 		return
 	}
@@ -135,11 +135,12 @@ func (u *UI) add(ctx jsutil.AsyncContext, evt dom.Event) {
 }
 
 // promptAdd displays a dialog prompting the user for a name and private key.
-func (u *UI) promptAdd(ctx jsutil.AsyncContext) (ok bool, name, privateKey string) {
+func (u *UI) promptAdd(ctx jsutil.AsyncContext) (ok bool, name, privateKey string, options keys.KeyOptions) {
 	dialog := dom.NewDialog(u.dom.GetElement("addDialog"))
 	form := u.dom.GetElement("addForm")
 	nameField := u.dom.GetElement("addName")
 	keyField := u.dom.GetElement("addKey")
+	autoLoadField := u.dom.GetElement("addAutoLoad")
 	cancel := u.dom.GetElement("addCancel")
 
 	sig := newSignal()
@@ -148,6 +149,7 @@ func (u *UI) promptAdd(ctx jsutil.AsyncContext) (ok bool, name, privateKey strin
 		ok = true
 		name = dom.Value(nameField)
 		privateKey = dom.Value(keyField)
+		options.AutoLoad = dom.Checked(autoLoadField)
 		dialog.Close()
 		sig.Notify()
 	}))

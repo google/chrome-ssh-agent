@@ -28,6 +28,7 @@ type dummyManager struct {
 	ID             ID
 	Name           string
 	PEMPrivateKey  string
+	Options        KeyOptions
 	Passphrase     string
 	ConfiguredKeys []*ConfiguredKey
 	LoadedKeys     []*LoadedKey
@@ -39,9 +40,10 @@ func (m *dummyManager) Configured(ctx jsutil.AsyncContext) ([]*ConfiguredKey, er
 	return m.ConfiguredKeys, m.Err
 }
 
-func (m *dummyManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error {
+func (m *dummyManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string, options KeyOptions) error {
 	m.Name = name
 	m.PEMPrivateKey = pemPrivateKey
+	m.Options = options
 	return m.Err
 }
 
@@ -112,7 +114,7 @@ func TestClientServerAdd(t *testing.T) {
 
 		mgr.Err = wantErr
 
-		err := cli.Add(ctx, wantName, wantPrivateKey)
+		err := cli.Add(ctx, wantName, wantPrivateKey, KeyOptions{})
 		if diff := cmp.Diff(mgr.Name, wantName); diff != "" {
 			t.Errorf("incorrect name; -got +want: %s", diff)
 		}

@@ -48,7 +48,7 @@ var (
 func newTestManager(ctx jsutil.AsyncContext, agent agent.Agent, syncStorage, sessionStorage storage.Area, keys []*initialKey) (*DefaultManager, error) {
 	mgr := NewManager(agent, syncStorage, sessionStorage)
 	for _, k := range keys {
-		if err := mgr.Add(ctx, k.Name, k.PEMPrivateKey); err != nil {
+		if err := mgr.Add(ctx, k.Name, k.PEMPrivateKey, KeyOptions{}); err != nil {
 			return nil, err
 		}
 
@@ -125,7 +125,7 @@ func TestAdd(t *testing.T) {
 				}
 
 				// Add the key.
-				err = mgr.Add(ctx, tc.name, tc.pemPrivateKey)
+				err = mgr.Add(ctx, tc.name, tc.pemPrivateKey, KeyOptions{})
 				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
 					t.Errorf("incorrect error; -got +want: %s", diff)
 				}
