@@ -29,7 +29,7 @@ jobs:
           files: |
             bazel-bin/chrome-ssh-agent.zip
       - name: Publish to Webstore
-        uses: mnao305/chrome-extension-upload@v4.0.0
+        uses: mnao305/chrome-extension-upload@v4.0.1
         with:
           file-path;: bazel-bin/chrome-ssh-agent.zip
           extension-id: eechpbnaifiimgajnomdipfaamobdfha
