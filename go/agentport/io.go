@@ -74,7 +74,8 @@ func (ap *AgentPort) OnDisconnect() {
 }
 
 type message struct {
-	Data []int `js:"data"`
+	Data []int  `js:"data"`
+	Type string `js:"type"`
 }
 
 func (ap *AgentPort) OnMessage(msg js.Value) {
@@ -111,6 +112,12 @@ var (
 	array = js.Global().Get("Array")
 )
 
+const (
+	// Type on messages to client. Value chosen for compatibility with mosh. See:
+	//   https://github.com/google/chrome-ssh-agent/issues/83
+	messageType = "auth-agent@openssh.com"
+)
+
 func (ap *AgentPort) SendMessages() {
 	jsutil.LogDebug("AgentPort.SendMessages: starting loop")
 	defer jsutil.LogDebug("AgentPort.SendMessages: finished loop")
@@ -136,6 +143,7 @@ func (ap *AgentPort) SendMessages() {
 
 		jsutil.LogDebug("AgentPort.SendMessages: encoding message from agent to client")
 		var encoded message
+		encoded.Type = messageType
 		encoded.Data = make([]int, len(data))
 		for i, b := range data {
 			encoded.Data[i] = int(b)
