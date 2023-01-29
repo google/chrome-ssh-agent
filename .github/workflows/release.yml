@@ -23,7 +23,7 @@ jobs:
         run: |
           MANIFEST_VERSION=$(cat manifest.json | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
           TAG_VERSION=${{ github.ref_name }}
-          test "${MANIFEST_VERSION}" = "${TAG_VERSION}"
+          test "v${MANIFEST_VERSION}" = "${TAG_VERSION}"
       - run: bazel build ...
       - run: bazel test --test_output=errors ...
       - name: Create Release
