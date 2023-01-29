@@ -37,7 +37,7 @@ jobs:
       - name: Publish to Webstore
         uses: mnao305/chrome-extension-upload@v4.0.1
         with:
-          file-path;: bazel-bin/chrome-ssh-agent.zip
+          file-path: bazel-out/k8-fastbuild/bin/chrome-ssh-agent.zip
           extension-id: eechpbnaifiimgajnomdipfaamobdfha
           client-id: ${{ secrets.WEBSTORE_CLIENT_ID }}
           client-secret: ${{ secrets.WEBSTORE_CLIENT_SECRET }}
