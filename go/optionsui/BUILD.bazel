@@ -23,9 +23,9 @@ go_wasm_test(
     ],
     embed = [":optionsui"],
     node_deps = [
-        "@npm//web-locks",
-        "@npm//mem-storage-area",
-        "@npm//jsdom",
+        "//:node_modules/web-locks",
+        "//:node_modules/mem-storage-area",
+        "//:node_modules/jsdom",
     ],
     deps = [
         "//go/dom",

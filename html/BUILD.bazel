@@ -1,6 +1,6 @@
-load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
-load("@npm//@bazel/typescript:index.bzl", "ts_config", "ts_project")
-load("@npm//@bazel/esbuild:index.bzl", "esbuild")
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_config", "ts_project")
+load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
 
 # Typescript compiler inputs must be within our package. Copy it over.
@@ -20,28 +20,36 @@ js_library(
     ],
 )
 
+ts_config(
+    name = "tsconfig",
+    src = "tsconfig.json",
+)
+
 ts_project(
     name = "app",
     srcs = ["app.ts"],
+    tsconfig = ":tsconfig",
     declaration = True,
     deps = [
         ":wasm_exec",
-        "@npm//@types/chrome",
+        "//:node_modules/@types/chrome",
     ],
 )
 
 ts_project(
     name = "background",
     srcs = ["background.ts"],
+    tsconfig = ":tsconfig",
     declaration = True,
     deps = [
         ":app",
-        "@npm//@types/chrome",
+        "//:node_modules/@types/chrome",
     ],
 )
 
 esbuild(
     name = "background-bundle",
+    data = [":tsconfig"],
     entry_point = "background.ts",
     deps = [":background"],
 )
@@ -49,10 +57,11 @@ esbuild(
 ts_project(
     name = "options",
     srcs = ["options.ts"],
+    tsconfig = ":tsconfig",
     declaration = True,
     deps = [
         ":app",
-        "@npm//@types/chrome",
+        "//:node_modules/@types/chrome",
     ],
 )
 
