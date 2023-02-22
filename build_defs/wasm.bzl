@@ -2,6 +2,7 @@ load("@io_bazel_rules_go//go/private:providers.bzl", "GoLibrary", "GoPath", "GoA
 load("@io_bazel_rules_go//go:def.bzl", "go_test", "go_library", "go_binary")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
+
 def _go_wasm_test_impl(ctx):
     node_info = ctx.toolchains["@rules_nodejs//nodejs:toolchain_type"].nodeinfo
     node_path = node_info.target_tool_path
@@ -16,8 +17,7 @@ def _go_wasm_test_impl(ctx):
             '#!/bin/bash -eu',
             # Ensure 'node' binary is on the PATH.
             'export PATH="${{PWD}}/{0}:${{PATH}}"'.format(paths.dirname(node_path)),
-            # TODO: Replace with proper way to discover directory
-            'export NODE_PATH="${PWD}/external/npm/node_modules"',
+            'export NODE_PATH="${PWD}/node_modules"',
 	    # Wrapping executes a subprocess and uses pipe() for communication;
 	    # pipe() is unsupported under node.js and WASM.
 	    'export GO_TEST_WRAP=0',
@@ -31,8 +31,10 @@ def _go_wasm_test_impl(ctx):
 
     runfiles = ctx.runfiles(files=(
 	[runner, test_executable, ctx.executable.run_wasm]
-        + node_inputs + ctx.files.node_deps
+        + node_inputs
     ))
+    for nd in ctx.attr.node_deps:
+        runfiles = runfiles.merge(nd[DefaultInfo].default_runfiles)
     runfiles = runfiles.merge(test_runfiles)
 
     return [DefaultInfo(

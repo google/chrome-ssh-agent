@@ -14,7 +14,7 @@ go_wasm_test(
     srcs = ["lock_test.go"],
     embed = [":lock"],
     node_deps = [
-        "@npm//web-locks",
+        "//:node_modules/web-locks",
     ],
     deps = [
         "//go/dom/testing",

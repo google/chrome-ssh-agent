@@ -29,8 +29,8 @@ go_wasm_test(
     ],
     embed = [":keys"],
     node_deps = [
-        "@npm//web-locks",
-        "@npm//mem-storage-area",
+        "//:node_modules/web-locks",
+        "//:node_modules/mem-storage-area",
     ],
     deps = [
         "//go/jsutil/testing",

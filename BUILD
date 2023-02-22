@@ -1,4 +1,5 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@io_bazel_rules_go//go:def.bzl", "TOOLS_NOGO", "nogo")
 load("@rules_pkg//:pkg.bzl", "pkg_zip")
 
@@ -50,6 +51,8 @@ exports_files([
     "package.json",
     "package-lock.json",
 ])
+
+npm_link_all_packages(name = "node_modules")
 
 pkg_zip(
     name = "chrome-ssh-agent",
