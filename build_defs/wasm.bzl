@@ -11,9 +11,6 @@ def _go_wasm_test_impl(ctx):
     test_runfiles = ctx.attr.test_target[DefaultInfo].default_runfiles
 
     runner = ctx.actions.declare_file(ctx.label.name + '_runner.sh')
-    node_module_paths = ctx.host_configuration.host_path_separator.join(_node_paths(
-        depset(ctx.files.node_deps)
-    ))
     ctx.actions.write(
         runner,
         '\n'.join([
