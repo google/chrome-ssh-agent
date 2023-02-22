@@ -2,25 +2,6 @@ load("@io_bazel_rules_go//go/private:providers.bzl", "GoLibrary", "GoPath", "GoA
 load("@io_bazel_rules_go//go:def.bzl", "go_test", "go_library", "go_binary")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
-def _node_paths(deps):
-  """Gather paths that node should use for looking for dependent modules.
-  Paths are suitable for passing on the NODE_PATH environment variable.
-  
-  Args:
-    deps: depset including node modules.
-  Returns:
-    Sequence of paths as strings.
-  """
-  _NODE_MODULES = 'node_modules'
-  unique_deps = {f.path: None for f in deps.to_list()}
-  unique_node_paths = {}
-  for f in unique_deps:
-    pos = f.rfind(_NODE_MODULES)
-    if pos < 0: continue
-    node_path = f[:pos+len(_NODE_MODULES)]
-    unique_node_paths[node_path] = None
-  return ["${{PWD}}/{0}".format(p) for p in unique_node_paths]
-
 
 def _go_wasm_test_impl(ctx):
     node_info = ctx.toolchains["@rules_nodejs//nodejs:toolchain_type"].nodeinfo
@@ -36,11 +17,10 @@ def _go_wasm_test_impl(ctx):
     ctx.actions.write(
         runner,
         '\n'.join([
-            '#!/bin/bash -eux',
+            '#!/bin/bash -eu',
             # Ensure 'node' binary is on the PATH.
             'export PATH="${{PWD}}/{0}:${{PATH}}"'.format(paths.dirname(node_path)),
-            # TODO: Replace with proper way to discover directory
-            'export NODE_PATH="{0}"'.format(node_module_paths),
+            'export NODE_PATH="${PWD}/node_modules"',
 	    # Wrapping executes a subprocess and uses pipe() for communication;
 	    # pipe() is unsupported under node.js and WASM.
 	    'export GO_TEST_WRAP=0',
@@ -54,8 +34,10 @@ def _go_wasm_test_impl(ctx):
 
     runfiles = ctx.runfiles(files=(
 	[runner, test_executable, ctx.executable.run_wasm]
-        + node_inputs + ctx.files.node_deps
+        + node_inputs
     ))
+    for nd in ctx.attr.node_deps:
+        runfiles = runfiles.merge(nd[DefaultInfo].default_runfiles)
     runfiles = runfiles.merge(test_runfiles)
 
     return [DefaultInfo(
