@@ -49,6 +49,13 @@ func UnzipTemp(path string) (string, CleanupFunc, error) {
 				return fmt.Errorf("Archive contained path referring to parent directory: %s", f.Name)
 			}
 
+			if f.Mode().IsDir() {
+				if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
+					return fmt.Errorf("Failed to create destination directory %s: %v", filepath.Dir(filePath), err)
+				}
+				return nil
+			}
+
 			if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
 				return fmt.Errorf("Failed to create destination directory %s: %v", filepath.Dir(filePath), err)
 			}
