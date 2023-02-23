@@ -18,9 +18,6 @@
 		"ghcr.io/devcontainers/features/node:1": {}
 	},
 
-	"settings": {
-	},
-
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -29,5 +26,7 @@
 				"golang.go"
 			]
 		}
-	}
+	},
+
+	"postStartCommand": ".devcontainer/post-start-command.sh"
 }
