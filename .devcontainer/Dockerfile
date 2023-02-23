@@ -8,8 +8,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         pkg-config \
         zip unzip \
         python \
-        git \
-        libnss3-dev
+        git
 
 # Install Bazel
 ARG BAZELISK_VERSION=v1.10.1
@@ -33,6 +32,13 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
 # Install pnpm package manager
 RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
     && brew install pnpm
+
+# Install packages required for running Chrome in integration tests.
+# We don't technically require the full package since we pull it in hermetically
+# with Bazel, but this will ensure that any dependencies are installed.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get install -y --no-install-recommends \
+        chromium-driver
 
 # Clean extraneous packages and files
 RUN apt-get autoremove -y \
