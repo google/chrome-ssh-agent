@@ -27,9 +27,9 @@ http_archive(
 
 http_archive(
     name = "aspect_rules_ts",
-    sha256 = "db77d904284d21121ae63dbaaadfd8c75ff6d21ad229f92038b415c1ad5019cc",
-    strip_prefix = "rules_ts-1.3.0",
-    url = "https://github.com/aspect-build/rules_ts/releases/download/v1.3.0/rules_ts-v1.3.0.tar.gz",
+    sha256 = "02480b6a1cd12516edf364e678412e9da10445fe3f1070c014ac75e922c969ea",
+    strip_prefix = "rules_ts-1.3.1",
+    url = "https://github.com/aspect-build/rules_ts/releases/download/v1.3.1/rules_ts-v1.3.1.tar.gz",
 )
 
 http_archive(
