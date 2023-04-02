@@ -4,7 +4,8 @@
     "config:base",
     ":rebaseStalePrs",
     ":automergeMinor",
-    "schedule:weekends"
+    "schedule:weekends",
+    "group:allNonMajor"
   ],
   "golang": {
     "description": "TODO(ralimi) Enable when gazelle supported: https://github.com/renovatebot/renovate/issues/3347",
