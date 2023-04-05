@@ -8,21 +8,21 @@ load(
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "dd926a88a564a9246713a9c00b35315f54cbd46b31a26d5d8fb264c07045f05d",
-    urls = ["https://github.com/bazelbuild/rules_go/releases/download/v0.38.1/rules_go-v0.38.1.zip"],
+    sha256 = "6b65cb7917b4d1709f9410ffe00ecf3e160edf674b78c54a894471320862184f",
+    urls = ["https://github.com/bazelbuild/rules_go/releases/download/v0.39.0/rules_go-v0.39.0.zip"],
 )
 
 http_archive(
     name = "bazel_gazelle",
-    sha256 = "ecba0f04f96b4960a5b250c8e8eeec42281035970aa8852dda73098274d14a1d",
-    urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.29.0/bazel-gazelle-v0.29.0.tar.gz"],
+    sha256 = "727f3e4edd96ea20c29e8c2ca9e8d2af724d8c7778e7923a854b2c80952bc405",
+    urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.30.0/bazel-gazelle-v0.30.0.tar.gz"],
 )
 
 http_archive(
     name = "aspect_rules_js",
-    sha256 = "1aa0ab76d1f9520bb8993e2d84f82da2a9c87da1e6e8d121dbb4c857a292c2cd",
-    strip_prefix = "rules_js-1.20.1",
-    url = "https://github.com/aspect-build/rules_js/releases/download/v1.20.1/rules_js-v1.20.1.tar.gz",
+    sha256 = "124ed29fb0b3d0cba5b44f8f8e07897cf61b34e35e33b1f83d1a943dfd91b193",
+    strip_prefix = "rules_js-1.24.0",
+    url = "https://github.com/aspect-build/rules_js/releases/download/v1.24.0/rules_js-v1.24.0.tar.gz",
 )
 
 http_archive(
@@ -47,8 +47,8 @@ http_archive(
 
 http_archive(
     name = "rules_pkg",
-    sha256 = "8c20f74bca25d2d442b327ae26768c02cf3c99e93fad0381f32be9aab1967675",
-    urls = ["https://github.com/bazelbuild/rules_pkg/releases/download/0.8.1/rules_pkg-0.8.1.tar.gz"],
+    sha256 = "bcc96ae58d9d61db1a36a13d29e85dc2c1696ecb7997f9a26643ab0971ecb2ef",
+    urls = ["https://github.com/bazelbuild/rules_pkg/releases/download/0.9.0/rules_pkg-0.9.0.tar.gz"],
 )
 
 http_archive(
@@ -125,7 +125,7 @@ go_rules_dependencies()
 go_register_toolchains(
     nogo = "@//:chrome_ssh_agent_nogo",
     # Use semver-coerced to handle versions where patches are left off (e.g., 1.19).
-    version = "1.20.1",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
+    version = "1.20.3",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
 )
 
 # Gazelle dependency management support
