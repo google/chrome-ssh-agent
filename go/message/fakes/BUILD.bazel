@@ -7,9 +7,12 @@ go_library(
     srcs = ["hub.go"],
     importpath = "github.com/google/chrome-ssh-agent/go/message/fakes",
     visibility = ["//visibility:public"],
-    deps = [
-        "//go/jsutil",
-    ],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:js": [
+            "//go/jsutil",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 go_wasm_test(

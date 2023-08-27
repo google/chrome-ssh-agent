@@ -28,8 +28,8 @@ ts_config(
 ts_project(
     name = "app",
     srcs = ["app.ts"],
-    tsconfig = ":tsconfig",
     declaration = True,
+    tsconfig = ":tsconfig",
     deps = [
         ":wasm_exec",
         "//:node_modules/@types/chrome",
@@ -39,8 +39,8 @@ ts_project(
 ts_project(
     name = "background",
     srcs = ["background.ts"],
-    tsconfig = ":tsconfig",
     declaration = True,
+    tsconfig = ":tsconfig",
     deps = [
         ":app",
         "//:node_modules/@types/chrome",
@@ -57,8 +57,8 @@ esbuild(
 ts_project(
     name = "options",
     srcs = ["options.ts"],
-    tsconfig = ":tsconfig",
     declaration = True,
+    tsconfig = ":tsconfig",
     deps = [
         ":app",
         "//:node_modules/@types/chrome",

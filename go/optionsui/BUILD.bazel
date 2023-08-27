@@ -6,13 +6,16 @@ go_library(
     srcs = ["ui.go"],
     importpath = "github.com/google/chrome-ssh-agent/go/optionsui",
     visibility = ["//visibility:public"],
-    deps = [
-        "//go/dom",
-        "//go/jsutil",
-        "//go/keys",
-        "//go/keys/testdata",
-        "@com_github_google_go_cmp//cmp",
-    ],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:js": [
+            "//go/dom",
+            "//go/jsutil",
+            "//go/keys",
+            "//go/keys/testdata",
+            "@com_github_google_go_cmp//cmp",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 go_wasm_test(

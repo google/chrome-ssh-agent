@@ -129,7 +129,7 @@ go_register_toolchains(
 )
 
 # Gazelle dependency management support
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 # Pull in external dependencies:
 # gazelle:repository_macro go_deps.bzl%go_dependencies
