@@ -22,7 +22,7 @@ http_archive(
     name = "aspect_rules_js",
     sha256 = "7b2a4d1d264e105eae49a27e2e78065b23e2e45724df2251eacdd317e95bfdfd",
     strip_prefix = "rules_js-1.31.0",
-    url = "https://github.com/aspect-build/rules_js/releases/download/v1.31.0/rules_js-v1.31.0.tar.gz",
+    url = "https://github.com/aspect-build/rules_js/releases/download/v1.32.1/rules_js-v1.31.0.tar.gz",
 )
 
 http_archive(
@@ -125,7 +125,7 @@ go_rules_dependencies()
 go_register_toolchains(
     nogo = "@//:chrome_ssh_agent_nogo",
     # Use semver-coerced to handle versions where patches are left off (e.g., 1.19).
-    version = "1.20.4",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
+    version = "1.21.0",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
 )
 
 # Gazelle dependency management support
