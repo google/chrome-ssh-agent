@@ -7,14 +7,17 @@ go_library(
     srcs = ["main.go"],
     importpath = "github.com/google/chrome-ssh-agent/go/background",
     visibility = ["//visibility:private"],
-    deps = [
-        "//go/agentport",
-        "//go/app",
-        "//go/jsutil",
-        "//go/keys",
-        "//go/storage",
-        "@org_golang_x_crypto//ssh/agent",
-    ],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:js": [
+            "//go/agentport",
+            "//go/app",
+            "//go/jsutil",
+            "//go/keys",
+            "//go/storage",
+            "@org_golang_x_crypto//ssh/agent",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 go_wasm_binary(
