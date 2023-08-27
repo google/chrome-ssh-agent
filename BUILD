@@ -2,6 +2,7 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@io_bazel_rules_go//go:def.bzl", "TOOLS_NOGO", "nogo")
 load("@rules_pkg//:pkg.bzl", "pkg_zip")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
 
 # gazelle:prefix github.com/google/chrome-ssh-agent
 
@@ -54,17 +55,59 @@ exports_files([
 
 npm_link_all_packages(name = "node_modules")
 
-pkg_zip(
-    name = "chrome-ssh-agent",
+pkg_files(
+    name = "pkg_doc",
     srcs = [
         ":CONTRIBUTING.md",
         ":LICENSE",
         ":README.md",
-        ":manifest.json",
+    ],
+)
+
+
+pkg_filegroup(
+    name = "pkg_common",
+    srcs = [
+        ":pkg_doc",
         "//go/background:pkg",
         "//go/options:pkg",
         "//html:pkg",
         "//img:pkg",
+    ],
+)
+
+pkg_files(
+    name = "pkg_manifest",
+    srcs = [
+        ":manifest.json",
+    ]
+)
+
+pkg_files(
+    name = "pkg_manifest_beta",
+    srcs = [
+        ":manifest-beta.json",
+    ],
+    # Manifest must end up with well-known name.
+    renames = {
+        "manifest-beta.json": "manifest.json",
+    }
+)
+
+pkg_zip(
+    name = "chrome-ssh-agent",
+    srcs = [
+        ":pkg_common",
+        ":pkg_manifest",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+pkg_zip(
+    name = "chrome-ssh-agent-beta",
+    srcs = [
+        ":pkg_common",
+        ":pkg_manifest_beta",
     ],
     visibility = ["//visibility:public"],
 )

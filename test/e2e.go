@@ -19,7 +19,6 @@ import (
 var (
 	chromeDriverPath = testutil.MustRunfile("chromedriver.bin")
 	chromePath       = testutil.MustRunfile("chromium.bin")
-	extensionPath    = testutil.MustRunfile("chrome-ssh-agent.zip")
 )
 
 func getElementText(wd selenium.WebDriver, id string) (string, error) {
@@ -97,92 +96,113 @@ func dumpLog(t *testing.T, name string, r io.Reader) {
 }
 
 func TestWebApp(t *testing.T) {
-	port, err := unusedPort()
-	if err != nil {
-		t.Fatalf("failed to identify unused port: %v", err)
-	}
-
-	var selOut bytes.Buffer
-	opts := []selenium.ServiceOption{
-		selenium.Output(&selOut),
-	}
-	service, err := selenium.NewChromeDriverService(chromeDriverPath, port, opts...)
-	if err != nil {
-		defer dumpLog(t, "SeleniumOutput", &selOut) // Selenium failed to initialize; show debug info.
-		t.Fatalf("failed to start Selenium service: %v", err)
-	}
-	defer service.Stop()
-
-	caps := selenium.Capabilities{}
-	caps.AddLogging(logLevels)
-
-	t.Log("Preparing extension")
-	extPath, extCleanup, err := testutil.UnzipTemp(extensionPath)
-	if err != nil {
-		t.Fatalf("Failed to unzip extension: %v", err)
-	}
-	defer extCleanup()
-
-	t.Log("Configuring extension in Chrome")
-	chromeCaps := chrome.Capabilities{
-		Path: chromePath,
-		Args: []string{
-			"--no-sandbox",
-			// Specific headless mode that supports extensions. See:
-			//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c36
-			"--headless=chrome",
+	testcases := []struct {
+		name          string
+		extensionPath string
+		extensionId   string
+	}{
+		{
+			name:          "Prod Release",
+			extensionPath: testutil.MustRunfile("chrome-ssh-agent.zip"),
+			extensionId:   "eechpbnaifiimgajnomdipfaamobdfha",
+		},
+		{
+			name:          "Beta Release",
+			extensionPath: testutil.MustRunfile("chrome-ssh-agent-beta.zip"),
+			extensionId:   "onabphcdiffmanfdhkihllckikaljmhh",
 		},
 	}
-	if err = chromeCaps.AddUnpackedExtension(extPath); err != nil {
-		t.Fatalf("failed to add extension: %v", err)
-	}
-	caps.AddChrome(chromeCaps)
 
-	t.Log("Starting WebDriver")
-	wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", port))
-	if err != nil {
-		defer dumpLog(t, "SeleniumOutput", &selOut) // Selenium failed to initialize; show debug info.
-		t.Fatalf("Failed to start webdriver: %v", err)
-	}
-	defer wd.Quit()
-	defer dumpSeleniumLogs(t, wd)
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			port, err := unusedPort()
+			if err != nil {
+				t.Fatalf("failed to identify unused port: %v", err)
+			}
 
-	t.Log("Navigating to test page")
-	path := makeExtensionUrl("html/options.html", "test")
-	if err = wd.Get(path.String()); err != nil {
-		t.Fatalf("Failed to navigate to %s: %v", path, err)
-	}
+			var selOut bytes.Buffer
+			opts := []selenium.ServiceOption{
+				selenium.Output(&selOut),
+			}
+			service, err := selenium.NewChromeDriverService(chromeDriverPath, port, opts...)
+			if err != nil {
+				defer dumpLog(t, "SeleniumOutput", &selOut) // Selenium failed to initialize; show debug info.
+				t.Fatalf("failed to start Selenium service: %v", err)
+			}
+			defer service.Stop()
 
-	t.Log("Waiting for navigation")
-	if err = wd.WaitWithTimeout(currentURLIs(path.String()), 10*time.Second); err != nil {
-		t.Fatalf("Failed to complete navigation to page: %v", err)
-	}
+			caps := selenium.Capabilities{}
+			caps.AddLogging(logLevels)
 
-	t.Log("Waiting for results")
-	if err = wd.WaitWithTimeout(elementExists("failureCount"), 30*time.Second); err != nil {
-		t.Fatalf("failed to wait for failure count: %v", err)
-	}
-	if err = wd.WaitWithTimeout(elementExists("failures"), 30*time.Second); err != nil {
-		t.Fatalf("failed to wait for failures: %v", err)
-	}
+			t.Log("Preparing extension")
+			extPath, extCleanup, err := testutil.UnzipTemp(tc.extensionPath)
+			if err != nil {
+				t.Fatalf("Failed to unzip extension: %v", err)
+			}
+			defer extCleanup()
 
-	t.Log("Extracting test results")
-	countTxt, err := getElementText(wd, "failureCount")
-	if err != nil {
-		t.Fatalf("Failed to find failure count: %v", err)
-	}
+			t.Log("Configuring extension in Chrome")
+			chromeCaps := chrome.Capabilities{
+				Path: chromePath,
+				Args: []string{
+					"--no-sandbox",
+					// Specific headless mode that supports extensions. See:
+					//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c36
+					"--headless=chrome",
+				},
+			}
+			if err = chromeCaps.AddUnpackedExtension(extPath); err != nil {
+				t.Fatalf("failed to add extension: %v", err)
+			}
+			caps.AddChrome(chromeCaps)
 
-	count, err := strconv.Atoi(countTxt)
-	if err != nil {
-		t.Fatalf("Failed to parse failure count '%s' as integer: %v", countTxt, err)
-	}
+			t.Log("Starting WebDriver")
+			wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", port))
+			if err != nil {
+				defer dumpLog(t, "SeleniumOutput", &selOut) // Selenium failed to initialize; show debug info.
+				t.Fatalf("Failed to start webdriver: %v", err)
+			}
+			defer wd.Quit()
+			defer dumpSeleniumLogs(t, wd)
 
-	failures, err := getElementText(wd, "failures")
-	if err != nil {
-		t.Fatalf("Failed to find failure details: %v", err)
-	}
+			t.Log("Navigating to test page")
+			path := makeExtensionUrl(tc.extensionId, "html/options.html", "test")
+			if err = wd.Get(path.String()); err != nil {
+				t.Fatalf("Failed to navigate to %s: %v", path, err)
+			}
 
-	if count != 0 {
-		t.Errorf("Reported Failures:\n%s", failures)
+			t.Log("Waiting for navigation")
+			if err = wd.WaitWithTimeout(currentURLIs(path.String()), 10*time.Second); err != nil {
+				t.Fatalf("Failed to complete navigation to page: %v", err)
+			}
+
+			t.Log("Waiting for results")
+			if err = wd.WaitWithTimeout(elementExists("failureCount"), 30*time.Second); err != nil {
+				t.Fatalf("failed to wait for failure count: %v", err)
+			}
+			if err = wd.WaitWithTimeout(elementExists("failures"), 30*time.Second); err != nil {
+				t.Fatalf("failed to wait for failures: %v", err)
+			}
+
+			t.Log("Extracting test results")
+			countTxt, err := getElementText(wd, "failureCount")
+			if err != nil {
+				t.Fatalf("Failed to find failure count: %v", err)
+			}
+
+			count, err := strconv.Atoi(countTxt)
+			if err != nil {
+				t.Fatalf("Failed to parse failure count '%s' as integer: %v", countTxt, err)
+			}
+
+			failures, err := getElementText(wd, "failures")
+			if err != nil {
+				t.Fatalf("Failed to find failure details: %v", err)
+			}
+
+			if count != 0 {
+				t.Errorf("Reported Failures:\n%s", failures)
+			}
+		})
 	}
 }
