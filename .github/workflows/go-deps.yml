@@ -29,6 +29,7 @@ jobs:
       - uses: dacbd/create-issue-action@v1
         if: steps.has-changes.outputs.changed != 0
         with:
+          token: ${{ github.token }}
           title: Update Go Dependencies
           body: |
             Update to Go dependencies are available.
