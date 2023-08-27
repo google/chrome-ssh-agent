@@ -27,7 +27,7 @@ jobs:
         id: has-changes
         run: echo "changed=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT
       - uses: dacbd/create-issue-action@v1
-        if: steps.has-changes.outputs.changed == 1
+        if: steps.has-changes.outputs.changed != 0
         with:
           title: Update Go Dependencies
           body: |
