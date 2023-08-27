@@ -60,7 +60,7 @@ func (a *AppContext) Release() {
 // Run exports the following async functions to be available from Javascript:
 //
 //   initWaitFunc (see above): waits for app initialization to complete. If this
-//     function returns succesfully, then the App.Init() function is guaranteed
+//     function returns successfully, then the App.Init() function is guaranteed
 //     to have completed without error.
 //
 //   terminateFunc (see above): signals the application to terminate; Run() will
