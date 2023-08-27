@@ -19,11 +19,10 @@ jobs:
       issues: write
     steps:
       - uses: actions/checkout@v3
-      - uses: bazelbuild/setup-bazelisk@v2
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '>=1.18.0'
-      - run: go mod tidy
+      - name: Setup Bazel
+        run: bazel version || npm install -g @bazel/bazelisk
+      - name: Update
+        run: scripts/update-go-deps.sh
       - uses: UnicornGlobal/has-changes-action@v1.0.12
         id: has-changes
       - uses: dacbd/create-issue-action@v1
@@ -36,6 +35,5 @@ jobs:
             To update, run
 
             ```
-            go mod tidy
-            bazel //:gazelle-update-repos
+            scripts/update-go-deps.sh
             ```
