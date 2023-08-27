@@ -27,8 +27,15 @@ function die() {
 
 # Read current version from manifest.
 readonly MANIFEST=${PWD}/manifest.json
+readonly MANIFEST_BETA=${PWD}/manifest-beta.json
 readonly VERSION=$(cat "${MANIFEST}" | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
+readonly VERSION_BETA=$(cat "${MANIFEST_BETA}" | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
 readonly TAG=v${VERSION}
+
+# Ensure both manifests have the same version. This could happen if only one of
+# the manifests was updated.
+test "${VERSION}" = "${VERSION_BETA}" \
+  || die "Prod and Beta versions do not match; Prod is ${VERSION}, Beta is ${VERSION_BETA}"
 
 # Ensure the tag doesn't already exist.  This could happen if someone forgot to
 # update the version in manifest.json.
