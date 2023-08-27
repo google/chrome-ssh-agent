@@ -6,5 +6,10 @@ go_library(
     srcs = ["testing.go"],
     importpath = "github.com/google/chrome-ssh-agent/go/dom/testing",
     visibility = ["//visibility:public"],
-    deps = ["//go/jsutil"],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:js": [
+            "//go/jsutil",
+        ],
+        "//conditions:default": [],
+    }),
 )

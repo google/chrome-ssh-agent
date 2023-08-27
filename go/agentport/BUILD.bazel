@@ -5,8 +5,11 @@ go_library(
     srcs = ["io.go"],
     importpath = "github.com/google/chrome-ssh-agent/go/agentport",
     visibility = ["//visibility:public"],
-    deps = [
-        "//go/jsutil",
-        "@com_github_norunners_vert//:vert",
-    ],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:js": [
+            "//go/jsutil",
+            "@com_github_norunners_vert//:vert",
+        ],
+        "//conditions:default": [],
+    }),
 )
