@@ -1,11 +1,15 @@
-name: Release
+name: Release Beta
 
 on:
+  # New release tagged.
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.*'
   # Manual trigger.
   workflow_dispatch:
 
 jobs:
-  release:
+  release-beta:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -17,7 +21,7 @@ jobs:
       - uses: bazelbuild/setup-bazelisk@v2
       - name: Check Manifest
         run: |
-          MANIFEST_VERSION=$(cat manifest.json | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
+          MANIFEST_VERSION=$(cat manifest-beta.json | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
           TAG_VERSION=${{ github.ref_name }}
           test "v${MANIFEST_VERSION}" = "${TAG_VERSION}"
       - run: bazel build ...
@@ -29,12 +33,12 @@ jobs:
           fail_on_unmatched_files: true
           # bazel-bin symlink may not exist
           files: |
-            bazel-out/k8-fastbuild/bin/chrome-ssh-agent.zip
+            bazel-out/k8-fastbuild/bin/chrome-ssh-agent-beta.zip
       - name: Publish to Webstore
         uses: mnao305/chrome-extension-upload@v4.0.1
         with:
-          file-path: bazel-out/k8-fastbuild/bin/chrome-ssh-agent.zip
-          extension-id: eechpbnaifiimgajnomdipfaamobdfha
+          file-path: bazel-out/k8-fastbuild/bin/chrome-ssh-agent-beta.zip
+          extension-id: onabphcdiffmanfdhkihllckikaljmhh
           client-id: ${{ secrets.WEBSTORE_CLIENT_ID }}
           client-secret: ${{ secrets.WEBSTORE_CLIENT_SECRET }}
           refresh-token: ${{ secrets.WEBSTORE_REFRESH_TOKEN }}
