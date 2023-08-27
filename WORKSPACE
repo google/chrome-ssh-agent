@@ -125,7 +125,7 @@ go_rules_dependencies()
 go_register_toolchains(
     nogo = "@//:chrome_ssh_agent_nogo",
     # Use semver-coerced to handle versions where patches are left off (e.g., 1.19).
-    version = "1.20.4",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
+    version = "1.21.0",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
 )
 
 # Gazelle dependency management support
@@ -148,7 +148,9 @@ load("@rules_nodejs//nodejs:repositories.bzl", "DEFAULT_NODE_VERSION", "node_rep
 
 nodejs_register_toolchains(
     name = "nodejs",
-    node_version = DEFAULT_NODE_VERSION,
+    # TODO Revert node_version to DEFAULT_NODE_VERSION.
+    #  See https://github.com/google/chrome-ssh-agent/issues/145
+    node_version = "18.13.0",
 )
 
 load("@aspect_rules_js//npm:npm_import.bzl", "npm_translate_lock")
