@@ -23,8 +23,9 @@ jobs:
         run: bazel version || npm install -g @bazel/bazelisk
       - name: Update
         run: scripts/update-go-deps.sh
-      - uses: UnicornGlobal/has-changes-action@v1.0.12
+      - name: Detect Changes
         id: has-changes
+        run: echo "changed=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT
       - uses: dacbd/create-issue-action@v1
         if: steps.has-changes.outputs.changed == 1
         with:
