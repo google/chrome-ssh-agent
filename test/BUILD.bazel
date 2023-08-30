@@ -8,6 +8,7 @@ go_test(
     ],
     data = [
         "//:chrome-ssh-agent.zip",
+        "//:chrome-ssh-agent-beta.zip",
         "@chromedriver",
         "@chromium",
     ],
