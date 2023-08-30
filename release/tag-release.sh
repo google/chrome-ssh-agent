@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Usage:
-#  (1) Update version in manifest.json
+#  (1) Update version in manifest.json and merge into master
 #  (2) Run tag-release.sh
 
 cd $(dirname $0)/..
@@ -32,6 +32,17 @@ readonly VERSION=$(cat "${MANIFEST}" | python3 -c "import sys, json; print(json.
 readonly VERSION_BETA=$(cat "${MANIFEST_BETA}" | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
 readonly TAG=v${VERSION}
 
+# Ensure we are currently in the master branch.
+test "$(git branch --show-current)" = "master" \
+  || die "Must be in master to tag a new release"
+
+# Ensure there are no pending local changes.
+test "$(git status --porcelain | wc -l)" = "0" \
+  || die "Cannot release when there are pending changes."
+
+# Pull must recent changes.  We don't want to release from outdated state.
+git pull
+
 # Ensure both manifests have the same version. This could happen if only one of
 # the manifests was updated.
 test "${VERSION}" = "${VERSION_BETA}" \
@@ -44,10 +55,6 @@ test -z $(git tag | grep --line-regexp "${TAG}") \
 
 # Ensure all tests pass.
 bazel test ...
-
-# Commit everything. This should include the change to manifest.json.
-git add .
-git commit -m "Bump to version ${VERSION}"
 
 # Tag the release.
 git tag -a "${TAG}" -m "Tag version ${VERSION}"
