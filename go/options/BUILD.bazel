@@ -1,5 +1,5 @@
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@rules_go//go:def.bzl", "go_library")
 load("//build_defs:wasm.bzl", "go_wasm_binary")
 
 go_library(
@@ -8,7 +8,7 @@ go_library(
     importpath = "github.com/google/chrome-ssh-agent/go/options",
     visibility = ["//visibility:private"],
     deps = select({
-        "@io_bazel_rules_go//go/platform:js": [
+        "@rules_go//go/platform:js": [
             "//go/app",
             "//go/dom",
             "//go/jsutil",

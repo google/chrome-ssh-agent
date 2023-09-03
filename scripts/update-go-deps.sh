@@ -1,5 +1,4 @@
 #!/bin/bash -eu
 
-bazel run @go_sdk//:bin/go -- get -u ./...
-bazel run @go_sdk//:bin/go -- mod tidy
-bazel run //:gazelle-update-repos
+bazel run @rules_go//go -- get -u ./...
+bazel run @rules_go//go -- mod tidy

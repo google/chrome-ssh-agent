@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_test")
+load("@rules_go//go:def.bzl", "go_test")
 
 go_test(
     name = "test",
@@ -18,6 +18,6 @@ go_test(
         "@com_github_tebeka_selenium//:selenium",
         "@com_github_tebeka_selenium//chrome",
         "@com_github_tebeka_selenium//log",
-        "@io_bazel_rules_go//go/tools/bazel",
+        "@rules_go//go/tools/bazel",
     ],
 )

@@ -1,10 +1,7 @@
-load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@gazelle//:def.bzl", "gazelle")
 load("@npm//:defs.bzl", "npm_link_all_packages")
-load("@io_bazel_rules_go//go:def.bzl", "TOOLS_NOGO", "nogo")
 load("@rules_pkg//:pkg.bzl", "pkg_zip")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
-
-# gazelle:prefix github.com/google/chrome-ssh-agent
 
 # Force Gazelle to choose the correct target when there are multiple go_library
 # targets in a single package.
@@ -23,27 +20,6 @@ load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
 gazelle(
     name = "gazelle",
     command = "fix",
-)
-
-gazelle(
-    name = "gazelle-update-repos",
-    args = [
-        "--prune=true",
-        "--from_file=go.mod",
-    ],
-    command = "update-repos",
-)
-
-# Enable nogo for source code analysis
-nogo(
-    name = "chrome_ssh_agent_nogo",
-    config = ":nogo-config.json",
-    visibility = ["//visibility:public"],
-    deps = TOOLS_NOGO + [
-        # Prohibit build tags (e.g., //go:build ... ) within tests, as these may
-        # cause tests to silently be skipped unless we are extremely careful.
-        "//nogo/testbuildtags",
-    ],
 )
 
 exports_files([

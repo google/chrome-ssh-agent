@@ -1,0 +1,64 @@
+module(
+    name = "chrome_ssh_agent",
+)
+
+bazel_dep(name = "rules_go", version = "0.41.0")
+bazel_dep(name = "gazelle", version = "0.32.0")
+bazel_dep(name = "rules_nodejs", version = "5.8.2")
+bazel_dep(name = "aspect_rules_js", version = "1.32.1")
+bazel_dep(name = "aspect_rules_ts", version = "2.0.0-rc0")
+bazel_dep(name = "aspect_rules_esbuild", version = "0.15.0")
+bazel_dep(name = "bazel_skylib", version = "1.4.2")
+bazel_dep(name = "rules_pkg", version = "0.9.1")
+bazel_dep(name = "rules_proto", version = "5.3.0-21.7")
+
+# Explicitly manage Go version.
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(
+    # Use semver-coerced to handle versions where patches are left off (e.g., 1.19).
+    version = "1.21.0",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
+)
+go_sdk.host(name = "go_sdk")
+use_repo(go_sdk, "go_sdk")
+
+# Pull in Go dependencies
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//:go.mod")
+use_repo(
+    go_deps,
+    # Direct dependencies only
+    "com_github_google_go_cmp",
+    "com_github_tebeka_selenium",
+    "com_github_youmark_pkcs8",
+    "org_golang_x_crypto",
+    "org_golang_x_tools",
+    "com_github_norunners_vert",
+)
+
+# TODO Revert node_version to DEFAULT_NODE_VERSION by removing this block.
+#  See https://github.com/google/chrome-ssh-agent/issues/145
+node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node")
+node.toolchain(node_version = "18.13.0")
+
+# Pull in NPM dependencies
+npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm", dev_dependency = True)
+npm.npm_translate_lock(
+    name = "npm",
+    pnpm_lock = "//:pnpm-lock.yaml",
+    verify_node_modules_ignored = "//:.bazelignore",
+)
+use_repo(npm, "npm")
+
+# Pull in typescript dependencies
+rules_ts_ext = use_extension(
+    "@aspect_rules_ts//ts:extensions.bzl",
+    "ext",
+    dev_dependency = True,
+)
+rules_ts_ext.deps()
+use_repo(rules_ts_ext, "npm_typescript")
+
+# Pull in Chromium for use in tests
+chromium_dependencies = use_extension("//build_defs:chromium.bzl", "chromium_dependencies")
+use_repo(chromium_dependencies, "chromedriver")
+use_repo(chromium_dependencies, "chromium")

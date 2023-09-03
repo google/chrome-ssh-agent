@@ -1,4 +1,4 @@
 # honor the setting of `skipLibCheck` in the tsconfig.json file; parameter required for aspect_rules_ts.
-build --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
-fetch --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
-query --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+build --enable_bzlmod --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+fetch --enable_bzlmod --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+query --enable_bzlmod --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
