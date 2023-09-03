@@ -15,10 +15,10 @@ bazel_dep(name = "rules_proto", version = "5.3.0-21.7")
 # Explicitly manage Go version.
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(
+    name = "go_sdk",
     # Use semver-coerced to handle versions where patches are left off (e.g., 1.19).
     version = "1.21.0",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
 )
-go_sdk.host(name = "go_sdk")
 use_repo(go_sdk, "go_sdk")
 
 # Pull in Go dependencies
