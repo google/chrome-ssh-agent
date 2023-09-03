@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@rules_go//go:def.bzl", "go_library")
 load("//build_defs:wasm.bzl", "go_wasm_test")
 
 go_library(
@@ -14,7 +14,7 @@ go_library(
     importpath = "github.com/google/chrome-ssh-agent/go/storage",
     visibility = ["//visibility:public"],
     deps = select({
-        "@io_bazel_rules_go//go/platform:js": [
+        "@rules_go//go/platform:js": [
             "//go/jsutil",
             "//go/lock",
             "@com_github_norunners_vert//:vert",

@@ -1,5 +1,5 @@
-load("@io_bazel_rules_go//go/private:providers.bzl", "GoLibrary", "GoPath", "GoArchive")
-load("@io_bazel_rules_go//go:def.bzl", "go_test", "go_library", "go_binary")
+load("@rules_go//go/private:providers.bzl", "GoLibrary", "GoPath", "GoArchive")
+load("@rules_go//go:def.bzl", "go_test", "go_library", "go_binary")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 

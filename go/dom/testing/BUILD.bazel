@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "testing",
@@ -7,7 +7,7 @@ go_library(
     importpath = "github.com/google/chrome-ssh-agent/go/dom/testing",
     visibility = ["//visibility:public"],
     deps = select({
-        "@io_bazel_rules_go//go/platform:js": [
+        "@rules_go//go/platform:js": [
             "//go/jsutil",
         ],
         "//conditions:default": [],

@@ -18,6 +18,9 @@
 // Build tags, if not extremely carefully used, may prevent those files from
 // being included in the test package and thus silently prevent them from
 // being executed.
+//
+// TODO: Find a way to re-enable this static analyzer. See
+//	https://github.com/google/chrome-ssh-agent/issues/163
 package testbuildtags
 
 import (
