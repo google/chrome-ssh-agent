@@ -29,6 +29,7 @@ ts_project(
     name = "app",
     srcs = ["app.ts"],
     declaration = True,
+    transpiler = "tsc",
     tsconfig = ":tsconfig",
     deps = [
         ":wasm_exec",
@@ -40,6 +41,7 @@ ts_project(
     name = "background",
     srcs = ["background.ts"],
     declaration = True,
+    transpiler = "tsc",
     tsconfig = ":tsconfig",
     deps = [
         ":app",
@@ -58,6 +60,7 @@ ts_project(
     name = "options",
     srcs = ["options.ts"],
     declaration = True,
+    transpiler = "tsc",
     tsconfig = ":tsconfig",
     deps = [
         ":app",

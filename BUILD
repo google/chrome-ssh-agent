@@ -64,7 +64,6 @@ pkg_files(
     ],
 )
 
-
 pkg_filegroup(
     name = "pkg_common",
     srcs = [
@@ -80,7 +79,7 @@ pkg_files(
     name = "pkg_manifest",
     srcs = [
         ":manifest.json",
-    ]
+    ],
 )
 
 pkg_files(
@@ -91,7 +90,7 @@ pkg_files(
     # Manifest must end up with well-known name.
     renames = {
         "manifest-beta.json": "manifest.json",
-    }
+    },
 )
 
 pkg_zip(
