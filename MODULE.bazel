@@ -55,7 +55,10 @@ rules_ts_ext = use_extension(
     "ext",
     dev_dependency = True,
 )
-rules_ts_ext.deps()
+rules_ts_ext.deps(
+    # Keep typescript version in sync with package.json
+    ts_version_from = "@npm//:typescript/resolved.json",
+)
 use_repo(rules_ts_ext, "npm_typescript")
 
 # Pull in Chromium for use in tests
