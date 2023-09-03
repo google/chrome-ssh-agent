@@ -24,7 +24,7 @@
     {
       "description": "Custom match modeled after https://docs.renovatebot.com/modules/manager/regex/#advanced-capture. Match things like: <something>1.2.3<something else>  # renovate: datasource=foo depName=bar versioning=baz",
       "fileMatch": [
-        "^WORKSPACE$"
+        "^MODULE.bazel$"
       ],
       "matchStrings": [
        ".*?(?<currentValue>[\\d\\.]+)[^\\n]*?renovate:\\s+datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)\\s+(versioning=(?<versioning>\\S+))?"
