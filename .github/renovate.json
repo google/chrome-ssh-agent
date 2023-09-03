@@ -7,10 +7,6 @@
     "schedule:weekends",
     "group:allNonMajor"
   ],
-  "golang": {
-    "description": "TODO(ralimi) Enable when gazelle supported: https://github.com/renovatebot/renovate/issues/3347",
-    "enabled": false
-  },
   "packageRules": [
     {
       "description": "rules_proto has versions like '4.0.0-3.19.2-2'.  Override the versioning scheme to better handle these.",
