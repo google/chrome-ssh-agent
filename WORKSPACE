@@ -27,9 +27,9 @@ http_archive(
 
 http_archive(
     name = "aspect_rules_ts",
-    sha256 = "4c3f34fff9f96ffc9c26635d8235a32a23a6797324486c7d23c1dfa477e8b451",
-    strip_prefix = "rules_ts-1.4.5",
-    url = "https://github.com/aspect-build/rules_ts/releases/download/v1.4.5/rules_ts-v1.4.5.tar.gz",
+    sha256 = "8f94152da908e747c007162e01e7da8f36eb399f675d5dc4799be20ea7f302f4",
+    strip_prefix = "rules_ts-2.0.0-rc0",
+    url = "https://github.com/aspect-build/rules_ts/releases/download/v2.0.0-rc0/rules_ts-v2.0.0-rc0.tar.gz",
 )
 
 http_archive(
@@ -166,9 +166,11 @@ load("@npm//:repositories.bzl", "npm_repositories")
 npm_repositories()
 
 # Typescript support.
-load("@aspect_rules_ts//ts:repositories.bzl", "LATEST_VERSION", "rules_ts_dependencies")
+load("@aspect_rules_ts//ts:repositories.bzl", "rules_ts_dependencies")
 
-rules_ts_dependencies(ts_version = LATEST_VERSION)
+rules_ts_dependencies(
+    ts_version_from = "@npm//:typescript/resolved.json",
+)
 
 # esbuild support.
 
