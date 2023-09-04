@@ -16,9 +16,6 @@ package keys
 
 import (
 	"crypto/x509"
-	"encoding/base64"
-	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/google/chrome-ssh-agent/go/jsutil"
@@ -38,12 +35,6 @@ type initialKey struct {
 	Load          bool
 	Passphrase    string
 }
-
-var (
-	storageGetErr    = errors.New("Storage.Get() failed")
-	storageSetErr    = errors.New("Storage.Set() failed")
-	storageDeleteErr = errors.New("Storage.Delete() failed")
-)
 
 func newTestManager(ctx jsutil.AsyncContext, agent agent.Agent, syncStorage, sessionStorage storage.Area, keys []*initialKey) (*DefaultManager, error) {
 	mgr := NewManager(agent, syncStorage, sessionStorage)
@@ -507,17 +498,6 @@ func TestLoadAndLoaded(t *testing.T) {
 			})
 		})
 	}
-}
-
-func makeLoadedKey(format, blob string) *LoadedKey {
-	b, err := base64.StdEncoding.DecodeString(blob)
-	if err != nil {
-		panic(fmt.Sprintf("failed to decode blob: %v", err))
-	}
-
-	result := LoadedKey{Type: format}
-	result.SetBlob(b)
-	return &result
 }
 
 func TestUnload(t *testing.T) {

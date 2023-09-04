@@ -564,7 +564,7 @@ const (
 //
 // The AsyncContext ensures this is invoked within an async context where
 // blocking is acceptable.
-func poll(ctx jsutil.AsyncContext, done func() bool) bool {
+func poll(_ jsutil.AsyncContext, done func() bool) bool {
 	timeout := time.Now().Add(pollTimeout)
 	for time.Now().Before(timeout) {
 		if done() {

@@ -15,7 +15,6 @@
 package storage
 
 import (
-	"errors"
 	"syscall/js"
 	"testing"
 
@@ -25,12 +24,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/norunners/vert"
-)
-
-var (
-	getError    = errors.New("Storage.Get failed")
-	setError    = errors.New("Storage.Set failed")
-	deleteError = errors.New("Storage.Delete failed")
 )
 
 const testKeyPrefix = "key"

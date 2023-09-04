@@ -108,10 +108,6 @@ func (ap *AgentPort) Read(p []byte) (n int, err error) {
 	return ap.inReader.Read(p)
 }
 
-var (
-	array = js.Global().Get("Array")
-)
-
 const (
 	// Type on messages to client. Value chosen for compatibility with mosh. See:
 	//   https://github.com/google/chrome-ssh-agent/issues/83
