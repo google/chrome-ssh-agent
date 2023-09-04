@@ -2,5 +2,11 @@
     "go.lintTool": "golangci-lint",
     "go.lintFlags": [
         "--fast"
-    ]
+    ],
+    "gopls": {
+        "build.buildFlags": [
+            "js",
+            "wasm"
+        ]
+    }
 }
