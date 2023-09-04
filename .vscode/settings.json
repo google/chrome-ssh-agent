@@ -1,0 +1,13 @@
+{
+    "go.lintTool": "golangci-lint",
+    "go.toolsEnvVars": {
+        "GOOS": "js",
+        "GOARCH": "wasm"
+    },
+    "gopls": {
+        "build.env": {
+            "GOOS": "js",
+            "GOARCH": "wasm"
+        }
+    }
+}

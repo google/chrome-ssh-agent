@@ -12,12 +12,11 @@
 		"ghcr.io/devcontainers/features/common-utils:1": {
 			"installZsh": false,
 			"installOhMyZsh": false,
-			"upgradePackages": true	
+			"upgradePackages": true
 		},
 		"ghcr.io/devcontainers/features/go:1": {},
 		"ghcr.io/devcontainers/features/node:1": {}
 	},
-
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -27,6 +26,5 @@
 			]
 		}
 	},
-
 	"postStartCommand": ".devcontainer/post-start-command.sh"
 }

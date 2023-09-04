@@ -46,9 +46,9 @@ func getBody(d *dom.Doc) js.Value {
 // WriteResults adds elements to the supplied DOM summarizing the test results.
 // The elements are given identifiers such that the results can be queried by
 // automation. The following elements are added:
-// - failureCount: a div element, whose contained text is the number of tests
+//   - failureCount: a div element, whose contained text is the number of tests
 //     that failed.
-// - failures: A pre element, whose contained text is a human-readable list
+//   - failures: A pre element, whose contained text is a human-readable list
 //     of the individual failures.
 func WriteResults(d *dom.Doc, errs []error) {
 	body := getBody(d)

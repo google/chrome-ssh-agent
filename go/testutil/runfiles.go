@@ -18,14 +18,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bazelbuild/rules_go/go/tools/bazel"
+	"github.com/bazelbuild/rules_go/go/runfiles"
 )
 
 // MustRunfile returns the path to the specified runfile. Panic on error.
 func MustRunfile(path string) string {
-	path, err := bazel.Runfile(path)
+	path, err := runfiles.Rlocation(path)
 	if err != nil {
-		panic(fmt.Errorf("failed to find runfile %s: %v", path, err))
+		panic(fmt.Errorf("failed to find runfile %s: %w", path, err))
 	}
 	return path
 }
@@ -36,7 +36,7 @@ func MustReadRunfile(path string) []byte {
 	fullPath := MustRunfile(path)
 	buf, err := os.ReadFile(fullPath)
 	if err != nil {
-		panic(fmt.Errorf("failed to read runfile %s: %v", fullPath, err))
+		panic(fmt.Errorf("failed to read runfile %s: %w", fullPath, err))
 	}
 	return buf
 }

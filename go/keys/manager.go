@@ -413,7 +413,7 @@ func decryptKey(key *storedKey, passphrase string) (decryptedKey, error) {
 	}
 	// Wrap all other non-specific errors.
 	if err != nil {
-		return "", fmt.Errorf("%w: %v", errParseFailed, err)
+		return "", fmt.Errorf("%w: %w", errParseFailed, err)
 	}
 
 	// Workaround for https://github.com/google/chrome-ssh-agent/issues/28.
@@ -427,7 +427,7 @@ func decryptKey(key *storedKey, passphrase string) (decryptedKey, error) {
 	// Marshal to PKCS#8 format.
 	buf, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
-		return "", fmt.Errorf("%w: %v", errMarshalFailed, err)
+		return "", fmt.Errorf("%w: %w", errMarshalFailed, err)
 	}
 
 	return decryptedKey(pem.EncodeToMemory(&pem.Block{
@@ -518,11 +518,11 @@ func (m *DefaultManager) Unload(ctx jsutil.AsyncContext, id ID) error {
 		Blob:   lk.Blob(),
 	}
 	if err := m.agent.Remove(pub); err != nil {
-		return fmt.Errorf("%w: %v", errAgentUnloadFailed, err)
+		return fmt.Errorf("%w: %w", errAgentUnloadFailed, err)
 	}
 
 	if err := m.sessionKeys.Delete(ctx, func(sk *sessionKey) bool { return ID(sk.ID) == id }); err != nil {
-		return fmt.Errorf("%w: %v", errStorageUnloadFailed, err)
+		return fmt.Errorf("%w: %w", errStorageUnloadFailed, err)
 	}
 
 	return nil

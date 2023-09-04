@@ -50,7 +50,7 @@ func dataToValue(data map[string]js.Value) js.Value {
 func valueToData(val js.Value) (map[string]js.Value, error) {
 	keys, err := jsutil.ObjectKeys(val)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read data: %v", err)
+		return nil, fmt.Errorf("failed to read data: %w", err)
 	}
 
 	data := map[string]js.Value{}
@@ -68,7 +68,7 @@ func (r *Raw) Set(ctx jsutil.AsyncContext, data map[string]js.Value) error {
 	jsutil.LogDebug("RawStorage.Set: setting data in storage")
 	_, err := jsutil.AsPromise(r.o.Call("set", dataToValue(data))).Await(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to set data: %v", err)
+		return fmt.Errorf("failed to set data: %w", err)
 	}
 	return nil
 }
@@ -81,13 +81,13 @@ func (r *Raw) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
 	jsutil.LogDebug("RawStorage.Get: read data from storage")
 	val, err := jsutil.AsPromise(r.o.Call("get", js.Null())).Await(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get data: %v", err)
+		return nil, fmt.Errorf("failed to get data: %w", err)
 	}
 
 	jsutil.LogDebug("RawStorage.Get: parse data")
 	data, err := valueToData(val)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse data: %v", err)
+		return nil, fmt.Errorf("failed to parse data: %w", err)
 	}
 
 	jsutil.LogDebug("RawStorage.Get: return %d values", len(data))
@@ -106,7 +106,7 @@ func (r *Raw) Delete(ctx jsutil.AsyncContext, keys []string) error {
 	jsutil.LogDebug("RawStorage.Delete: removing from storage")
 	_, err := jsutil.AsPromise(r.o.Call("remove", vert.ValueOf(keys).JSValue())).Await(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to delete data: %v", err)
+		return fmt.Errorf("failed to delete data: %w", err)
 	}
 
 	jsutil.LogDebug("RawStorage.Delete: finished")

@@ -17,19 +17,19 @@ import (
 )
 
 var (
-	chromeDriverPath = testutil.MustRunfile("chromedriver.bin")
-	chromePath       = testutil.MustRunfile("chromium.bin")
+	chromeDriverPath = testutil.MustRunfile("_main~chromium_dependencies~chromedriver/chromedriver.bin")
+	chromePath       = testutil.MustRunfile("_main~chromium_dependencies~chromium/chromium.bin")
 )
 
 func getElementText(wd selenium.WebDriver, id string) (string, error) {
 	el, err := wd.FindElement(selenium.ByID, id)
 	if err != nil {
-		return "", fmt.Errorf("Failed to find element with ID %s: %v", id, err)
+		return "", fmt.Errorf("Failed to find element with ID %s: %w", id, err)
 	}
 
 	txt, err := el.Text()
 	if err != nil {
-		return "", fmt.Errorf("Failed to get text for element with ID %s: %v", id, err)
+		return "", fmt.Errorf("Failed to get text for element with ID %s: %w", id, err)
 	}
 
 	return txt, nil
@@ -62,7 +62,7 @@ var (
 
 func dumpSeleniumLogs(t *testing.T, wd selenium.WebDriver) {
 	t.Log("Dumping Selenium Logs")
-	for typ, _ := range logLevels {
+	for typ := range logLevels {
 		msgs, err := wd.Log(typ)
 		if err != nil {
 			t.Errorf("Failed to fetch logs of type %s: %v", typ, err)
@@ -103,12 +103,12 @@ func TestWebApp(t *testing.T) {
 	}{
 		{
 			name:          "Prod Release",
-			extensionPath: testutil.MustRunfile("chrome-ssh-agent.zip"),
+			extensionPath: testutil.MustRunfile("_main/chrome-ssh-agent.zip"),
 			extensionId:   "eechpbnaifiimgajnomdipfaamobdfha",
 		},
 		{
 			name:          "Beta Release",
-			extensionPath: testutil.MustRunfile("chrome-ssh-agent-beta.zip"),
+			extensionPath: testutil.MustRunfile("_main/chrome-ssh-agent-beta.zip"),
 			extensionId:   "onabphcdiffmanfdhkihllckikaljmhh",
 		},
 	}
@@ -129,7 +129,11 @@ func TestWebApp(t *testing.T) {
 				defer dumpLog(t, "SeleniumOutput", &selOut) // Selenium failed to initialize; show debug info.
 				t.Fatalf("failed to start Selenium service: %v", err)
 			}
-			defer service.Stop()
+			defer func() {
+				if err := service.Stop(); err != nil {
+					t.Errorf("failed to stop Selenium service: %v", err)
+				}
+			}()
 
 			caps := selenium.Capabilities{}
 			caps.AddLogging(logLevels)
@@ -162,7 +166,11 @@ func TestWebApp(t *testing.T) {
 				defer dumpLog(t, "SeleniumOutput", &selOut) // Selenium failed to initialize; show debug info.
 				t.Fatalf("Failed to start webdriver: %v", err)
 			}
-			defer wd.Quit()
+			defer func() {
+				if err := wd.Quit(); err != nil {
+					t.Errorf("failed to quit webdriver: %v", err)
+				}
+			}()
 			defer dumpSeleniumLogs(t, wd)
 
 			t.Log("Navigating to test page")

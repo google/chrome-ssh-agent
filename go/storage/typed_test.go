@@ -51,8 +51,8 @@ func TestTypedReadAll(t *testing.T) {
 				testKeyPrefix + "." + "2": vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			want: []*myStruct{
-				&myStruct{IntField: 42},
-				&myStruct{StringField: "foo"},
+				{IntField: 42},
+				{StringField: "foo"},
 			},
 		},
 		{
@@ -62,7 +62,7 @@ func TestTypedReadAll(t *testing.T) {
 				testKeyPrefix + "." + "2": js.ValueOf(42),
 			},
 			want: []*myStruct{
-				&myStruct{IntField: 42},
+				{IntField: 42},
 			},
 		},
 		{
@@ -72,7 +72,7 @@ func TestTypedReadAll(t *testing.T) {
 				"wrong.2":                 vert.ValueOf(&myStruct{StringField: "foo"}).JSValue(),
 			},
 			want: []*myStruct{
-				&myStruct{IntField: 42},
+				{IntField: 42},
 			},
 		},
 	}
@@ -165,9 +165,9 @@ func TestTypedWrite(t *testing.T) {
 			},
 			write: &myStruct{IntField: 100},
 			want: []*myStruct{
-				&myStruct{IntField: 42},
-				&myStruct{IntField: 100},
-				&myStruct{StringField: "foo"},
+				{IntField: 42},
+				{IntField: 100},
+				{StringField: "foo"},
 			},
 		},
 		{
@@ -178,9 +178,9 @@ func TestTypedWrite(t *testing.T) {
 			},
 			write: &myStruct{IntField: 42},
 			want: []*myStruct{
-				&myStruct{IntField: 42},
-				&myStruct{IntField: 42},
-				&myStruct{StringField: "foo"},
+				{IntField: 42},
+				{IntField: 42},
+				{StringField: "foo"},
 			},
 		},
 	}
@@ -228,7 +228,7 @@ func TestTypedDelete(t *testing.T) {
 			},
 			test: func(v *myStruct) bool { return v.IntField == 42 },
 			want: []*myStruct{
-				&myStruct{StringField: "foo"},
+				{StringField: "foo"},
 			},
 		},
 		{
@@ -240,7 +240,7 @@ func TestTypedDelete(t *testing.T) {
 			},
 			test: func(v *myStruct) bool { return v.IntField > 0 },
 			want: []*myStruct{
-				&myStruct{StringField: "foo"},
+				{StringField: "foo"},
 			},
 		},
 	}

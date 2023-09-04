@@ -44,7 +44,7 @@ var (
 	// randomly-generated ID.
 	displayedKeyCmp = cmpopts.IgnoreFields(displayedKey{}, "Comment", "cleanup")
 
-	optionsHTMLData = string(testutil.MustReadRunfile("html/options.html"))
+	optionsHTMLData = string(testutil.MustReadRunfile("_main/html/options.html"))
 )
 
 type testHarness struct {
@@ -205,7 +205,7 @@ func TestUserActions(t *testing.T) {
 				h.waitKeyConfigured(ctx, "new-key")
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:   validID,
 					Name: "new-key",
 				},
@@ -231,11 +231,11 @@ func TestUserActions(t *testing.T) {
 				h.waitKeyConfigured(ctx, "new-key-2")
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:   validID,
 					Name: "new-key-1",
 				},
-				&displayedKey{
+				{
 					ID:   validID,
 					Name: "new-key-2",
 				},
@@ -291,7 +291,7 @@ func TestUserActions(t *testing.T) {
 				h.waitKeyRemoved(ctx, "new-key-1")
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:   validID,
 					Name: "new-key-2",
 				},
@@ -323,11 +323,11 @@ func TestUserActions(t *testing.T) {
 				h.waitDialogClosed(ctx, h.removeDialog)
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:   validID,
 					Name: "new-key-1",
 				},
-				&displayedKey{
+				{
 					ID:   validID,
 					Name: "new-key-2",
 				},
@@ -357,11 +357,11 @@ func TestUserActions(t *testing.T) {
 				h.waitDialogClosed(ctx, h.removeDialog)
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:   validID,
 					Name: "new-key-1",
 				},
-				&displayedKey{
+				{
 					ID:   validID,
 					Name: "new-key-2",
 				},
@@ -388,7 +388,7 @@ func TestUserActions(t *testing.T) {
 				h.waitKeyLoaded(ctx, "new-key")
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:     validID,
 					Name:   "new-key",
 					Loaded: true,
@@ -415,7 +415,7 @@ func TestUserActions(t *testing.T) {
 				h.waitDialogClosed(ctx, h.passphraseDialog)
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:        validID,
 					Name:      "new-key",
 					Encrypted: true,
@@ -441,7 +441,7 @@ func TestUserActions(t *testing.T) {
 				h.waitDialogClosed(ctx, h.passphraseDialog)
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:        validID,
 					Name:      "new-key",
 					Encrypted: true,
@@ -464,7 +464,7 @@ func TestUserActions(t *testing.T) {
 				dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:     validID,
 					Name:   "new-key",
 					Loaded: true,
@@ -496,7 +496,7 @@ func TestUserActions(t *testing.T) {
 				h.waitKeyUnloaded(ctx, "new-key")
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:        validID,
 					Name:      "new-key",
 					Loaded:    false,
@@ -526,7 +526,7 @@ func TestUserActions(t *testing.T) {
 				h.UI.unload(ctx, keys.ID("bogus-id"))
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:     validID,
 					Name:   "new-key",
 					Loaded: true,
@@ -561,13 +561,13 @@ func TestUserActions(t *testing.T) {
 				h.waitKeyLoaded(ctx, "new-key")
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:     keys.InvalidID,
 					Loaded: true,
 					Type:   testdata.WithoutPassphrase.Type,
 					Blob:   testdata.WithoutPassphrase.Blob,
 				},
-				&displayedKey{
+				{
 					ID:     validID,
 					Name:   "new-key",
 					Loaded: true,
@@ -602,7 +602,7 @@ func TestUserActions(t *testing.T) {
 				h.waitKeyRemoved(ctx, "new-key")
 			},
 			wantDisplayed: []*displayedKey{
-				&displayedKey{
+				{
 					ID:     keys.InvalidID,
 					Loaded: true,
 					Type:   testdata.WithPassphrase.Type,
