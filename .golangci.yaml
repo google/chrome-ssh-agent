@@ -3,7 +3,10 @@ linters:
     - bugs
     - comment
     - format
+    - import
     - unused
   disable:
     # Produces ordering contradictory to VS Code's auto formatting.
     - gci
+    # We don't have any denylisted dependencies
+    - depguard
