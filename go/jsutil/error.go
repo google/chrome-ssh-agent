@@ -17,6 +17,7 @@
 package jsutil
 
 import (
+	"errors"
 	"syscall/js"
 )
 
@@ -58,8 +59,10 @@ func NewError(err error) JSError {
 	if err == nil {
 		panic("Cannot construct nil JSError")
 	}
-	if e, ok := err.(JSError); ok {
-		return e
+
+	var je JSError
+	if errors.As(err, &je) {
+		return je
 	}
 
 	e := jsError.New(err.Error())
