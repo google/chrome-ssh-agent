@@ -44,7 +44,7 @@ var (
 	// randomly-generated ID.
 	displayedKeyCmp = cmpopts.IgnoreFields(displayedKey{}, "Comment", "cleanup")
 
-	optionsHTMLData = string(testutil.MustReadRunfile("html/options.html"))
+	optionsHTMLData = string(testutil.MustReadRunfile("_main/html/options.html"))
 )
 
 type testHarness struct {

@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	chromeDriverPath = testutil.MustRunfile("chromedriver.bin")
-	chromePath       = testutil.MustRunfile("chromium.bin")
+	chromeDriverPath = testutil.MustRunfile("_main~chromium_dependencies~chromedriver/chromedriver.bin")
+	chromePath       = testutil.MustRunfile("_main~chromium_dependencies~chromium/chromium.bin")
 )
 
 func getElementText(wd selenium.WebDriver, id string) (string, error) {
@@ -103,12 +103,12 @@ func TestWebApp(t *testing.T) {
 	}{
 		{
 			name:          "Prod Release",
-			extensionPath: testutil.MustRunfile("chrome-ssh-agent.zip"),
+			extensionPath: testutil.MustRunfile("_main/chrome-ssh-agent.zip"),
 			extensionId:   "eechpbnaifiimgajnomdipfaamobdfha",
 		},
 		{
 			name:          "Beta Release",
-			extensionPath: testutil.MustRunfile("chrome-ssh-agent-beta.zip"),
+			extensionPath: testutil.MustRunfile("_main/chrome-ssh-agent-beta.zip"),
 			extensionId:   "onabphcdiffmanfdhkihllckikaljmhh",
 		},
 	}

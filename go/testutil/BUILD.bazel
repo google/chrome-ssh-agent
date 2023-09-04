@@ -9,5 +9,5 @@ go_library(
     ],
     importpath = "github.com/google/chrome-ssh-agent/go/testutil",
     visibility = ["//visibility:public"],
-    deps = ["@rules_go//go/tools/bazel:go_default_library"],
+    deps = ["@rules_go//go/runfiles:go_default_library"],
 )
