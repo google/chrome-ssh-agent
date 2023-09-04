@@ -4,6 +4,7 @@ linters:
     - comment
     - format
     - import
+    - module
     - unused
   disable:
     # Produces ordering contradictory to VS Code's auto formatting.
