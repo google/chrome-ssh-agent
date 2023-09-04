@@ -126,7 +126,7 @@ func (u *UI) add(ctx jsutil.AsyncContext, evt dom.Event) {
 	}
 
 	if err := u.mgr.Add(ctx, name, privateKey); err != nil {
-		u.setError(fmt.Errorf("failed to add key: %v", err))
+		u.setError(fmt.Errorf("failed to add key: %w", err))
 		return
 	}
 
@@ -185,7 +185,7 @@ func (u *UI) load(ctx jsutil.AsyncContext, id keys.ID) {
 	}
 
 	if err := u.mgr.Load(ctx, id, passphrase); err != nil {
-		u.setError(fmt.Errorf("failed to load key: %v", err))
+		u.setError(fmt.Errorf("failed to load key: %w", err))
 		return
 	}
 	u.setError(nil)
@@ -224,7 +224,7 @@ func (u *UI) promptPassphrase(ctx jsutil.AsyncContext) (ok bool, passphrase stri
 // unload unloads the specified key.
 func (u *UI) unload(ctx jsutil.AsyncContext, id keys.ID) {
 	if err := u.mgr.Unload(ctx, id); err != nil {
-		u.setError(fmt.Errorf("failed to unload key ID %s: %v", id, err))
+		u.setError(fmt.Errorf("failed to unload key ID %s: %w", id, err))
 		return
 	}
 	u.setError(nil)
@@ -275,7 +275,7 @@ func (u *UI) remove(ctx jsutil.AsyncContext, id keys.ID) {
 	}
 
 	if err := u.mgr.Remove(ctx, id); err != nil {
-		u.setError(fmt.Errorf("failed to remove key ID %s: %v", id, err))
+		u.setError(fmt.Errorf("failed to remove key ID %s: %w", id, err))
 		return
 	}
 	u.setError(nil)
@@ -309,7 +309,7 @@ type displayedKey struct {
 func (d *displayedKey) LoadedKey() (*keys.LoadedKey, error) {
 	blob, err := base64.StdEncoding.DecodeString(d.Blob)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode blob: %v", err)
+		return nil, fmt.Errorf("failed to decode blob: %w", err)
 	}
 
 	l := &keys.LoadedKey{
@@ -539,13 +539,13 @@ func mergeKeys(configured []*keys.ConfiguredKey, loaded []*keys.LoadedKey) []*di
 func (u *UI) updateKeys(ctx jsutil.AsyncContext) {
 	configured, err := u.mgr.Configured(ctx)
 	if err != nil {
-		u.setError(fmt.Errorf("failed to get configured keys: %v", err))
+		u.setError(fmt.Errorf("failed to get configured keys: %w", err))
 		return
 	}
 
 	loaded, err := u.mgr.Loaded(ctx)
 	if err != nil {
-		u.setError(fmt.Errorf("failed to get loaded keys: %v", err))
+		u.setError(fmt.Errorf("failed to get loaded keys: %w", err))
 		return
 	}
 	u.setError(nil)
@@ -605,7 +605,7 @@ func (u *UI) EndToEndTest(ctx jsutil.AsyncContext) []error {
 	jsutil.Log("Generate random name to use for key")
 	i, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to generate random number: %v", err))
+		errs = append(errs, fmt.Errorf("failed to generate random number: %w", err))
 		return errs
 	}
 	keyName := fmt.Sprintf("e2e-test-key-%s", i.String())

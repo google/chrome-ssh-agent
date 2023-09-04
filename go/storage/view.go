@@ -126,7 +126,7 @@ func DeleteViewPrefixes(ctx jsutil.AsyncContext, prefixes []string, store Area) 
 	// Gather all of the keys.
 	data, err := v.Get(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get keys: %v", err)
+		return fmt.Errorf("failed to get keys: %w", err)
 	}
 	var keys []string
 	for k := range data {
@@ -135,7 +135,7 @@ func DeleteViewPrefixes(ctx jsutil.AsyncContext, prefixes []string, store Area) 
 
 	// Remove them all.
 	if err := v.Delete(ctx, keys); err != nil {
-		return fmt.Errorf("failed to delete keys: %v", err)
+		return fmt.Errorf("failed to delete keys: %w", err)
 	}
 
 	return nil

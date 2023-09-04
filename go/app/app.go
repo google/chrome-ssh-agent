@@ -95,7 +95,7 @@ func (a *AppContext) Run() {
 
 	init.Wait()
 	if initErr != nil {
-		panic(fmt.Errorf("%s init failed: %v; terminating", a.app.Name(), initErr))
+		panic(fmt.Errorf("%s init failed: %w; terminating", a.app.Name(), initErr))
 	}
 
 	done.Wait()

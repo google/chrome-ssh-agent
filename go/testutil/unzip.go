@@ -16,6 +16,7 @@ package testutil
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -26,54 +27,71 @@ import (
 // CleanupFunc can be invoked to cleanup any temporary state.
 type CleanupFunc func()
 
+const unzipChunkSizeBytes = 4096
+
+// See https://github.com/securego/gosec/issues/324#issuecomment-935927967
+func sanitizeArchivePath(dir, fileName string) (string, error) {
+	fullPath := filepath.Join(dir, fileName)
+	if !strings.Contains(fullPath, filepath.Clean(dir)) {
+		return "", fmt.Errorf("Archive contained unsafe path: %s", fileName)
+	}
+
+	return fullPath, nil
+}
+
 // UnzipTemp unzips a zip archive to temporary path, and returns the path.
 // The returned cleanup function should be invoked to cleanup any temporary
 // state when it is no longer needed.
 func UnzipTemp(path string) (string, CleanupFunc, error) {
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
-		return "", nil, fmt.Errorf("Failed to create temp directory: %v", err)
+		return "", nil, fmt.Errorf("Failed to create temp directory: %w", err)
 	}
 
 	rdr, err := zip.OpenReader(path)
 	if err != nil {
 		defer os.RemoveAll(dir)
-		return "", nil, fmt.Errorf("Failed to open extension file: %v", err)
+		return "", nil, fmt.Errorf("Failed to open extension file: %w", err)
 	}
 	defer rdr.Close()
 
 	for _, f := range rdr.File {
 		err := func() error {
-			filePath := filepath.Join(dir, f.Name)
-			if strings.Contains(filePath, "..") {
-				return fmt.Errorf("Archive contained path referring to parent directory: %s", f.Name)
+			filePath, err := sanitizeArchivePath(dir, f.Name)
+			if err != nil {
+				return fmt.Errorf("Archive contained unsafe path: %w", err)
 			}
 
 			if f.Mode().IsDir() {
 				if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
-					return fmt.Errorf("Failed to create destination directory %s: %v", filepath.Dir(filePath), err)
+					return fmt.Errorf("Failed to create destination directory %s: %w", filepath.Dir(filePath), err)
 				}
 				return nil
 			}
 
 			if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-				return fmt.Errorf("Failed to create destination directory %s: %v", filepath.Dir(filePath), err)
+				return fmt.Errorf("Failed to create destination directory %s: %w", filepath.Dir(filePath), err)
 			}
 
 			dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 			if err != nil {
-				return fmt.Errorf("Failed to open destination file %s: %v", filePath, err)
+				return fmt.Errorf("Failed to open destination file %s: %w", filePath, err)
 			}
 			defer dstFile.Close()
 
 			archFile, err := f.Open()
 			if err != nil {
-				return fmt.Errorf("Failed to open source file %s: %v", f.Name, err)
+				return fmt.Errorf("Failed to open source file %s: %w", f.Name, err)
 			}
 			defer archFile.Close()
 
-			if _, err := io.Copy(dstFile, archFile); err != nil {
-				return fmt.Errorf("Failed to copy to destination file %s: %v", filePath, err)
+			for {
+				if _, err := io.CopyN(dstFile, archFile, unzipChunkSizeBytes); err != nil {
+					if errors.Is(err, io.EOF) {
+						break
+					}
+					return fmt.Errorf("Failed to copy to destination file %s: %w", filePath, err)
+				}
 			}
 			return nil
 		}()

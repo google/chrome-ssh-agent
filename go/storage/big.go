@@ -214,7 +214,7 @@ func (b *Big) Get(ctx jsutil.AsyncContext) (map[string]js.Value, error) {
 				}
 				dec, err := base64.StdEncoding.DecodeString(chunkVal.String())
 				if err != nil {
-					return nil, fmt.Errorf("failed to read data; base64 decode failed: %v", err)
+					return nil, fmt.Errorf("failed to read data; base64 decode failed: %w", err)
 				}
 
 				json.WriteString(string(dec))
@@ -247,7 +247,7 @@ func (b *Big) Delete(ctx jsutil.AsyncContext, keys []string) error {
 			// have been left over from before.
 			data, err := b.s.Get(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to query for dangling chunks: %v", err)
+				return fmt.Errorf("failed to query for dangling chunks: %w", err)
 			}
 
 			// Initially, consider all chunk keys as dangling.
@@ -275,7 +275,7 @@ func (b *Big) Delete(ctx jsutil.AsyncContext, keys []string) error {
 				dangling = append(dangling, k)
 			}
 			if err := b.s.Delete(ctx, dangling); err != nil {
-				return fmt.Errorf("failed to delete dangling chunks: %v", err)
+				return fmt.Errorf("failed to delete dangling chunks: %w", err)
 			}
 			return nil
 		}()

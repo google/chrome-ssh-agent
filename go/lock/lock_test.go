@@ -52,7 +52,9 @@ func TestExclusive(t *testing.T) {
 
 		// Wait for all routines to complete.
 		for _, p := range promises {
-			p.Await(ctx)
+			if _, err := p.Await(ctx); err != nil {
+				t.Errorf("promise returned error: %v", err)
+			}
 		}
 
 		// Validate that all workers completed.

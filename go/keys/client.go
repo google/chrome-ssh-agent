@@ -167,7 +167,7 @@ func (s *Server) makeErrorResponse(err error) js.Value {
 func (s *Server) OnMessage(ctx jsutil.AsyncContext, headerObj js.Value, sender js.Value) js.Value {
 	var header msgHeader
 	if err := vert.ValueOf(headerObj).AssignTo(&header); err != nil {
-		return s.makeErrorResponse(fmt.Errorf("failed to parse message header: %v", err))
+		return s.makeErrorResponse(fmt.Errorf("failed to parse message header: %w", err))
 	}
 
 	jsutil.LogDebug("Server.OnMessage(type = %d)", header.Type)
@@ -195,7 +195,7 @@ func (s *Server) OnMessage(ctx jsutil.AsyncContext, headerObj js.Value, sender j
 	case msgTypeAdd:
 		var m msgAdd
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			return s.makeErrorResponse(fmt.Errorf("failed to parse Add message: %v", err))
+			return s.makeErrorResponse(fmt.Errorf("failed to parse Add message: %w", err))
 		}
 		jsutil.LogDebug("Server.OnMessage(Add req): name=%s", m.Name)
 		err := s.mgr.Add(ctx, m.Name, m.PEMPrivateKey)
@@ -208,7 +208,7 @@ func (s *Server) OnMessage(ctx jsutil.AsyncContext, headerObj js.Value, sender j
 	case msgTypeRemove:
 		var m msgRemove
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			return s.makeErrorResponse(fmt.Errorf("failed to parse Remove message: %v", err))
+			return s.makeErrorResponse(fmt.Errorf("failed to parse Remove message: %w", err))
 		}
 		jsutil.LogDebug("Server.OnMessage(Remove req): id=%s", m.ID)
 		err := s.mgr.Remove(ctx, ID(m.ID))
@@ -221,7 +221,7 @@ func (s *Server) OnMessage(ctx jsutil.AsyncContext, headerObj js.Value, sender j
 	case msgTypeLoad:
 		var m msgLoad
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			return s.makeErrorResponse(fmt.Errorf("failed to parse Load message: %v", err))
+			return s.makeErrorResponse(fmt.Errorf("failed to parse Load message: %w", err))
 		}
 		jsutil.LogDebug("Server.OnMessage(Load req): id=%s", m.ID)
 		err := s.mgr.Load(ctx, ID(m.ID), m.Passphrase)
@@ -234,7 +234,7 @@ func (s *Server) OnMessage(ctx jsutil.AsyncContext, headerObj js.Value, sender j
 	case msgTypeUnload:
 		var m msgUnload
 		if err := vert.ValueOf(headerObj).AssignTo(&m); err != nil {
-			return s.makeErrorResponse(fmt.Errorf("failed to parse Unload message: %v", err))
+			return s.makeErrorResponse(fmt.Errorf("failed to parse Unload message: %w", err))
 		}
 		jsutil.LogDebug("Server.OnMessage(Unload req): id=%s", m.ID)
 		err := s.mgr.Unload(ctx, ID(m.ID))
@@ -267,11 +267,11 @@ func (c *client) Configured(ctx jsutil.AsyncContext) ([]*ConfiguredKey, error) {
 	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
 	jsutil.LogDebug("Client.Configured(rsp)")
 	if err != nil {
-		return nil, fmt.Errorf("failed to send message: %v", err)
+		return nil, fmt.Errorf("failed to send message: %w", err)
 	}
 	var rsp rspConfigured
 	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %v", err)
+		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 	return rsp.Keys, makeErr(rsp.Err)
 }
@@ -284,11 +284,11 @@ func (c *client) Loaded(ctx jsutil.AsyncContext) ([]*LoadedKey, error) {
 	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
 	jsutil.LogDebug("Client.Loaded(rsp)")
 	if err != nil {
-		return nil, fmt.Errorf("failed to send message: %v", err)
+		return nil, fmt.Errorf("failed to send message: %w", err)
 	}
 	var rsp rspLoaded
 	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %v", err)
+		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 	return rsp.Keys, makeErr(rsp.Err)
 }
@@ -303,11 +303,11 @@ func (c *client) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string)
 	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
 	jsutil.LogDebug("Client.Add(rsp)")
 	if err != nil {
-		return fmt.Errorf("failed to send message: %v", err)
+		return fmt.Errorf("failed to send message: %w", err)
 	}
 	var rsp rspAdd
 	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-		return fmt.Errorf("failed to parse response: %v", err)
+		return fmt.Errorf("failed to parse response: %w", err)
 	}
 	return makeErr(rsp.Err)
 }
@@ -321,11 +321,11 @@ func (c *client) Remove(ctx jsutil.AsyncContext, id ID) error {
 	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
 	jsutil.LogDebug("Client.Remove(rsp)")
 	if err != nil {
-		return fmt.Errorf("failed to send message: %v", err)
+		return fmt.Errorf("failed to send message: %w", err)
 	}
 	var rsp rspRemove
 	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-		return fmt.Errorf("failed to parse response: %v", err)
+		return fmt.Errorf("failed to parse response: %w", err)
 	}
 	return makeErr(rsp.Err)
 }
@@ -340,11 +340,11 @@ func (c *client) Load(ctx jsutil.AsyncContext, id ID, passphrase string) error {
 	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
 	jsutil.LogDebug("Client.Load(rsp)")
 	if err != nil {
-		return fmt.Errorf("failed to send message: %v", err)
+		return fmt.Errorf("failed to send message: %w", err)
 	}
 	var rsp rspLoad
 	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-		return fmt.Errorf("failed to parse response: %v", err)
+		return fmt.Errorf("failed to parse response: %w", err)
 	}
 	return makeErr(rsp.Err)
 }
@@ -358,11 +358,11 @@ func (c *client) Unload(ctx jsutil.AsyncContext, id ID) error {
 	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
 	jsutil.LogDebug("Client.Unload(rsp)")
 	if err != nil {
-		return fmt.Errorf("failed to send message: %v", err)
+		return fmt.Errorf("failed to send message: %w", err)
 	}
 	var rsp rspUnload
 	if err := vert.ValueOf(rspObj).AssignTo(&rsp); err != nil {
-		return fmt.Errorf("failed to parse response: %v", err)
+		return fmt.Errorf("failed to parse response: %w", err)
 	}
 	return makeErr(rsp.Err)
 }
