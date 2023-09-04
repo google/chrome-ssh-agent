@@ -17,6 +17,9 @@ jobs:
         with:
           go-version: 'stable'
       - uses: golangci/golangci-lint-action@v3
+        env:
+          GOOS: js
+          GOARCH: wasm
         with:
           version: 'latest'
           only-new-issues: true
