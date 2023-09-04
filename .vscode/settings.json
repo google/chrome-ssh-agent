@@ -4,8 +4,9 @@
         "--fast"
     ],
     "gopls": {
-        "build.buildFlags": [
-            "--tags=js,wasm",
-        ]
+        "build.env": {
+            "GOOS": "js",
+            "GOARCH": "wasm"
+        }
     }
 }
