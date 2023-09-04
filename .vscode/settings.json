@@ -1,8 +1,5 @@
 {
     "go.lintTool": "golangci-lint",
-    "go.lintFlags": [
-        "--fast"
-    ],
     "go.toolsEnvVars": {
         "GOOS": "js",
         "GOARCH": "wasm"
