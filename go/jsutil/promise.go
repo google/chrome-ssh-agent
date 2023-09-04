@@ -120,7 +120,7 @@ var (
 	// functions. This allows us to require blocking calls such as Await()
 	// to supply the context, providing some safety that the caller was
 	// actually invoking them from an asynchronously executing function. If
-	// blocking calls were made from the the main thread, we would deadlock.
+	// blocking calls were made from the main thread, we would deadlock.
 	asyncContext = &asyncContextImpl{}
 )
 
