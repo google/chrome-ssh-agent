@@ -1,0 +1,22 @@
+name: Lint
+
+on:
+  # Test on checkin.
+  push:
+  # Pull requests
+  pull_request:
+  # Manual trigger.
+  workflow_dispatch:
+
+jobs:
+  go-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 'stable'
+      - uses: golangci/golangci-lint-action@v3
+        with:
+          version: 'latest'
+          only-new-issues: true
