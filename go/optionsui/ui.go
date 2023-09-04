@@ -697,5 +697,4 @@ func (u *UI) EndToEndTest(ctx jsutil.AsyncContext) []error {
 	}
 
 	return errs
-
 }

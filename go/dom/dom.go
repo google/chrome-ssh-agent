@@ -24,12 +24,10 @@ import (
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
-var (
-	// document is the default 'document' object.  This should be used for
-	// regular code. See NewDocForTesting() for a Document object that can
-	// be used in unit tests.
-	document = js.Global().Get("document")
-)
+// document is the default 'document' object.  This should be used for
+// regular code. See NewDocForTesting() for a Document object that can
+// be used in unit tests.
+var document = js.Global().Get("document")
 
 // Event provides an API for interacting with events.
 type Event struct {

@@ -52,13 +52,11 @@ func currentURLIs(url string) selenium.Condition {
 	}
 }
 
-var (
-	logLevels = slog.Capabilities{
-		slog.Browser:     slog.All,
-		slog.Performance: slog.Info,
-		slog.Driver:      slog.Info,
-	}
-)
+var logLevels = slog.Capabilities{
+	slog.Browser:     slog.All,
+	slog.Performance: slog.Info,
+	slog.Driver:      slog.Info,
+}
 
 func dumpSeleniumLogs(t *testing.T, wd selenium.WebDriver) {
 	t.Log("Dumping Selenium Logs")

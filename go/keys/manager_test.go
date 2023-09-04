@@ -107,7 +107,6 @@ func TestAdd(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
-
 				syncStorage := storage.NewRaw(st.NewMemArea())
 				sessionStorage := storage.NewRaw(st.NewMemArea())
 				mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, tc.initial)

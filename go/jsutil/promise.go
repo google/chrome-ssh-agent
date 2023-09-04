@@ -21,9 +21,7 @@ import (
 	"syscall/js"
 )
 
-var (
-	promise = js.Global().Get("Promise")
-)
+var promise = js.Global().Get("Promise")
 
 // Promise encapsulates a javascript Promise type.
 type Promise struct {
@@ -114,15 +112,13 @@ type asyncContextImpl struct{}
 
 func (a *asyncContextImpl) AFunc() {}
 
-var (
-	// asyncContext is a token value that implements AsyncContext. This
-	// token value is expected to supplied to all asynchronously executing
-	// functions. This allows us to require blocking calls such as Await()
-	// to supply the context, providing some safety that the caller was
-	// actually invoking them from an asynchronously executing function. If
-	// blocking calls were made from the main thread, we would deadlock.
-	asyncContext = &asyncContextImpl{}
-)
+// asyncContext is a token value that implements AsyncContext. This
+// token value is expected to supplied to all asynchronously executing
+// functions. This allows us to require blocking calls such as Await()
+// to supply the context, providing some safety that the caller was
+// actually invoking them from an asynchronously executing function. If
+// blocking calls were made from the main thread, we would deadlock.
+var asyncContext = &asyncContextImpl{}
 
 // Async executes a function asynchronously.  A promise corresponding to the
 // function is returned.

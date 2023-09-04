@@ -21,11 +21,9 @@ import (
 	"syscall/js"
 )
 
-var (
-	storageArea = js.Global().Call("eval", `{
-		require("mem-storage-area/StorageArea");
-	}`)
-)
+var storageArea = js.Global().Call("eval", `{
+	require("mem-storage-area/StorageArea");
+}`)
 
 func NewMemArea() js.Value {
 	return storageArea.New()

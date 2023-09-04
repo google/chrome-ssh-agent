@@ -2,4 +2,8 @@ linters:
   presets:
     - bugs
     - comment
+    - format
     - unused
+  disable:
+    # Produces ordering contradictory to VS Code's auto formatting.
+    - gci

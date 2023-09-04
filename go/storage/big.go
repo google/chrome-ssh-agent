@@ -81,10 +81,8 @@ const (
 	chunkKeyPrefix = "chunk-" + bigValueManifestMagic + ":"
 )
 
-var (
-	// chunkKeyLength is the size of chunk keys that we store.
-	chunkKeyLength = len(makeChunkKey("dummy"))
-)
+// chunkKeyLength is the size of chunk keys that we store.
+var chunkKeyLength = len(makeChunkKey("dummy"))
 
 func (b *Big) maxChunkSize() int {
 	// Chunk values are stored as strings; subtract 2 to leave room for

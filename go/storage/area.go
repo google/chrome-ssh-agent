@@ -24,7 +24,8 @@ import (
 
 // Area implementations provide access to underlying storage. The interface is
 // a simplified subset of the StorageArea API:
-//   https://developer.chrome.com/docs/extensions/reference/storage/#type-StorageArea
+//
+//	https://developer.chrome.com/docs/extensions/reference/storage/#type-StorageArea
 type Area interface {
 	// Set stores new data in storage. data is a map of key-value pairs to
 	// be stored. If a key already exists, it will be overwritten.

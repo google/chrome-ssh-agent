@@ -284,9 +284,7 @@ func (m *DefaultManager) Configured(ctx jsutil.AsyncContext) ([]*ConfiguredKey, 
 	return result, nil
 }
 
-var (
-	errInvalidName = errors.New("invalid name")
-)
+var errInvalidName = errors.New("invalid name")
 
 // Add implements Manager.Add.
 func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error {

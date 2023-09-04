@@ -59,12 +59,12 @@ func (a *AppContext) Release() {
 //
 // Run exports the following async functions to be available from Javascript:
 //
-//   initWaitFunc (see above): waits for app initialization to complete. If this
-//     function returns successfully, then the App.Init() function is guaranteed
-//     to have completed without error.
+//	initWaitFunc (see above): waits for app initialization to complete. If this
+//	  function returns successfully, then the App.Init() function is guaranteed
+//	  to have completed without error.
 //
-//   terminateFunc (see above): signals the application to terminate; Run() will
-//     terminate.
+//	terminateFunc (see above): signals the application to terminate; Run() will
+//	  terminate.
 func (a *AppContext) Run() {
 	jsutil.LogDebug("%s starting", a.app.Name())
 	defer jsutil.LogDebug("%s finished", a.app.Name())
