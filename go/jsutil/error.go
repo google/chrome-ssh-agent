@@ -36,17 +36,17 @@ func (e JSError) AsJSValue() js.Value {
 
 // Name returns the Error's name.
 func (e JSError) Name() string {
-	return e.Get("name").String()
+	return e.Value.Get("name").String()
 }
 
 // Message returns the Error's message.
 func (e JSError) Message() string {
-	return e.Get("message").String()
+	return e.Value.Get("message").String()
 }
 
 // Error implements Go's error interface.
 func (e JSError) Error() string {
-	return e.Call("toString").String()
+	return e.Value.Call("toString").String()
 }
 
 const (
