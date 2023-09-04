@@ -19,12 +19,6 @@
 	},
 	"customizations": {
 		"vscode": {
-			"settings": {
-				"go.lintTool": "golangci-lint",
-				"go.lintFlags": [
-					"--fast"
-				]
-			},
 			"extensions": [
 				"dbaeumer.vscode-eslint",
 				"bazelbuild.vscode-bazel",
