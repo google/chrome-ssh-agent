@@ -5,8 +5,7 @@
     ],
     "gopls": {
         "build.buildFlags": [
-            "js",
-            "wasm"
+            "--tags=js,wasm",
         ]
     }
 }
