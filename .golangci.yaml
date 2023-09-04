@@ -5,9 +5,12 @@ linters:
     - format
     - import
     - module
+    - performance
     - unused
   disable:
     # Produces ordering contradictory to VS Code's auto formatting.
     - gci
     # We don't have any denylisted dependencies
     - depguard
+    # Don't require preallocating slices
+    - prealloc
