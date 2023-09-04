@@ -1,7 +1,3 @@
-run:
-  build-tags:
-    - js
-    - wasm
 linters:
   presets:
     - bugs
