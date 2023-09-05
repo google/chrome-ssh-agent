@@ -99,7 +99,7 @@ func (r *Raw) Delete(ctx jsutil.AsyncContext, keys []string) error {
 	jsutil.LogDebug("RawStorage.Delete: deleting %d values", len(keys))
 	defer jsutil.LogDebug("RawStorage.Delete: finished")
 
-	if len(keys) <= 0 {
+	if len(keys) == 0 {
 		return nil // Nothing to do.
 	}
 

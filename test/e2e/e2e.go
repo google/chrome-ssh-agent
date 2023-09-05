@@ -1,4 +1,4 @@
-package test
+package e2e
 
 import (
 	"bytes"
@@ -97,17 +97,17 @@ func TestWebApp(t *testing.T) {
 	testcases := []struct {
 		name          string
 		extensionPath string
-		extensionId   string
+		extensionID   string
 	}{
 		{
 			name:          "Prod Release",
 			extensionPath: testutil.MustRunfile("_main/chrome-ssh-agent.zip"),
-			extensionId:   "eechpbnaifiimgajnomdipfaamobdfha",
+			extensionID:   "eechpbnaifiimgajnomdipfaamobdfha",
 		},
 		{
 			name:          "Beta Release",
 			extensionPath: testutil.MustRunfile("_main/chrome-ssh-agent-beta.zip"),
-			extensionId:   "onabphcdiffmanfdhkihllckikaljmhh",
+			extensionID:   "onabphcdiffmanfdhkihllckikaljmhh",
 		},
 	}
 
@@ -172,7 +172,7 @@ func TestWebApp(t *testing.T) {
 			defer dumpSeleniumLogs(t, wd)
 
 			t.Log("Navigating to test page")
-			path := makeExtensionUrl(tc.extensionId, "html/options.html", "test")
+			path := makeExtensionURL(tc.extensionID, "html/options.html", "test")
 			if err = wd.Get(path.String()); err != nil {
 				t.Fatalf("Failed to navigate to %s: %v", path, err)
 			}

@@ -311,7 +311,7 @@ func (m *DefaultManager) Remove(ctx jsutil.AsyncContext, id ID) error {
 }
 
 // Loaded implements Manager.Loaded.
-func (m *DefaultManager) Loaded(ctx jsutil.AsyncContext) ([]*LoadedKey, error) {
+func (m *DefaultManager) Loaded(_ jsutil.AsyncContext) ([]*LoadedKey, error) {
 	loaded, err := m.agent.List()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list loaded keys: %w", err)
@@ -387,7 +387,8 @@ func decryptKey(key *storedKey, passphrase string) (decryptedKey, error) {
 	// Decode and decrypt the key.
 	var err error
 	var priv interface{}
-	if key.EncryptedPKCS8() {
+	switch {
+	case key.EncryptedPKCS8():
 		// Crypto libraries don't yet support encrypted PKCS#8 keys:
 		//   https://github.com/golang/go/issues/8860
 		var block *pem.Block
@@ -400,9 +401,9 @@ func decryptKey(key *storedKey, passphrase string) (decryptedKey, error) {
 		} else {
 			priv, err = pkcs8.ParsePKCS8PrivateKey(block.Bytes, nil)
 		}
-	} else if key.Encrypted() {
+	case key.Encrypted():
 		priv, err = ssh.ParseRawPrivateKeyWithPassphrase([]byte(key.PEMPrivateKey), []byte(passphrase))
-	} else {
+	default:
 		priv, err = ssh.ParseRawPrivateKey([]byte(key.PEMPrivateKey))
 	}
 	// Forward incorrect password errors on directly.

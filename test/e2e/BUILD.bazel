@@ -1,7 +1,7 @@
 load("@rules_go//go:def.bzl", "go_test")
 
 go_test(
-    name = "test",
+    name = "e2e",
     srcs = [
         "e2e.go",
         "extension.go",

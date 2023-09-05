@@ -4,6 +4,7 @@ linters:
     - comment
     - format
     - import
+    - metalinter
     - module
     - performance
     - test

@@ -129,7 +129,7 @@ func TestValue(t *testing.T) {
 func joinTextContent(objs []js.Value) string {
 	var result string
 	for _, o := range objs {
-		result = result + TextContent(o)
+		result += TextContent(o)
 	}
 	return result
 }

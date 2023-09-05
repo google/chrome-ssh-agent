@@ -70,7 +70,7 @@ func (a *background) Init(ctx jsutil.AsyncContext, cleanup *jsutil.CleanupFuncs)
 	return nil
 }
 
-func (a *background) onMessage(ctx jsutil.AsyncContext, this js.Value, args []js.Value) (js.Value, error) {
+func (a *background) onMessage(ctx jsutil.AsyncContext, _ js.Value, args []js.Value) (js.Value, error) {
 	var message, sender, sendResponse js.Value
 	jsutil.ExpandArgs(args, &message, &sender, &sendResponse)
 	rsp := a.server.OnMessage(ctx, message, sender)
@@ -93,7 +93,7 @@ func (a *background) addPort(port js.Value) *agentport.AgentPort {
 	return ap
 }
 
-func (a *background) onConnectionMessage(ctx jsutil.AsyncContext, this js.Value, args []js.Value) (js.Value, error) {
+func (a *background) onConnectionMessage(_ jsutil.AsyncContext, _ js.Value, args []js.Value) (js.Value, error) {
 	var port, msg js.Value
 	jsutil.ExpandArgs(args, &port, &msg)
 
@@ -114,7 +114,7 @@ func (a *background) onConnectionMessage(ctx jsutil.AsyncContext, this js.Value,
 	return js.Undefined(), nil
 }
 
-func (a *background) onConnectionDisconnect(ctx jsutil.AsyncContext, this js.Value, args []js.Value) (js.Value, error) {
+func (a *background) onConnectionDisconnect(_ jsutil.AsyncContext, _ js.Value, args []js.Value) (js.Value, error) {
 	port := jsutil.SingleArg(args)
 
 	ap := a.ports.Lookup(port)

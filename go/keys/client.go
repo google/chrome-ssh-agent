@@ -164,7 +164,7 @@ func (s *Server) makeErrorResponse(err error) js.Value {
 // the type of request received, invokes the appropriate method on the
 // underlying manager instance, and then returns the response to be sent to the
 // client.
-func (s *Server) OnMessage(ctx jsutil.AsyncContext, headerObj js.Value, sender js.Value) js.Value {
+func (s *Server) OnMessage(ctx jsutil.AsyncContext, headerObj js.Value, _ js.Value) js.Value {
 	var header msgHeader
 	if err := vert.ValueOf(headerObj).AssignTo(&header); err != nil {
 		return s.makeErrorResponse(fmt.Errorf("failed to parse message header: %w", err))

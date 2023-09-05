@@ -48,7 +48,10 @@ func TestWaitForSignal(t *testing.T) {
 func TestMultipleWaitOnSameSignal(t *testing.T) {
 	s := newSignal()
 	s.Signal()
+	t.Log("wait #1")
 	s.Wait()
+	t.Log("wait #2")
 	s.Wait()
+	t.Log("wait #3")
 	s.Wait()
 }

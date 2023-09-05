@@ -34,6 +34,7 @@ func TestAsPromise(t *testing.T) {
 		func(val js.Value) { close(done) },
 		func(err error) { close(done) },
 	)
+	t.Log("waiting")
 	<-done
 }
 
