@@ -94,6 +94,8 @@ func dumpLog(t *testing.T, name string, r io.Reader) {
 }
 
 func TestWebApp(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		name          string
 		extensionPath string
@@ -112,7 +114,10 @@ func TestWebApp(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			port, err := unusedPort()
 			if err != nil {
 				t.Fatalf("failed to identify unused port: %v", err)

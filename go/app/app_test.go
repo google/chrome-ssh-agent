@@ -56,6 +56,8 @@ func (t *testApp) Init(_ jsutil.AsyncContext, _ *jsutil.CleanupFuncs) error {
 }
 
 func TestAppInitAndTerminate(t *testing.T) {
+	t.Parallel()
+
 	func() {
 		a := &testApp{}
 		ac := New(a)
@@ -97,6 +99,8 @@ func TestAppInitAndTerminate(t *testing.T) {
 }
 
 func TestAppInitErr(t *testing.T) {
+	t.Parallel()
+
 	a := &testApp{
 		initErr: errors.New("init failed"),
 	}

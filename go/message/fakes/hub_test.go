@@ -52,6 +52,8 @@ func (m *mapReceiver) OnMessage(_ jsutil.AsyncContext, header js.Value, _ js.Val
 }
 
 func TestMessagePassing(t *testing.T) {
+	t.Parallel()
+
 	hub := NewHub()
 
 	// Add handlers that respond to different values.

@@ -31,6 +31,8 @@ const testKeyPrefix = "key"
 var testKeyPrefixes = []string{testKeyPrefix}
 
 func TestTypedReadAll(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		init        map[string]js.Value
@@ -71,7 +73,10 @@ func TestTypedReadAll(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				store := NewRaw(st.NewMemArea())
 				if err := store.Set(ctx, tc.init); err != nil {
@@ -93,6 +98,8 @@ func TestTypedReadAll(t *testing.T) {
 }
 
 func TestTypedRead(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		init        map[string]js.Value
@@ -121,7 +128,10 @@ func TestTypedRead(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				store := NewRaw(st.NewMemArea())
 				if err := store.Set(ctx, tc.init); err != nil {
@@ -143,6 +153,8 @@ func TestTypedRead(t *testing.T) {
 }
 
 func TestTypedWrite(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		init        map[string]js.Value
@@ -179,7 +191,10 @@ func TestTypedWrite(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				store := NewRaw(st.NewMemArea())
 				if err := store.Set(ctx, tc.init); err != nil {
@@ -206,6 +221,8 @@ func TestTypedWrite(t *testing.T) {
 }
 
 func TestTypedDelete(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		init        map[string]js.Value
@@ -239,7 +256,10 @@ func TestTypedDelete(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				store := NewRaw(st.NewMemArea())
 				if err := store.Set(ctx, tc.init); err != nil {

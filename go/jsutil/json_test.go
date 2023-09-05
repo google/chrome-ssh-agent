@@ -22,6 +22,8 @@ import (
 )
 
 func TestToJSON(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		val         js.Value
@@ -47,7 +49,10 @@ func TestToJSON(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			if diff := cmp.Diff(ToJSON(tc.val), tc.want); diff != "" {
 				t.Errorf("incorrect result; -got +want: %s", diff)
 			}
@@ -56,6 +61,8 @@ func TestToJSON(t *testing.T) {
 }
 
 func TestFromJSON(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		val         string
@@ -81,7 +88,10 @@ func TestFromJSON(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			// We assume that ToJSON works per the tests above. We can
 			// compare values by their JSON representations.
 			if diff := cmp.Diff(ToJSON(FromJSON(tc.val)), ToJSON(tc.want)); diff != "" {

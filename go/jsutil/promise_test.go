@@ -24,6 +24,8 @@ import (
 )
 
 func TestAsPromise(t *testing.T) {
+	t.Parallel()
+
 	orig := NewPromise(func(ctx AsyncContext, resolve ResolveFunc, reject RejectFunc) {
 		resolve(js.Null())
 	})
@@ -39,6 +41,8 @@ func TestAsPromise(t *testing.T) {
 }
 
 func TestPromiseResolve(t *testing.T) {
+	t.Parallel()
+
 	p := NewPromise(func(ctx AsyncContext, resolve ResolveFunc, reject RejectFunc) {
 		time.Sleep(10 * time.Millisecond) // some blocking function
 		resolve(js.ValueOf(2))
@@ -68,6 +72,8 @@ func TestPromiseResolve(t *testing.T) {
 }
 
 func TestPromiseReject(t *testing.T) {
+	t.Parallel()
+
 	orig := NewPromise(func(ctx AsyncContext, resolve ResolveFunc, reject RejectFunc) {
 		time.Sleep(10 * time.Millisecond) // some blocking function
 		reject(errors.New("my error"))
@@ -98,6 +104,8 @@ func TestPromiseReject(t *testing.T) {
 }
 
 func TestAsyncSuccess(t *testing.T) {
+	t.Parallel()
+
 	p := Async(func(ctx AsyncContext) (js.Value, error) {
 		return js.ValueOf(2), nil
 	})
@@ -126,6 +134,8 @@ func TestAsyncSuccess(t *testing.T) {
 }
 
 func TestAsyncError(t *testing.T) {
+	t.Parallel()
+
 	p := Async(func(ctx AsyncContext) (js.Value, error) {
 		return js.Null(), errors.New("my error")
 	})
@@ -154,6 +164,8 @@ func TestAsyncError(t *testing.T) {
 }
 
 func TestAwait(t *testing.T) {
+	t.Parallel()
+
 	p := Async(func(ctx AsyncContext) (js.Value, error) {
 		// Function that returns success
 		val, err := Async(func(ctx AsyncContext) (js.Value, error) {

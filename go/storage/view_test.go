@@ -25,6 +25,8 @@ import (
 )
 
 func TestViewSet(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		prefixes    []string
@@ -105,7 +107,10 @@ func TestViewSet(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				raw := NewRaw(st.NewMemArea())
 				if err := raw.Set(ctx, tc.initRaw); err != nil {
@@ -131,6 +136,8 @@ func TestViewSet(t *testing.T) {
 }
 
 func TestViewGet(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		prefixes    []string
@@ -199,7 +206,10 @@ func TestViewGet(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				raw := NewRaw(st.NewMemArea())
 				if err := raw.Set(ctx, tc.initRaw); err != nil {
@@ -221,6 +231,8 @@ func TestViewGet(t *testing.T) {
 }
 
 func TestViewDelete(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		prefixes    []string
@@ -293,7 +305,10 @@ func TestViewDelete(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				raw := NewRaw(st.NewMemArea())
 				if err := raw.Set(ctx, tc.initRaw); err != nil {
@@ -319,6 +334,8 @@ func TestViewDelete(t *testing.T) {
 }
 
 func TestMultipleViews(t *testing.T) {
+	t.Parallel()
+
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		raw := NewRaw(st.NewMemArea())
 		v1 := NewView([]string{"foo"}, raw)
@@ -350,6 +367,8 @@ func TestMultipleViews(t *testing.T) {
 }
 
 func TestDeleteViewPrefixes(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		prefixes    []string
@@ -395,7 +414,10 @@ func TestDeleteViewPrefixes(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				raw := NewRaw(st.NewMemArea())
 				if err := raw.Set(ctx, tc.initRaw); err != nil {

@@ -23,6 +23,8 @@ import (
 )
 
 func TestNewObject(t *testing.T) {
+	t.Parallel()
+
 	o := NewObject()
 	if typ := o.Type(); typ != js.TypeObject {
 		t.Errorf("expecting TypeObject; got %s", typ)
@@ -30,6 +32,8 @@ func TestNewObject(t *testing.T) {
 }
 
 func TestObjectKeys(t *testing.T) {
+	t.Parallel()
+
 	o := FromJSON(`{
 		"foo": 2,
 		"bar": "value"

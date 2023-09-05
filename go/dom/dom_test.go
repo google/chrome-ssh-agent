@@ -25,6 +25,8 @@ import (
 )
 
 func TestTextContent(t *testing.T) {
+	t.Parallel()
+
 	d := New(dt.NewDocForTesting(`
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
@@ -34,6 +36,8 @@ func TestTextContent(t *testing.T) {
 }
 
 func TestRemoveChildren(t *testing.T) {
+	t.Parallel()
+
 	d := New(dt.NewDocForTesting(`
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
@@ -44,6 +48,8 @@ func TestRemoveChildren(t *testing.T) {
 }
 
 func TestNewElement(t *testing.T) {
+	t.Parallel()
+
 	d := New(dt.NewDocForTesting(`
 		<div id="list"></div>
 	`))
@@ -67,6 +73,8 @@ func TestNewElement(t *testing.T) {
 }
 
 func TestNewText(t *testing.T) {
+	t.Parallel()
+
 	d := New(dt.NewDocForTesting(`
 		<div id="list"><div>first</div><div>second</div></div>
 	`))
@@ -77,6 +85,8 @@ func TestNewText(t *testing.T) {
 }
 
 func TestClick(t *testing.T) {
+	t.Parallel()
+
 	d := New(dt.NewDocForTesting(`
 		<button id="btn"/>
 	`))
@@ -95,6 +105,8 @@ func TestClick(t *testing.T) {
 }
 
 func TestDOMContentLoaded(t *testing.T) {
+	t.Parallel()
+
 	d := New(dt.NewDocForTesting(`
 		<p>Some Text</p>
 	`))
@@ -112,6 +124,8 @@ func TestDOMContentLoaded(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
+	t.Parallel()
+
 	d := New(dt.NewDocForTesting(`
 		<input id="ipt" type="text" value="Hello">
 	`))
@@ -135,6 +149,8 @@ func joinTextContent(objs []js.Value) string {
 }
 
 func TestGetElementsByTag(t *testing.T) {
+	t.Parallel()
+
 	d := New(dt.NewDocForTesting(`
 		<div>foo</div>
 		<pre>bar</pre>

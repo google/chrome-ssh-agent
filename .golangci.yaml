@@ -16,8 +16,6 @@ linters:
     - depguard
     # Don't require preallocating slices
     - prealloc
-    # Parallel tests don't work under NodeJS
-    - paralleltest
     # Don't require tests to be in separate package
     - testpackage
     # Permit tests to specify structs with default fields

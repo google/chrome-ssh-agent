@@ -187,6 +187,8 @@ func equalizeIds(disp []*displayedKey) []*displayedKey {
 }
 
 func TestUserActions(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description   string
 		sequence      func(ctx jsutil.AsyncContext, h *testHarness)
@@ -613,7 +615,10 @@ func TestUserActions(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			h := newHarness()
 			defer h.Release()
 

@@ -58,6 +58,8 @@ func newTestManager(ctx jsutil.AsyncContext, agent agent.Agent, syncStorage, ses
 }
 
 func TestAdd(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description    string
 		initial        []*initialKey
@@ -105,7 +107,10 @@ func TestAdd(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				syncStorage := storage.NewRaw(st.NewMemArea())
 				sessionStorage := storage.NewRaw(st.NewMemArea())
@@ -135,6 +140,8 @@ func TestAdd(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description    string
 		initial        []*initialKey
@@ -168,7 +175,10 @@ func TestRemove(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				syncStorage := storage.NewRaw(st.NewMemArea())
 				sessionStorage := storage.NewRaw(st.NewMemArea())
@@ -204,6 +214,8 @@ func TestRemove(t *testing.T) {
 }
 
 func TestConfigured(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description    string
 		initial        []*initialKey
@@ -230,7 +242,10 @@ func TestConfigured(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				syncStorage := storage.NewRaw(st.NewMemArea())
 				sessionStorage := storage.NewRaw(st.NewMemArea())
@@ -254,6 +269,8 @@ func TestConfigured(t *testing.T) {
 }
 
 func TestLoadAndLoaded(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		initial     []*initialKey
@@ -455,7 +472,10 @@ func TestLoadAndLoaded(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				syncStorage := storage.NewRaw(st.NewMemArea())
 				sessionStorage := storage.NewRaw(st.NewMemArea())
@@ -500,6 +520,8 @@ func TestLoadAndLoaded(t *testing.T) {
 }
 
 func TestUnload(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		initial     []*initialKey
@@ -540,7 +562,10 @@ func TestUnload(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				syncStorage := storage.NewRaw(st.NewMemArea())
 				sessionStorage := storage.NewRaw(st.NewMemArea())
@@ -588,6 +613,8 @@ func TestUnload(t *testing.T) {
 }
 
 func TestGetID(t *testing.T) {
+	t.Parallel()
+
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		// Create a manager with one configured key.  We load the key and
 		// ensure we can correctly extract the ID.
@@ -649,6 +676,8 @@ func TestGetID(t *testing.T) {
 }
 
 func TestLoadFromSession(t *testing.T) {
+	t.Parallel()
+
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		// Storage peresists across multiple manager instances
 		syncStorage := storage.NewRaw(st.NewMemArea())

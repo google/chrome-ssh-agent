@@ -73,6 +73,8 @@ const (
 )
 
 func TestSetAndGet(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description  string
 		maxItemBytes int
@@ -125,7 +127,10 @@ func TestSetAndGet(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			if tc.maxItemBytes == 0 {
 				tc.maxItemBytes = defaultMaxItemBytes
 			}
@@ -157,6 +162,8 @@ func TestSetAndGet(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description  string
 		maxItemBytes int
@@ -229,7 +236,10 @@ func TestDelete(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			if tc.maxItemBytes == 0 {
 				tc.maxItemBytes = defaultMaxItemBytes
 			}
