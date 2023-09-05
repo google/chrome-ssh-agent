@@ -15,7 +15,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: bazelbuild/setup-bazelisk@v2
       - run: bazel build ...
       - run: bazel test --test_output=errors ...
