@@ -31,6 +31,8 @@ func init() {
 }
 
 func TestHas(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		queryString string
@@ -58,7 +60,10 @@ func TestHas(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			qs := NewURLSearchParams(tc.queryString)
 			if diff := cmp.Diff(qs.Has(tc.param), tc.want); diff != "" {
 				t.Errorf("incorrect result; -got +want: %s", diff)

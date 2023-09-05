@@ -187,6 +187,8 @@ func equalizeIds(disp []*displayedKey) []*displayedKey {
 }
 
 func TestUserActions(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description   string
 		sequence      func(ctx jsutil.AsyncContext, h *testHarness)
@@ -373,24 +375,24 @@ func TestUserActions(t *testing.T) {
 			sequence: func(ctx jsutil.AsyncContext, h *testHarness) {
 				dom.DoClick(h.addButton)
 				h.waitDialogOpen(ctx, h.addDialog)
-				dom.SetValue(h.addName, "new-key")
+				dom.SetValue(h.addName, "new-passphrase-key")
 				dom.SetValue(h.addKey, testdata.WithPassphrase.Private)
 				dom.DoClick(h.addOk)
 				h.waitDialogClosed(ctx, h.addDialog)
-				h.waitKeyConfigured(ctx, "new-key")
+				h.waitKeyConfigured(ctx, "new-passphrase-key")
 
-				id := findKey(h.UI.displayedKeys(), "new-key")
+				id := findKey(h.UI.displayedKeys(), "new-passphrase-key")
 				dom.DoClick(h.dom.GetElement(buttonID(LoadButton, id)))
 				h.waitDialogOpen(ctx, h.passphraseDialog)
 				dom.SetValue(h.passphraseInput, testdata.WithPassphrase.Passphrase)
 				dom.DoClick(h.passphraseOk)
 				h.waitDialogClosed(ctx, h.passphraseDialog)
-				h.waitKeyLoaded(ctx, "new-key")
+				h.waitKeyLoaded(ctx, "new-passphrase-key")
 			},
 			wantDisplayed: []*displayedKey{
 				{
 					ID:     validID,
-					Name:   "new-key",
+					Name:   "new-passphrase-key",
 					Loaded: true,
 					Type:   testdata.WithPassphrase.Type,
 					Blob:   testdata.WithPassphrase.Blob,
@@ -613,7 +615,10 @@ func TestUserActions(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			h := newHarness()
 			defer h.Release()
 

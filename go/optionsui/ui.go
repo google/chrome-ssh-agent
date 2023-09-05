@@ -71,7 +71,7 @@ func (s *signal) Notify() {
 
 // Wait waits for the signal to be notified before returning. The AsyncContext
 // ensures this is invoked within an async context where blocking is acceptable.
-func (s *signal) Wait(ctx jsutil.AsyncContext) {
+func (s *signal) Wait(_ jsutil.AsyncContext) {
 	s.wg.Wait()
 }
 
@@ -119,7 +119,7 @@ func (u *UI) setError(err error) {
 // add configures a new key.  It displays a dialog prompting the user for a name
 // and the corresponding private key.  If the user continues, the key is
 // added to the manager.
-func (u *UI) add(ctx jsutil.AsyncContext, evt dom.Event) {
+func (u *UI) add(ctx jsutil.AsyncContext, _ dom.Event) {
 	ok, name, privateKey := u.promptAdd(ctx)
 	if !ok {
 		return
@@ -564,7 +564,7 @@ const (
 //
 // The AsyncContext ensures this is invoked within an async context where
 // blocking is acceptable.
-func poll(ctx jsutil.AsyncContext, done func() bool) bool {
+func poll(_ jsutil.AsyncContext, done func() bool) bool {
 	timeout := time.Now().Add(pollTimeout)
 	for time.Now().Before(timeout) {
 		if done() {
@@ -697,5 +697,4 @@ func (u *UI) EndToEndTest(ctx jsutil.AsyncContext) []error {
 	}
 
 	return errs
-
 }

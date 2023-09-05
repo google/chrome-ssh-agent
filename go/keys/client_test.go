@@ -35,37 +35,39 @@ type dummyManager struct {
 	Err            error
 }
 
-func (m *dummyManager) Configured(ctx jsutil.AsyncContext) ([]*ConfiguredKey, error) {
+func (m *dummyManager) Configured(_ jsutil.AsyncContext) ([]*ConfiguredKey, error) {
 	return m.ConfiguredKeys, m.Err
 }
 
-func (m *dummyManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error {
+func (m *dummyManager) Add(_ jsutil.AsyncContext, name string, pemPrivateKey string) error {
 	m.Name = name
 	m.PEMPrivateKey = pemPrivateKey
 	return m.Err
 }
 
-func (m *dummyManager) Remove(ctx jsutil.AsyncContext, id ID) error {
+func (m *dummyManager) Remove(_ jsutil.AsyncContext, id ID) error {
 	m.ID = id
 	return m.Err
 }
 
-func (m *dummyManager) Loaded(ctx jsutil.AsyncContext) ([]*LoadedKey, error) {
+func (m *dummyManager) Loaded(_ jsutil.AsyncContext) ([]*LoadedKey, error) {
 	return m.LoadedKeys, m.Err
 }
 
-func (m *dummyManager) Load(ctx jsutil.AsyncContext, id ID, passphrase string) error {
+func (m *dummyManager) Load(_ jsutil.AsyncContext, id ID, passphrase string) error {
 	m.ID = id
 	m.Passphrase = passphrase
 	return m.Err
 }
 
-func (m *dummyManager) Unload(ctx jsutil.AsyncContext, id ID) error {
+func (m *dummyManager) Unload(_ jsutil.AsyncContext, id ID) error {
 	m.ID = id
 	return m.Err
 }
 
 func TestClientServerConfigured(t *testing.T) {
+	t.Parallel()
+
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		hub := mfakes.NewHub()
 		mgr := &dummyManager{}
@@ -99,6 +101,8 @@ func TestClientServerConfigured(t *testing.T) {
 }
 
 func TestClientServerAdd(t *testing.T) {
+	t.Parallel()
+
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		hub := mfakes.NewHub()
 		mgr := &dummyManager{}
@@ -128,6 +132,8 @@ func TestClientServerAdd(t *testing.T) {
 }
 
 func TestClientServerRemove(t *testing.T) {
+	t.Parallel()
+
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		hub := mfakes.NewHub()
 		mgr := &dummyManager{}
@@ -153,6 +159,8 @@ func TestClientServerRemove(t *testing.T) {
 }
 
 func TestClientServerLoaded(t *testing.T) {
+	t.Parallel()
+
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		hub := mfakes.NewHub()
 		mgr := &dummyManager{}
@@ -188,6 +196,8 @@ func TestClientServerLoaded(t *testing.T) {
 }
 
 func TestClientServerLoad(t *testing.T) {
+	t.Parallel()
+
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		hub := mfakes.NewHub()
 		mgr := &dummyManager{}
@@ -217,6 +227,8 @@ func TestClientServerLoad(t *testing.T) {
 }
 
 func TestClientServerUnload(t *testing.T) {
+	t.Parallel()
+
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		hub := mfakes.NewHub()
 		mgr := &dummyManager{}

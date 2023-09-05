@@ -21,10 +21,8 @@ import (
 	"syscall/js"
 )
 
-var (
-	// object refers to Javascript's Object class.
-	object = js.Global().Get("Object")
-)
+// object refers to Javascript's Object class.
+var object = js.Global().Get("Object")
 
 // NewObject returns a new 'Object' instance.
 func NewObject() js.Value {

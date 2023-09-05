@@ -1,4 +1,4 @@
-package test
+package e2e
 
 import (
 	"bytes"
@@ -52,13 +52,11 @@ func currentURLIs(url string) selenium.Condition {
 	}
 }
 
-var (
-	logLevels = slog.Capabilities{
-		slog.Browser:     slog.All,
-		slog.Performance: slog.Info,
-		slog.Driver:      slog.Info,
-	}
-)
+var logLevels = slog.Capabilities{
+	slog.Browser:     slog.All,
+	slog.Performance: slog.Info,
+	slog.Driver:      slog.Info,
+}
 
 func dumpSeleniumLogs(t *testing.T, wd selenium.WebDriver) {
 	t.Log("Dumping Selenium Logs")
@@ -96,25 +94,30 @@ func dumpLog(t *testing.T, name string, r io.Reader) {
 }
 
 func TestWebApp(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		name          string
 		extensionPath string
-		extensionId   string
+		extensionID   string
 	}{
 		{
 			name:          "Prod Release",
 			extensionPath: testutil.MustRunfile("_main/chrome-ssh-agent.zip"),
-			extensionId:   "eechpbnaifiimgajnomdipfaamobdfha",
+			extensionID:   "eechpbnaifiimgajnomdipfaamobdfha",
 		},
 		{
 			name:          "Beta Release",
 			extensionPath: testutil.MustRunfile("_main/chrome-ssh-agent-beta.zip"),
-			extensionId:   "onabphcdiffmanfdhkihllckikaljmhh",
+			extensionID:   "onabphcdiffmanfdhkihllckikaljmhh",
 		},
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			port, err := unusedPort()
 			if err != nil {
 				t.Fatalf("failed to identify unused port: %v", err)
@@ -174,7 +177,7 @@ func TestWebApp(t *testing.T) {
 			defer dumpSeleniumLogs(t, wd)
 
 			t.Log("Navigating to test page")
-			path := makeExtensionUrl(tc.extensionId, "html/options.html", "test")
+			path := makeExtensionURL(tc.extensionID, "html/options.html", "test")
 			if err = wd.Get(path.String()); err != nil {
 				t.Fatalf("Failed to navigate to %s: %v", path, err)
 			}

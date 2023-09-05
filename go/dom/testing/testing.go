@@ -23,16 +23,14 @@ import (
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
-var (
-	// We use jsdom to create a new Document object. For use in testing
-	// only. This requires running under node.js with the jsdom package
-	// installed.
-	jsdom = js.Global().Call("eval", `{
-		const jsdom = require("jsdom");
-                const { JSDOM } = jsdom;
-		JSDOM;
-	}`)
-)
+// We use jsdom to create a new Document object. For use in testing
+// only. This requires running under node.js with the jsdom package
+// installed.
+var jsdom = js.Global().Call("eval", `{
+	const jsdom = require("jsdom");
+	const { JSDOM } = jsdom;
+	JSDOM;
+}`)
 
 // NewDocForTesting returns a Document object that can be used for testing.
 // The DOM in the Document object is instantiated using the supplied HTML.

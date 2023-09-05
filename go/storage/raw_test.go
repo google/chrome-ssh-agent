@@ -46,6 +46,8 @@ func myStructLess(a *myStruct, b *myStruct) bool {
 }
 
 func TestRawSetAndGet(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		data        map[string]js.Value
@@ -79,7 +81,10 @@ func TestRawSetAndGet(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				s := NewRaw(st.NewMemArea())
 				if err := s.Set(ctx, tc.data); err != nil {
@@ -98,6 +103,8 @@ func TestRawSetAndGet(t *testing.T) {
 }
 
 func TestRawDelete(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		init        map[string]js.Value
@@ -152,7 +159,10 @@ func TestRawDelete(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			jut.DoSync(func(ctx jsutil.AsyncContext) {
 				s := NewRaw(st.NewMemArea())
 				if err := s.Set(ctx, tc.init); err != nil {

@@ -26,7 +26,7 @@ import (
 
 type intReceiver struct{}
 
-func (i *intReceiver) OnMessage(ctx jsutil.AsyncContext, header js.Value, sender js.Value) js.Value {
+func (i *intReceiver) OnMessage(_ jsutil.AsyncContext, header js.Value, _ js.Value) js.Value {
 	if header.Type() == js.TypeNumber && header.Int() == 42 {
 		return js.ValueOf("int")
 	}
@@ -35,7 +35,7 @@ func (i *intReceiver) OnMessage(ctx jsutil.AsyncContext, header js.Value, sender
 
 type stringReceiver struct{}
 
-func (s *stringReceiver) OnMessage(ctx jsutil.AsyncContext, header js.Value, sender js.Value) js.Value {
+func (s *stringReceiver) OnMessage(_ jsutil.AsyncContext, header js.Value, _ js.Value) js.Value {
 	if header.Type() == js.TypeString && header.String() == "foo" {
 		return js.ValueOf("string")
 	}
@@ -44,7 +44,7 @@ func (s *stringReceiver) OnMessage(ctx jsutil.AsyncContext, header js.Value, sen
 
 type mapReceiver struct{}
 
-func (m *mapReceiver) OnMessage(ctx jsutil.AsyncContext, header js.Value, sender js.Value) js.Value {
+func (m *mapReceiver) OnMessage(_ jsutil.AsyncContext, header js.Value, _ js.Value) js.Value {
 	if header.Type() == js.TypeObject && !header.Get("some-key").IsUndefined() {
 		return js.ValueOf("map")
 	}
@@ -52,6 +52,8 @@ func (m *mapReceiver) OnMessage(ctx jsutil.AsyncContext, header js.Value, sender
 }
 
 func TestMessagePassing(t *testing.T) {
+	t.Parallel()
+
 	hub := NewHub()
 
 	// Add handlers that respond to different values.

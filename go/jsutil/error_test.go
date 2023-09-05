@@ -23,6 +23,8 @@ import (
 )
 
 func TestNewError(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		err         error
@@ -41,7 +43,10 @@ func TestNewError(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			got := NewError(tc.err)
 			if diff := cmp.Diff(got.Error(), tc.want); diff != "" {
 				t.Errorf("incorrect result; -got +want: %s", diff)
@@ -51,6 +56,8 @@ func TestNewError(t *testing.T) {
 }
 
 func TestNewErrorFromVal(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		val         js.Value
@@ -74,7 +81,10 @@ func TestNewErrorFromVal(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			got := NewErrorFromVal(tc.val)
 			if diff := cmp.Diff(got.Error(), tc.want); diff != "" {
 				t.Errorf("incorrect result; -got +want: %s", diff)
@@ -84,6 +94,8 @@ func TestNewErrorFromVal(t *testing.T) {
 }
 
 func TestErrorProperties(t *testing.T) {
+	t.Parallel()
+
 	e := NewErrorFromVal(js.Global().Get("RangeError").New("my range error"))
 	if diff := cmp.Diff(e.Name(), "RangeError"); diff != "" {
 		t.Errorf("incorrect name: -got +want: %s", diff)

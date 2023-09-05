@@ -52,5 +52,5 @@ func (m *Hub) Send(ctx jsutil.AsyncContext, msg js.Value) (js.Value, error) {
 			return rsp, nil
 		}
 	}
-	return js.Undefined(), errors.New("No receivers!")
+	return js.Undefined(), errors.New("no receivers")
 }

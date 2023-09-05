@@ -50,12 +50,14 @@ type testApp struct {
 
 func (t *testApp) Name() string { return "TestApp" }
 
-func (t *testApp) Init(ctx jsutil.AsyncContext, cleanup *jsutil.CleanupFuncs) error {
+func (t *testApp) Init(_ jsutil.AsyncContext, _ *jsutil.CleanupFuncs) error {
 	t.initted = true
 	return t.initErr
 }
 
 func TestAppInitAndTerminate(t *testing.T) {
+	t.Parallel()
+
 	func() {
 		a := &testApp{}
 		ac := New(a)
@@ -97,8 +99,10 @@ func TestAppInitAndTerminate(t *testing.T) {
 }
 
 func TestAppInitErr(t *testing.T) {
+	t.Parallel()
+
 	a := &testApp{
-		initErr: errors.New("init failed!"),
+		initErr: errors.New("init failed"),
 	}
 	ac := New(a)
 	defer ac.Release()

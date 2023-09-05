@@ -102,7 +102,7 @@ var (
 		return a.Error() == b.Error()
 	})
 
-	// Option for order-independent slices of IDs
+	// Option for order-independent slices of IDs.
 	idSlice = cmpopts.SortSlices(func(a, b ID) bool {
 		return a < b
 	})

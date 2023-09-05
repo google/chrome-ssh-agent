@@ -24,6 +24,8 @@ import (
 )
 
 func TestExclusive(t *testing.T) {
+	t.Parallel()
+
 	jut.DoSync(func(ctx jsutil.AsyncContext) {
 		const workers = 10
 		var count, concurrent, finished int32

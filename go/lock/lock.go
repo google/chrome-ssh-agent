@@ -22,19 +22,17 @@ import (
 	"github.com/google/chrome-ssh-agent/go/jsutil"
 )
 
-var (
-	locks = func() js.Value {
-		// Prefer Web Locks API is defined under 'navigator.locks'
-		if navigator := js.Global().Get("navigator"); !navigator.IsUndefined() {
-			return navigator.Get("locks")
-		}
-		// Fallback to node.js's web-locks implementation (used in tests).
-		return js.Global().Call("eval", `{
-			const { locks } = require("web-locks");
-			locks;
-		}`)
-	}()
-)
+var locks = func() js.Value {
+	// Prefer Web Locks API is defined under 'navigator.locks'
+	if navigator := js.Global().Get("navigator"); !navigator.IsUndefined() {
+		return navigator.Get("locks")
+	}
+	// Fallback to node.js's web-locks implementation (used in tests).
+	return js.Global().Call("eval", `{
+		const { locks } = require("web-locks");
+		locks;
+	}`)
+}()
 
 // Async runs a routine asynchronously once access to the resource has been
 // granted. Access to the resource is released when the routine returns.

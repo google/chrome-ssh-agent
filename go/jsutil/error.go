@@ -21,9 +21,7 @@ import (
 	"syscall/js"
 )
 
-var (
-	jsError = js.Global().Get("Error")
-)
+var jsError = js.Global().Get("Error")
 
 // JSError represents javascript's Error type.
 type JSError struct {

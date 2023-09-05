@@ -20,10 +20,8 @@ import (
 	"syscall/js"
 )
 
-var (
-	// json refers to Javascript's JSON class.
-	json = js.Global().Get("JSON")
-)
+// json refers to Javascript's JSON class.
+var json = js.Global().Get("JSON")
 
 // ToJSON converts the supplied value to a JSON string.
 func ToJSON(val js.Value) string {

@@ -23,6 +23,8 @@ import (
 )
 
 func TestOneTimeFuncOf(t *testing.T) {
+	t.Parallel()
+
 	got := make(chan struct{}, 1)
 	f := OneTimeFuncOf(func(this js.Value, args []js.Value) interface{} {
 		got <- struct{}{}
@@ -38,6 +40,8 @@ func TestOneTimeFuncOf(t *testing.T) {
 }
 
 func TestDefineFunc(t *testing.T) {
+	t.Parallel()
+
 	const funcName = "myFunc"
 
 	o := NewObject()
@@ -73,6 +77,8 @@ func TestDefineFunc(t *testing.T) {
 }
 
 func TestAsyncDefineFunc(t *testing.T) {
+	t.Parallel()
+
 	const funcName = "myFunc"
 
 	o := NewObject()
@@ -94,6 +100,8 @@ func TestAsyncDefineFunc(t *testing.T) {
 }
 
 func TestSetTimeout(t *testing.T) {
+	t.Parallel()
+
 	got := make(chan struct{}, 1)
 	SetTimeout(1*time.Millisecond, func() {
 		got <- struct{}{}
@@ -107,6 +115,8 @@ func TestSetTimeout(t *testing.T) {
 }
 
 func TestExpandArgs(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		args        []js.Value
@@ -152,7 +162,10 @@ func TestExpandArgs(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			var got []*js.Value
 			for i := 0; i < tc.targets; i++ {
 				got = append(got, &js.Value{})
@@ -175,6 +188,8 @@ func TestExpandArgs(t *testing.T) {
 }
 
 func TestSingleArgs(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		description string
 		args        []js.Value
@@ -203,7 +218,10 @@ func TestSingleArgs(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+
 			got := SingleArg(tc.args)
 			if diff := cmp.Diff(ToJSON(got), ToJSON(tc.want)); diff != "" {
 				t.Errorf("incorrect result; -got +want: %s", diff)

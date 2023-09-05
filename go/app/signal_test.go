@@ -20,6 +20,8 @@ import (
 )
 
 func TestWaitForSignal(t *testing.T) {
+	t.Parallel()
+
 	s := newSignal()
 
 	// Wait for Signal() to be invoked. Validate that signal
@@ -46,9 +48,14 @@ func TestWaitForSignal(t *testing.T) {
 }
 
 func TestMultipleWaitOnSameSignal(t *testing.T) {
+	t.Parallel()
+
 	s := newSignal()
 	s.Signal()
+	t.Log("wait #1")
 	s.Wait()
+	t.Log("wait #2")
 	s.Wait()
+	t.Log("wait #3")
 	s.Wait()
 }

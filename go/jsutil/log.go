@@ -22,10 +22,8 @@ import (
 	"time"
 )
 
-var (
-	// console is the default 'console' object for the browser.
-	console = js.Global().Get("console")
-)
+// console is the default 'console' object for the browser.
+var console = js.Global().Get("console")
 
 // Log logs general information to the Javascript Console.
 func Log(format string, objs ...interface{}) {

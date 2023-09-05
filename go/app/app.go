@@ -39,18 +39,18 @@ type App interface {
 	Init(ctx jsutil.AsyncContext, cleanup *jsutil.CleanupFuncs) error
 }
 
-type AppContext struct {
+type Context struct {
 	app     App
 	cleanup jsutil.CleanupFuncs
 }
 
-func New(app App) *AppContext {
-	return &AppContext{
+func New(app App) *Context {
+	return &Context{
 		app: app,
 	}
 }
 
-func (a *AppContext) Release() {
+func (a *Context) Release() {
 	a.cleanup.Do()
 }
 
@@ -59,13 +59,13 @@ func (a *AppContext) Release() {
 //
 // Run exports the following async functions to be available from Javascript:
 //
-//   initWaitFunc (see above): waits for app initialization to complete. If this
-//     function returns successfully, then the App.Init() function is guaranteed
-//     to have completed without error.
+//	initWaitFunc (see above): waits for app initialization to complete. If this
+//	  function returns successfully, then the App.Init() function is guaranteed
+//	  to have completed without error.
 //
-//   terminateFunc (see above): signals the application to terminate; Run() will
-//     terminate.
-func (a *AppContext) Run() {
+//	terminateFunc (see above): signals the application to terminate; Run() will
+//	  terminate.
+func (a *Context) Run() {
 	jsutil.LogDebug("%s starting", a.app.Name())
 	defer jsutil.LogDebug("%s finished", a.app.Name())
 

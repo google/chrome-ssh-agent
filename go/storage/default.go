@@ -22,7 +22,8 @@ import (
 
 // DefaultSync returns an Area that can store and retrieve data that is synced
 // between the user's devices.  See:
-//   https://developer.chrome.com/docs/extensions/reference/storage/#property-sync
+//
+//	https://developer.chrome.com/docs/extensions/reference/storage/#property-sync
 func DefaultSync() Area {
 	area := js.Global().Get("chrome").Get("storage").Get("sync")
 	maxItemBytes := area.Get("QUOTA_BYTES_PER_ITEM").Int()
@@ -31,7 +32,8 @@ func DefaultSync() Area {
 
 // DefaultSession returns an Area that can store and retrieve in-memory data.
 // The data is not written to disk.  See:
-//   https://developer.chrome.com/docs/extensions/reference/storage/#property-session
+//
+//	https://developer.chrome.com/docs/extensions/reference/storage/#property-session
 func DefaultSession() Area {
 	area := js.Global().Get("chrome").Get("storage").Get("session")
 	return NewRaw(area)
