@@ -30,6 +30,9 @@
       "algkcnfjnajfhgimadimbjhmpaeohhln",
       "ooiklbnjmhbcgemelgfhaeaocllobloj",
       "hmgggebkhjjkiimkjlknpdgapncghehh"
+    ],
+    "matches": [
+      "chrome-untrusted://terminal/*"
     ]
   },
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsYE6b5ANIgvI8Twuv5CqOnXfphjSIPgD13vVNxSbNuUa9b8FAb1uvx1O9LIVhvQ7HOAUwn6Z+LO7Y6GBh05hTMSAHJ69UAoiRrsjdpkVcm+Je4Pkp7hv1R2IEOE+cEdWWfj2MlBqsc88CJ4DwP01gdGffbKPOn+KZzgSzB+6XvGTSqimO2snTUFChohKHQ3/6m6j5zc27LsahiPjiHiDVy0HNZkzp3Rh8F/XjeweYWMy1xUkV2oNoJjErk7qMGsJ0Vseqin+FlC7CHmnQxk16Sl9SUd5lmt+IfJ4ihlUzAnlKlYHAkfk6BbaiPN/9iQg2FfdDlxR6+s3Iv8EPmMukQIDAQAB"
