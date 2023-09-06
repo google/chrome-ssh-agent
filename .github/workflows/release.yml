@@ -8,28 +8,18 @@ jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    permissions:
-      # This is broad, but unfortunately it is required for creating
-      # releases.
-      contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: bazelbuild/setup-bazelisk@v2
       - name: Check Manifest
         run: |
           MANIFEST_VERSION=$(cat manifest.json | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
           TAG_VERSION=${{ github.ref_name }}
           test "v${MANIFEST_VERSION}" = "${TAG_VERSION}"
-      - run: bazel build ...
-      - run: bazel test --test_output=errors ...
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      # Release artifacts were published with the beta. Fetch instead of rebuilding.
+      - uses: robinraju/release-downloader@v1.8
         with:
-          generate_release_notes: true
-          fail_on_unmatched_files: true
-          # bazel-bin symlink may not exist
-          files: |
-            bazel-out/k8-fastbuild/bin/chrome-ssh-agent.zip
+          tag: ${{ github.ref_name }}
+          fileName: chrome-ssh-agent.zip
       - name: Publish to Webstore
         uses: mnao305/chrome-extension-upload@v4.0.1
         with:

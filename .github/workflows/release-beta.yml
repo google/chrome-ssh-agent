@@ -34,6 +34,7 @@ jobs:
           # bazel-bin symlink may not exist
           files: |
             bazel-out/k8-fastbuild/bin/chrome-ssh-agent-beta.zip
+            bazel-out/k8-fastbuild/bin/chrome-ssh-agent.zip
       - name: Publish to Webstore
         uses: mnao305/chrome-extension-upload@v4.0.1
         with:
