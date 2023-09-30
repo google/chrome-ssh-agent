@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/bazelbuild/rules_go v0.41.0
+	github.com/bazelbuild/rules_go v0.42.0
 	github.com/norunners/vert v0.0.0-20221203075838-106a353d42dd
 	golang.org/x/tools v0.13.0
 )
