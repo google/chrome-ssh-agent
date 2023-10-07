@@ -5,7 +5,7 @@ module(
 bazel_dep(name = "rules_go", version = "0.42.0")
 bazel_dep(name = "gazelle", version = "0.33.0")
 bazel_dep(name = "rules_nodejs", version = "6.0.1")
-bazel_dep(name = "aspect_rules_js", version = "1.32.5")
+bazel_dep(name = "aspect_rules_js", version = "1.32.6")
 bazel_dep(name = "aspect_rules_ts", version = "2.0.0")
 bazel_dep(name = "aspect_rules_esbuild", version = "0.15.3")
 bazel_dep(name = "bazel_skylib", version = "1.4.2")
@@ -17,7 +17,7 @@ go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(
     name = "go_sdk",
     # Use semver-coerced to handle versions where patches are left off (e.g., 1.19).
-    version = "1.21.1",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
+    version = "1.21.2",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
 )
 use_repo(go_sdk, "go_sdk")
 
