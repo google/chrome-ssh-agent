@@ -3,7 +3,7 @@ module github.com/google/chrome-ssh-agent
 go 1.20
 
 require (
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	// https://github.com/tebeka/selenium/commit/e617f9870cec59a6f6e234017e45d36ef0444a04 required to support CRX3 format
 	github.com/tebeka/selenium v0.9.10-0.20211105214847-e9100b7f5ac1
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a
