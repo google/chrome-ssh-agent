@@ -17,7 +17,7 @@ go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(
     name = "go_sdk",
     # Use semver-coerced to handle versions where patches are left off (e.g., 1.19).
-    version = "1.21.4",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
+    version = "1.21.5",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
 )
 use_repo(go_sdk, "go_sdk")
 
