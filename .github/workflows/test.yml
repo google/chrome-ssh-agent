@@ -17,5 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: bazelbuild/setup-bazelisk@v2
+      - run: bazel version
       - run: bazel build ...
       - run: bazel test --test_output=errors ...
