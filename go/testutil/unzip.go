@@ -63,14 +63,14 @@ func UnzipTemp(path string) (string, CleanupFunc, error) {
 			}
 
 			if f.Mode().IsDir() {
-				if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
-					return fmt.Errorf("Failed to create destination directory %s: %w", filepath.Dir(filePath), err)
+				if merr := os.MkdirAll(filePath, os.ModePerm); merr != nil {
+					return fmt.Errorf("Failed to create destination directory %s: %w", filepath.Dir(filePath), merr)
 				}
 				return nil
 			}
 
-			if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-				return fmt.Errorf("Failed to create destination directory %s: %w", filepath.Dir(filePath), err)
+			if merr := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); merr != nil {
+				return fmt.Errorf("Failed to create destination directory %s: %w", filepath.Dir(filePath), merr)
 			}
 
 			dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())

@@ -133,8 +133,8 @@ func TestWebApp(t *testing.T) {
 				t.Fatalf("failed to start Selenium service: %v", err)
 			}
 			defer func() {
-				if err := service.Stop(); err != nil {
-					t.Errorf("failed to stop Selenium service: %v", err)
+				if serr := service.Stop(); serr != nil {
+					t.Errorf("failed to stop Selenium service: %v", serr)
 				}
 			}()
 
@@ -170,8 +170,8 @@ func TestWebApp(t *testing.T) {
 				t.Fatalf("Failed to start webdriver: %v", err)
 			}
 			defer func() {
-				if err := wd.Quit(); err != nil {
-					t.Errorf("failed to quit webdriver: %v", err)
+				if qerr := wd.Quit(); qerr != nil {
+					t.Errorf("failed to quit webdriver: %v", qerr)
 				}
 			}()
 			defer dumpSeleniumLogs(t, wd)

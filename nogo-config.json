@@ -1,0 +1,42 @@
+{
+  "composites": {
+    "exclude_files": {
+      "external/.*": "Ignore for third-party code"
+    }
+  },
+  "copylocks": {
+    "exclude_files": {
+      "external/.*": "Ignore for third-party code"
+    }
+  },
+  "nilness": {
+    "exclude_files": {
+      "external/.*": "Ignore for third-party code"
+    }
+  },
+  "shadow": {
+    "exclude_files": {
+      "external/.*": "Ignore for third-party code"
+    }
+  },
+  "stdmethods": {
+    "exclude_files": {
+      "external/.*": "Ignore for third-party code"
+    }
+  },
+  "structtag": {
+    "exclude_files": {
+      "external/.*": "Ignore for third-party code"
+    }
+  },
+  "unreachable": {
+    "exclude_files": {
+      "external/.*": "Ignore for third-party code"
+    }
+  },
+  "unsafeptr": {
+    "exclude_files": {
+      "external/org_golang_x_sys/unix/.*": "Ignore for code not used on Javascript platforms"
+    }
+  } 
+}
