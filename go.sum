@@ -19,6 +19,8 @@ github.com/bazelbuild/rules_go v0.42.0 h1:aY2smc3JWyUKOjGYmOKVLX70fPK9ON0rtwQoju
 github.com/bazelbuild/rules_go v0.42.0/go.mod h1:TMHmtfpvyfsxaqfL9WnahCsXMWDMICTw7XeK9yVb+YU=
 github.com/bazelbuild/rules_go v0.43.0 h1:Q+vDhH4yzafZ0xHBT0JEVawb+1nDHUXhjvWTqSGCCyU=
 github.com/bazelbuild/rules_go v0.43.0/go.mod h1:TFLfii8e49kTgn329knh1lsJFKdxyp/hKlWObY66xwY=
+github.com/bazelbuild/rules_go v0.44.0 h1:uJStI9o5obVWSwquy9WxKNWfZxf2sKA2rpEsX6x5RVM=
+github.com/bazelbuild/rules_go v0.44.0/go.mod h1:z7Y8GZ90V4mwgYizbNbEQKmOmx93Q3Btcel4vX7pXoc=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
@@ -239,6 +241,8 @@ golang.org/x/tools v0.15.0 h1:zdAyfUGbYmuVokhzVmghFl2ZJh5QhcfebBgmVPFYA+8=
 golang.org/x/tools v0.15.0/go.mod h1:hpksKq4dtpQWS1uQ61JkdqWM3LscIS6Slf+VVkm+wQk=
 golang.org/x/tools v0.16.0 h1:GO788SKMRunPIBCXiQyo2AaexLstOrVhuAL5YwsckQM=
 golang.org/x/tools v0.16.0/go.mod h1:kYVVN6I1mBNoB1OX+noeBjbRk4IUEPa7JJ+TJMEooJ0=
+golang.org/x/tools v0.16.1 h1:TLyB3WofjdOEepBHAU20JdNC1Zbg87elYofWYAY5oZA=
+golang.org/x/tools v0.16.1/go.mod h1:kYVVN6I1mBNoB1OX+noeBjbRk4IUEPa7JJ+TJMEooJ0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 google.golang.org/api v0.4.0/go.mod h1:8k5glujaEP+g9n7WNsDg8QP6cUVNI86fCNMcbazEtwE=
 google.golang.org/api v0.7.0/go.mod h1:WtwebWUNSVBH/HAw79HIFXZNqEvBhG+Ra+ax0hx3E3M=
