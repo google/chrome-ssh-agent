@@ -18,7 +18,7 @@
 package testing
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 	"syscall/js"
 
@@ -58,7 +58,7 @@ func WriteResults(d *dom.Doc, errs []error) {
 		dom.AppendChild(results, d.NewElement("div"), func(failureCount js.Value) {
 			// Allow the element to be read by automation.
 			failureCount.Set("id", "failureCount")
-			dom.AppendChild(failureCount, d.NewText(fmt.Sprintf("%d", len(errs))), nil)
+			dom.AppendChild(failureCount, d.NewText(strconv.Itoa(len(errs))), nil)
 		})
 
 		// Enumerate the failures. This is a more readable list of the
