@@ -1,5 +1,4 @@
 {
-    "go.lintTool": "golangci-lint",
     "go.toolsEnvVars": {
         "GOOS": "js",
         "GOARCH": "wasm"

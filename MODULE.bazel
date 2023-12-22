@@ -19,6 +19,12 @@ go_sdk.download(
     # Use semver-coerced to handle versions where patches are left off (e.g., 1.19).
     version = "1.21.5",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
 )
+go_sdk.nogo(
+    nogo = "//:chrome_ssh_agent_nogo",
+    includes = [
+        "//:__subpackages__",
+    ],
+)
 use_repo(go_sdk, "go_sdk")
 
 # Pull in Go dependencies
