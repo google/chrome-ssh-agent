@@ -14,13 +14,7 @@ def chromium_data_dependencies():
         name = "chromedriver",
         build_file_content =
             """
-genrule(
-    name = "chromedriver",
-    srcs = [":chromedriver_linux64/chromedriver"],
-    outs = ["chromedriver.bin"],
-    cmd = "cp -af $(location //:chromedriver_linux64/chromedriver) $@",
-    visibility = ["//visibility:public"],
-)
+exports_files(["chromedriver_linux64/chromedriver"])
 """,
         sha256 = "30c27c17133bf3622f0716e1bc70017dc338a6920ea1b1f3eb15f407150b927c",
         # File within archive: chromedriver_linux64/chromedriver
@@ -32,13 +26,7 @@ genrule(
         name = "chromium",
         build_file_content =
             """
-genrule(
-    name = "chromium",
-    srcs = [":chrome-linux/chrome"],
-    outs = ["chromium.bin"],
-    cmd = "cp -af $(location //:chrome-linux/chrome) $@",
-    visibility = ["//visibility:public"],
-)
+exports_files(["chrome-linux/chrome"])
 """,
         sha256 = "53899aaf90d9b9768dbc54beb869a314bdc8f4d04c2ef7bab2cb480581cfa197",
         # File within archive: chrome-linux/chrome
