@@ -1,4 +1,7 @@
+# TODO Re-enable lockfile when supported by Renovate
+#   Blocked by https://github.com/renovatebot/renovate/issues/25557
+
 # honor the setting of `skipLibCheck` in the tsconfig.json file; parameter required for aspect_rules_ts.
-build --enable_bzlmod --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
-fetch --enable_bzlmod --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
-query --enable_bzlmod --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+build --lockfile_mode=off --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+fetch --lockfile_mode=off --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+query --lockfile_mode=off --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig

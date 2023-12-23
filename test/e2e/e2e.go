@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	chromeDriverPath = testutil.MustRunfile("_main~chromium_dependencies~chromedriver/chromedriver.bin")
-	chromePath       = testutil.MustRunfile("_main~chromium_dependencies~chromium/chromium.bin")
+	chromeDriverPath = testutil.MustRunfile("_main~chromium_dependencies~chromedriver/chromedriver_linux64/chromedriver")
+	chromePath       = testutil.MustRunfile("_main~chromium_dependencies~chromium/chrome-linux/chrome")
 )
 
 func getElementText(wd selenium.WebDriver, id string) (string, error) {
