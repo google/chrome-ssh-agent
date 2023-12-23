@@ -17,7 +17,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: bazelbuild/setup-bazelisk@v2
-      - run: bazel query @chromedriver//:*
-      - run: bazel query @chromium//:*
       - run: bazel build ...
       - run: bazel test --test_output=errors ...

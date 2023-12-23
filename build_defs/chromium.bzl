@@ -18,7 +18,7 @@ genrule(
     name = "chromedriver",
     srcs = [":chromedriver_linux64/chromedriver"],
     outs = ["chromedriver.bin"],
-    cmd = "ln $(location //:chromedriver_linux64/chromedriver) $@",
+    cmd = "cp $(location //:chromedriver_linux64/chromedriver) $@",
     visibility = ["//visibility:public"],
 )
 """,
@@ -36,7 +36,7 @@ genrule(
     name = "chromium",
     srcs = [":chrome-linux/chrome"],
     outs = ["chromium.bin"],
-    cmd = "ln $(location //:chrome-linux/chrome) $@",
+    cmd = "cp $(location //:chrome-linux/chrome) $@",
     visibility = ["//visibility:public"],
 )
 """,
