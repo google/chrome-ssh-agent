@@ -3,8 +3,10 @@ name: Test
 on:
   # Test on checkin.
   push:
+    branches: [ main ]
   # Pull requests
   pull_request:
+    branches: [ main ]
   # Nightly test.
   schedule:
     - cron: '0 */2 * * *'
