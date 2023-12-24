@@ -17,5 +17,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: bazelbuild/setup-bazelisk@v2
+      - uses: actions/cache@v3
+        name: Setup Bazel Cache
+        with:
+          path: ~/.cache/bazel
+          key: ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'MODULE.bazel') }}-go-${{ hashFiles('go.sum') }}-npm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'MODULE.bazel') }}-go-${{ hashFiles('go.sum') }}-npm-${{ hashFiles('pnpm-lock.yaml') }}
+            ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'MODULE.bazel') }}-go-${{ hashFiles('go.sum') }}
+            ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'MODULE.bazel') }}
+            ${{ runner.os }}-bazel-
       - run: bazel build ...
       - run: bazel test --test_output=errors ...
