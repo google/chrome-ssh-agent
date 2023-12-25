@@ -7,7 +7,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         gnupg \
         pkg-config \
         zip unzip \
-        python \
+        python3 \
         git
 
 # Install Homebrew. See:
