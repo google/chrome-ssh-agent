@@ -11,9 +11,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         git
 
 # Install Homebrew. See:
-#   https://docs.brew.sh/Installation#skip-tap-cloning-beta
 #   https://docs.brew.sh/Installation#unattended-installation
-ENV HOMEBREW_INSTALL_FROM_API=1
 ENV NONINTERACTIVE=1
 RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
     && echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /etc/profile.d/99-homebrew.sh \
