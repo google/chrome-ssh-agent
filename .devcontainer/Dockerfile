@@ -7,7 +7,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         gnupg \
         pkg-config \
         zip unzip \
-        python3 \
         git
 
 # Install Homebrew. See:
@@ -18,14 +17,6 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
     && chmod 0755 /etc/profile.d/99-homebrew.sh \
     && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
     && brew --version
-
-# Install Bazel
-RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
-    && brew install bazelisk
-
-# Install pnpm package manager
-RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
-    && brew install pnpm
 
 # Install packages required for running Chrome in integration tests.
 # We don't technically require the full package since we pull it in hermetically
