@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/base:bullseye
+FROM mcr.microsoft.com/devcontainers/base:debian
 
 # Install basic software that enables other software to be installed
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
