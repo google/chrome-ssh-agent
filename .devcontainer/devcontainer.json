@@ -22,6 +22,7 @@
 			"extensions": [
 				"dbaeumer.vscode-eslint",
 				"bazelbuild.vscode-bazel",
+				"gitHub.vscode-github-actions",
 				"golang.go"
 			]
 		}
