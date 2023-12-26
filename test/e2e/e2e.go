@@ -52,15 +52,15 @@ func logConsole(t *testing.T, ev *runtime.EventConsoleAPICalled) {
 	for _, a := range ev.Args {
 		switch ev.Type {
 		case runtime.APITypeDebug:
-			doLog(t, LogDebug, ev.Timestamp.Time(), "Console", "%s", a)
+			doLog(t, LogDebug, ev.Timestamp.Time(), "Console", "%s", a.Value)
 		case runtime.APITypeLog:
-			doLog(t, LogInfo, ev.Timestamp.Time(), "Console", "%s", a)
+			doLog(t, LogInfo, ev.Timestamp.Time(), "Console", "%s", a.Value)
 		case runtime.APITypeWarning:
-			doLog(t, LogInfo, ev.Timestamp.Time(), "Console", "%s", a)
+			doLog(t, LogInfo, ev.Timestamp.Time(), "Console", "%s", a.Value)
 		case runtime.APITypeError:
-			doLog(t, LogError, ev.Timestamp.Time(), "Console", "%s", a)
+			doLog(t, LogError, ev.Timestamp.Time(), "Console", "%s", a.Value)
 		default:
-			doLog(t, LogInfo, ev.Timestamp.Time(), "Console", "%s", a)
+			doLog(t, LogInfo, ev.Timestamp.Time(), "Console", "%s", a.Value)
 		}
 	}
 }
@@ -159,8 +159,8 @@ func TestWebApp(t *testing.T) {
 				chromedp.Flag("disable-extensions-except", extPath),
 				// https://chromium.googlesource.com/chromium/src/+/lkgr/docs/linux/debugging.md#logging
 				chromedp.Flag("enable-logging", "stderr"),
-				chromedp.Flag("log-level", "0"),
-				chromedp.Flag("vlog", "3"),
+				chromedp.Flag("log-level", "1"),
+				chromedp.Flag("vlog", "0"),
 			)
 
 			actx, acancel := chromedp.NewExecAllocator(
@@ -171,7 +171,6 @@ func TestWebApp(t *testing.T) {
 
 			cctx, ccancel := chromedp.NewContext(
 				actx,
-				chromedp.WithDebugf(makeLogFunc(t, LogInfo, "Browser")),
 				chromedp.WithLogf(makeLogFunc(t, LogInfo, "Browser")),
 				chromedp.WithErrorf(makeLogFunc(t, LogError, "Browser")),
 			)
