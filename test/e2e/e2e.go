@@ -155,7 +155,8 @@ func TestWebApp(t *testing.T) {
 					"--no-sandbox",
 					// Specific headless mode that supports extensions. See:
 					//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c36
-					"--headless=chrome",
+					//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c42
+					"--headless=new",
 				},
 			}
 			if err = chromeCaps.AddUnpackedExtension(extPath); err != nil {

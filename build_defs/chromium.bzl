@@ -4,7 +4,7 @@ def chromium_data_dependencies():
     # Instructions, courtesy of rules_webtesting.
     #
     # To update Chromium, do the following:
-    # Step 1: Go to https://omahaproxy.appspot.com/
+    # Step 1: Go to Go to https://chromiumdash.appspot.com/branches
     # Step 2: Look for branch_base_position of current stable releases
     # Step 3: Go to https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Linux_x64/ etc to verify presence of that branch release for that platform.
     #         If no results, delete the last digit to broaden your search til you find a result.
@@ -16,10 +16,9 @@ def chromium_data_dependencies():
             """
 exports_files(["chromedriver_linux64/chromedriver"])
 """,
-        sha256 = "30c27c17133bf3622f0716e1bc70017dc338a6920ea1b1f3eb15f407150b927c",
-        # File within archive: chromedriver_linux64/chromedriver
-        # 103.0.5060.134
-        urls = ["https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1002910/chromedriver_linux64.zip"],
+        sha256 = "25df608bbd1f2433a4622eb877c3026e005568bc69021fd16e5c9d57c287de07",
+        # Release Milestone: 118
+        urls = ["https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1192597/chromedriver_linux64.zip"],
     )
 
     http_archive(
@@ -28,10 +27,9 @@ exports_files(["chromedriver_linux64/chromedriver"])
             """
 exports_files(["chrome-linux/chrome"])
 """,
-        sha256 = "53899aaf90d9b9768dbc54beb869a314bdc8f4d04c2ef7bab2cb480581cfa197",
-        # File within archive: chrome-linux/chrome
-        # 103.0.5060.134
-        urls = ["https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1002910/chrome-linux.zip"],
+        sha256 = "20eb493492f5384be8b16a04aaccb7fd9e712fb994c060a17791cd85048fa205",
+        # Release Milestone: 118
+        urls = ["https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1192597/chrome-linux.zip"],
     )
 
 
