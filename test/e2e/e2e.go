@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -48,20 +49,23 @@ func makeLogFunc(t *testing.T, level LogLevel, kind string) func(string, ...any)
 }
 
 func logConsole(t *testing.T, ev *runtime.EventConsoleAPICalled) {
-	// TODO: Combine args within one invocation into single log message
+	var msg bytes.Buffer
 	for _, a := range ev.Args {
-		switch ev.Type {
-		case runtime.APITypeDebug:
-			doLog(t, LogDebug, ev.Timestamp.Time(), "Console", "%s", a.Value)
-		case runtime.APITypeLog:
-			doLog(t, LogInfo, ev.Timestamp.Time(), "Console", "%s", a.Value)
-		case runtime.APITypeWarning:
-			doLog(t, LogInfo, ev.Timestamp.Time(), "Console", "%s", a.Value)
-		case runtime.APITypeError:
-			doLog(t, LogError, ev.Timestamp.Time(), "Console", "%s", a.Value)
-		default:
-			doLog(t, LogInfo, ev.Timestamp.Time(), "Console", "%s", a.Value)
-		}
+		msg.Write(a.Value)
+		msg.WriteRune(' ')
+	}
+
+	switch ev.Type {
+	case runtime.APITypeDebug:
+		doLog(t, LogDebug, ev.Timestamp.Time(), "Console", msg.String())
+	case runtime.APITypeLog:
+		doLog(t, LogInfo, ev.Timestamp.Time(), "Console", msg.String())
+	case runtime.APITypeWarning:
+		doLog(t, LogInfo, ev.Timestamp.Time(), "Console", msg.String())
+	case runtime.APITypeError:
+		doLog(t, LogError, ev.Timestamp.Time(), "Console", msg.String())
+	default:
+		doLog(t, LogInfo, ev.Timestamp.Time(), "Console", msg.String())
 	}
 }
 
