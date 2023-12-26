@@ -22,6 +22,7 @@ gazelle(
     name = "gazelle",
     command = "fix",
 )
+
 nogo(
     name = "chrome_ssh_agent_nogo",
     config = ":nogo-config.json",

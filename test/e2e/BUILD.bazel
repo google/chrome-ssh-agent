@@ -15,9 +15,7 @@ go_test(
     importpath = "github.com/google/chrome-ssh-agent/test",
     deps = [
         "//go/testutil",
-        "@com_github_tebeka_selenium//:selenium",
-        "@com_github_tebeka_selenium//chrome",
-        "@com_github_tebeka_selenium//log",
-        "@rules_go//go/tools/bazel",
+        "@com_github_chromedp_cdproto//runtime",
+        "@com_github_chromedp_chromedp//:chromedp",
     ],
 )
