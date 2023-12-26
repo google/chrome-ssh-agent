@@ -8,19 +8,7 @@ def chromium_data_dependencies():
     # Step 2: Look for branch_base_position of current stable releases
     # Step 3: Go to https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Linux_x64/ etc to verify presence of that branch release for that platform.
     #         If no results, delete the last digit to broaden your search til you find a result.
-    # Step 4: Verify both Chromium and ChromeDriver are released at that version.
-    # Step 5: Update the URL to the new release.
-    http_archive(
-        name = "chromedriver",
-        build_file_content =
-            """
-exports_files(["chromedriver_linux64/chromedriver"])
-""",
-        sha256 = "25df608bbd1f2433a4622eb877c3026e005568bc69021fd16e5c9d57c287de07",
-        # Release Milestone: 118
-        urls = ["https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1192597/chromedriver_linux64.zip"],
-    )
-
+    # Step 4: Update the URL to the new release.
     http_archive(
         name = "chromium",
         build_file_content =
