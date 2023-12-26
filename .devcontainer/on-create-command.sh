@@ -1,17 +1,5 @@
 #!/bin/bash -eu
 
-# Install Homebrew. See:
-#   https://docs.brew.sh/Installation#unattended-installation
-#   https://docs.brew.sh/Analytics
-export NONINTERACTIVE=1
-export HOMEBREW_NO_ANALYTICS=1
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-(echo && echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> ~/.bashrc
-eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv)
-
-# Install bazelisk
-brew install bazelisk
-
 # Install additional packages:
 #
 # - gnupg
