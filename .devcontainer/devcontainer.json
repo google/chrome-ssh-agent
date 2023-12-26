@@ -1,21 +1,18 @@
 {
 	"name": "Bazel (Community)",
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
-	"remoteUser": "vscode",
+	"image": "mcr.microsoft.com/devcontainers/base:debian",
 	"features": {
 		"ghcr.io/devcontainers/features/go:1": {},
-		"ghcr.io/devcontainers/features/node:1": {},
-		"ghcr.io/devcontainers/features/python:1": {},
-		"ghcr.io/devcontainers-community/features/bazel:1": {}
+		"ghcr.io/devcontainers/features/node:1": {}
 	},
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"gitHub.vscode-github-actions"
+				"gitHub.vscode-github-actions",
+				"bazelbuild.vscode-bazel"
 			]
 		}
 	},
+	"onCreateCommand": ".devcontainer/on-create-command.sh",
 	"postStartCommand": ".devcontainer/post-start-command.sh"
 }
