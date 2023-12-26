@@ -34,7 +34,8 @@ use_repo(
     go_deps,
     # Direct dependencies only
     "com_github_google_go_cmp",
-    "com_github_tebeka_selenium",
+    "com_github_chromedp_chromedp",
+    "com_github_chromedp_cdproto",
     "com_github_youmark_pkcs8",
     "org_golang_x_crypto",
     "org_golang_x_tools",
@@ -64,5 +65,4 @@ use_repo(rules_ts_ext, "npm_typescript")
 
 # Pull in Chromium for use in tests
 chromium_dependencies = use_extension("//build_defs:chromium.bzl", "chromium_dependencies")
-use_repo(chromium_dependencies, "chromedriver")
 use_repo(chromium_dependencies, "chromium")

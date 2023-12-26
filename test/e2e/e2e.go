@@ -1,96 +1,119 @@
 package e2e
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
-	"net"
-	"os"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/runtime"
+	"github.com/chromedp/chromedp"
 	"github.com/google/chrome-ssh-agent/go/testutil"
-	"github.com/tebeka/selenium"
-	"github.com/tebeka/selenium/chrome"
-	slog "github.com/tebeka/selenium/log"
 )
 
 var (
-	chromeDriverPath = testutil.MustRunfile("_main~chromium_dependencies~chromedriver/chromedriver_linux64/chromedriver")
-	chromePath       = testutil.MustRunfile("_main~chromium_dependencies~chromium/chrome-linux/chrome")
+	chromePath = testutil.MustRunfile("_main~chromium_dependencies~chromium/chrome-linux/chrome")
 )
 
-func getElementText(wd selenium.WebDriver, id string) (string, error) {
-	el, err := wd.FindElement(selenium.ByID, id)
-	if err != nil {
-		return "", fmt.Errorf("Failed to find element with ID %s: %w", id, err)
+type LogLevel int
+
+const (
+	LogDebug = iota
+	LogInfo
+	LogWarning
+	LogError
+	LogFatal
+)
+
+func doLog(t *testing.T, level LogLevel, ts time.Time, kind string, m string, args ...any) {
+	f := t.Logf
+	switch level {
+	case LogError:
+		f = t.Errorf
+	case LogFatal:
+		f = t.Fatalf
 	}
 
-	txt, err := el.Text()
-	if err != nil {
-		return "", fmt.Errorf("Failed to get text for element with ID %s: %w", id, err)
-	}
-
-	return txt, nil
+	prefix := fmt.Sprintf("[%s %s] ", ts.Format(time.RFC3339Nano), kind)
+	f(prefix+m, args...)
 }
 
-func elementExists(id string) selenium.Condition {
-	return func(wd selenium.WebDriver) (bool, error) {
-		_, err := wd.FindElement(selenium.ByID, id)
-		return err == nil, nil
-	}
-}
-
-func currentURLIs(url string) selenium.Condition {
-	return func(wd selenium.WebDriver) (bool, error) {
-		u, err := wd.CurrentURL()
-		if err != nil {
-			return false, err
-		}
-		return url == u, nil
-	}
-}
-
-var logLevels = slog.Capabilities{
-	slog.Browser:     slog.All,
-	slog.Performance: slog.Info,
-	slog.Driver:      slog.Info,
-}
-
-func dumpSeleniumLogs(t *testing.T, wd selenium.WebDriver) {
-	t.Log("Dumping Selenium Logs")
-	for typ := range logLevels {
-		msgs, err := wd.Log(typ)
-		if err != nil {
-			t.Errorf("Failed to fetch logs of type %s: %v", typ, err)
-		}
-		for _, msg := range msgs {
-			t.Logf("SeleniumLog[%s]: %s [%s] %s", typ, msg.Timestamp, msg.Level, msg.Message)
-		}
+func makeLogFunc(t *testing.T, level LogLevel, kind string) func(string, ...any) {
+	return func(m string, args ...any) {
+		doLog(t, LogInfo, time.Now(), kind, m, args...)
 	}
 }
 
-func unusedPort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
+func logConsole(t *testing.T, ev *runtime.EventConsoleAPICalled) {
+	var msg bytes.Buffer
+	for _, a := range ev.Args {
+		msg.Write(a.Value)
+		msg.WriteRune(' ')
 	}
 
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
+	switch ev.Type {
+	case runtime.APITypeDebug:
+		doLog(t, LogDebug, ev.Timestamp.Time(), "Console", msg.String())
+	case runtime.APITypeLog:
+		doLog(t, LogInfo, ev.Timestamp.Time(), "Console", msg.String())
+	case runtime.APITypeWarning:
+		doLog(t, LogInfo, ev.Timestamp.Time(), "Console", msg.String())
+	case runtime.APITypeError:
+		doLog(t, LogError, ev.Timestamp.Time(), "Console", msg.String())
+	default:
+		doLog(t, LogInfo, ev.Timestamp.Time(), "Console", msg.String())
 	}
-	defer l.Close()
-
-	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-func dumpLog(t *testing.T, name string, r io.Reader) {
-	t.Logf("Dumping log: %s", name)
-	if _, err := io.Copy(os.Stderr, r); err != nil {
-		t.Errorf("Failed to dump log %s: %v", name, err)
+func logException(t *testing.T, ev *runtime.EventExceptionThrown) {
+	doLog(t, LogError, ev.Timestamp.Time(), "Console:Exception", ev.ExceptionDetails.Text)
+}
+
+type logWriter struct {
+	t     *testing.T
+	level LogLevel
+	kind  string
+
+	w    *io.PipeWriter
+	r    *io.PipeReader
+	scan *bufio.Scanner
+
+	done chan error
+}
+
+func newLogWriter(t *testing.T, level LogLevel, kind string) *logWriter {
+	r, w := io.Pipe()
+	l := &logWriter{
+		t:     t,
+		level: level,
+		kind:  kind,
+		w:     w,
+		r:     r,
+		scan:  bufio.NewScanner(r),
+		done:  make(chan error),
 	}
+	go l.writeLogs()
+	return l
+}
+
+func (l *logWriter) Close() error {
+	l.w.Close()
+	return <-l.done
+}
+
+func (l *logWriter) writeLogs() {
+	for l.scan.Scan() {
+		doLog(l.t, l.level, time.Now(), l.kind, l.scan.Text())
+	}
+	l.done <- l.scan.Err()
+}
+
+func (l *logWriter) Write(p []byte) (n int, err error) {
+	return l.w.Write(p)
 }
 
 func TestWebApp(t *testing.T) {
@@ -118,29 +141,6 @@ func TestWebApp(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			port, err := unusedPort()
-			if err != nil {
-				t.Fatalf("failed to identify unused port: %v", err)
-			}
-
-			var selOut bytes.Buffer
-			opts := []selenium.ServiceOption{
-				selenium.Output(&selOut),
-			}
-			service, err := selenium.NewChromeDriverService(chromeDriverPath, port, opts...)
-			if err != nil {
-				defer dumpLog(t, "SeleniumOutput", &selOut) // Selenium failed to initialize; show debug info.
-				t.Fatalf("failed to start Selenium service: %v", err)
-			}
-			defer func() {
-				if serr := service.Stop(); serr != nil {
-					t.Errorf("failed to stop Selenium service: %v", serr)
-				}
-			}()
-
-			caps := selenium.Capabilities{}
-			caps.AddLogging(logLevels)
-
 			t.Log("Preparing extension")
 			extPath, extCleanup, err := testutil.UnzipTemp(tc.extensionPath)
 			if err != nil {
@@ -148,71 +148,70 @@ func TestWebApp(t *testing.T) {
 			}
 			defer extCleanup()
 
-			t.Log("Configuring extension in Chrome")
-			chromeCaps := chrome.Capabilities{
-				Path: chromePath,
-				Args: []string{
-					"--no-sandbox",
-					// Specific headless mode that supports extensions. See:
-					//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c36
-					//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c42
-					"--headless=new",
-				},
-			}
-			if err = chromeCaps.AddUnpackedExtension(extPath); err != nil {
-				t.Fatalf("failed to add extension: %v", err)
-			}
-			caps.AddChrome(chromeCaps)
+			execLogger := newLogWriter(t, LogInfo, "Process")
+			defer execLogger.Close()
 
-			t.Log("Starting WebDriver")
-			wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", port))
-			if err != nil {
-				defer dumpLog(t, "SeleniumOutput", &selOut) // Selenium failed to initialize; show debug info.
-				t.Fatalf("Failed to start webdriver: %v", err)
-			}
-			defer func() {
-				if qerr := wd.Quit(); qerr != nil {
-					t.Errorf("failed to quit webdriver: %v", qerr)
+			t.Log("Initializing Chrome")
+			chromeOpts := append(
+				chromedp.DefaultExecAllocatorOptions[:],
+				chromedp.CombinedOutput(execLogger),
+				chromedp.ExecPath(chromePath),
+				// Specific headless mode that supports extensions. See:
+				//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c36
+				//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c42
+				chromedp.Flag("headless", "new"),
+				chromedp.Flag("disable-extensions-except", extPath),
+				// https://chromium.googlesource.com/chromium/src/+/lkgr/docs/linux/debugging.md#logging
+				chromedp.Flag("enable-logging", "stderr"),
+				chromedp.Flag("log-level", "1"),
+				chromedp.Flag("vlog", "0"),
+			)
+
+			actx, acancel := chromedp.NewExecAllocator(
+				context.Background(),
+				chromeOpts...,
+			)
+			defer acancel()
+
+			cctx, ccancel := chromedp.NewContext(
+				actx,
+				chromedp.WithLogf(makeLogFunc(t, LogInfo, "Browser")),
+				chromedp.WithErrorf(makeLogFunc(t, LogError, "Browser")),
+			)
+			defer ccancel()
+
+			chromedp.ListenTarget(cctx, func(ev any) {
+				switch ev := ev.(type) {
+				case *runtime.EventConsoleAPICalled:
+					logConsole(t, ev)
+				case *runtime.EventExceptionThrown:
+					logException(t, ev)
 				}
-			}()
-			defer dumpSeleniumLogs(t, wd)
+			})
 
-			t.Log("Navigating to test page")
-			path := makeExtensionURL(tc.extensionID, "html/options.html", "test")
-			if err = wd.Get(path.String()); err != nil {
-				t.Fatalf("Failed to navigate to %s: %v", path, err)
-			}
+			ctx, cancel := context.WithTimeout(cctx, 15*time.Second)
+			defer cancel()
 
-			t.Log("Waiting for navigation")
-			if err = wd.WaitWithTimeout(currentURLIs(path.String()), 10*time.Second); err != nil {
-				t.Fatalf("Failed to complete navigation to page: %v", err)
-			}
-
-			t.Log("Waiting for results")
-			if err = wd.WaitWithTimeout(elementExists("failureCount"), 30*time.Second); err != nil {
-				t.Fatalf("failed to wait for failure count: %v", err)
-			}
-			if err = wd.WaitWithTimeout(elementExists("failures"), 30*time.Second); err != nil {
-				t.Fatalf("failed to wait for failures: %v", err)
-			}
-
-			t.Log("Extracting test results")
-			countTxt, err := getElementText(wd, "failureCount")
+			t.Log("Running test")
+			extURL := makeExtensionURL(tc.extensionID, "html/options.html", "test")
+			var failureCountTxt, failures string
+			err = chromedp.Run(ctx,
+				chromedp.Navigate(extURL.String()),
+				chromedp.WaitReady("#failureCount"),
+				chromedp.WaitReady("#failures"),
+				chromedp.Text("#failureCount", &failureCountTxt),
+				chromedp.Text("#failures", &failures),
+			)
 			if err != nil {
-				t.Fatalf("Failed to find failure count: %v", err)
+				t.Fatalf("run failed: %v", err)
 			}
 
-			count, err := strconv.Atoi(countTxt)
+			failureCount, err := strconv.Atoi(failureCountTxt)
 			if err != nil {
-				t.Fatalf("Failed to parse failure count '%s' as integer: %v", countTxt, err)
+				t.Fatalf("Failed to parse failure count '%s' as integer: %v", failureCountTxt, err)
 			}
 
-			failures, err := getElementText(wd, "failures")
-			if err != nil {
-				t.Fatalf("Failed to find failure details: %v", err)
-			}
-
-			if count != 0 {
+			if failureCount != 0 {
 				t.Errorf("Reported Failures:\n%s", failures)
 			}
 		})
