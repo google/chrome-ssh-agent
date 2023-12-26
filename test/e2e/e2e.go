@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	chromeDriverPath = testutil.MustRunfile("_main~chromium_dependencies~chromedriver/chromedriver_linux64/chromedriver")
-	chromePath       = testutil.MustRunfile("_main~chromium_dependencies~chromium/chrome-linux/chrome")
+	chromePath = testutil.MustRunfile("_main~chromium_dependencies~chromium/chrome-linux/chrome")
 )
 
 type LogLevel int
@@ -38,7 +37,7 @@ func doLog(t *testing.T, level LogLevel, ts time.Time, kind string, m string, ar
 		f = t.Fatalf
 	}
 
-	prefix := fmt.Sprintf("[%s %s] ", ts.Format(time.RFC3339), kind)
+	prefix := fmt.Sprintf("[%s %s] ", ts.Format(time.RFC3339Nano), kind)
 	f(prefix+m, args...)
 }
 
@@ -157,12 +156,11 @@ func TestWebApp(t *testing.T) {
 				//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c36
 				//   https://bugs.chromium.org/p/chromium/issues/detail?id=706008#c42
 				chromedp.Flag("headless", "new"),
-				chromedp.Flag("load-extension", extPath),
-				chromedp.Flag("disable-extensions-except", tc.extensionID),
+				chromedp.Flag("disable-extensions-except", extPath),
 				// https://chromium.googlesource.com/chromium/src/+/lkgr/docs/linux/debugging.md#logging
 				chromedp.Flag("enable-logging", "stderr"),
 				chromedp.Flag("log-level", "0"),
-				chromedp.Flag("vlog", "1"),
+				chromedp.Flag("vlog", "3"),
 			)
 
 			actx, acancel := chromedp.NewExecAllocator(
