@@ -1,6 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-_CHROME_VERSION = "122.0.6210.0"  # renovate: datasource=custom.chrome-linux64 depName=chrome-linux64 versioning=semver-coerced
+_CHROME_VERSION = "122.0.6210.0"  # renovate: datasource=custom.chrome depName=linux64 versioning=semver-coerced
 
 def chromium_data_dependencies():
     http_archive(

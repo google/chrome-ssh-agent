@@ -21,15 +21,16 @@
     }
   ],
   "customDatasources": {
-    "chrome-linux64": {
+    "chrome": {
       "defaultRegistryUrlTemplate": "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json",
       "transformTemplates": [
-        "{ \"releases\": versions.{ \"version\": version, \"sourceUrl\": downloads.chrome[platform=\"linux64\"].url } }"
+        "{ \"releases\": versions.{ \"version\": version, \"sourceUrl\": downloads.chrome[platform=\"{{depName}}\"].url } }"
       ]
     }
   },
-  "regexManagers": [
+  "customManagers": [
     {
+      "customType": "regex",
       "description": "Custom match modeled after https://docs.renovatebot.com/modules/manager/regex/#advanced-capture. Match things like: <something>1.2.3<something else>  # renovate: datasource=foo depName=bar versioning=baz",
       "fileMatch": [
         "^MODULE.bazel$",
