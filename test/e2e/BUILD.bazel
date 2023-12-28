@@ -9,7 +9,7 @@ go_test(
     data = [
         "//:chrome-ssh-agent.zip",
         "//:chrome-ssh-agent-beta.zip",
-        "@chromium//:chrome-linux64/chrome",
+        "@chrome_linux64//:chrome-linux64/chrome",
     ],
     importpath = "github.com/google/chrome-ssh-agent/test",
     deps = [
