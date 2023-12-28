@@ -20,11 +20,20 @@
       "rangeStrategy": "bump"
     }
   ],
+  "customDatasources": {
+    "chrome-linux64": {
+      "defaultRegistryUrlTemplate": "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json",
+      "transformTemplates": [
+        "{ \"releases\": versions.{ \"version\": version, \"sourceUrl\": downloads.chrome[platform=\"linux64\"].url } }"
+      ]
+    }
+  },
   "regexManagers": [
     {
       "description": "Custom match modeled after https://docs.renovatebot.com/modules/manager/regex/#advanced-capture. Match things like: <something>1.2.3<something else>  # renovate: datasource=foo depName=bar versioning=baz",
       "fileMatch": [
-        "^MODULE.bazel$"
+        "^MODULE.bazel$",
+        "\\.bzl$"
       ],
       "matchStrings": [
        ".*?(?<currentValue>[\\d\\.]+)[^\\n]*?renovate:\\s+datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)\\s+(versioning=(?<versioning>\\S+))?"
