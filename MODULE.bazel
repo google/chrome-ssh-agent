@@ -63,6 +63,6 @@ rules_ts_ext.deps(
 )
 use_repo(rules_ts_ext, "npm_typescript")
 
-# Pull in Chromium for use in tests
-chromium_dependencies = use_extension("//build_defs:chromium.bzl", "chromium_dependencies")
-use_repo(chromium_dependencies, "chromium")
+# Pull in Chrome for use in tests
+chrome_dependencies = use_extension("//build_defs:chrome.bzl", "chrome_dependencies")
+use_repo(chrome_dependencies, "chrome")
