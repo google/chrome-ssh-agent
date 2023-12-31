@@ -21,7 +21,7 @@
     }
   ],
   "customDatasources": {
-    "chrome": {
+    "chrome-for-testing": {
       "defaultRegistryUrlTemplate": "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json",
       "transformTemplates": [
         "{ 'releases': versions[$count(downloads.'{{depName}}') > 0].{ 'version': version } }"
