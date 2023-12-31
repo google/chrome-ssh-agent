@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	chromePath = testutil.MustRunfile("_main~chrome~chrome_linux64/chrome-linux64/chrome")
+	chromePath = testutil.MustRunfile("_main~chrome~chrome_chrome_linux64/chrome-linux64/chrome")
 )
 
 type LogLevel int
