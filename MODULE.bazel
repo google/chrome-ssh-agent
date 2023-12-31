@@ -64,10 +64,8 @@ rules_ts_ext.deps(
 use_repo(rules_ts_ext, "npm_typescript")
 
 # Pull in Chrome for use in tests
-chrome_linux64 = use_extension("//build_defs:chrome.bzl", "chrome")
-chrome_linux64.download(
-    package = "chrome",
-    platform = "linux64",
-    version = "122.0.6217.0",  # renovate: datasource=custom.chrome depName=linux64 versioning=loose
+chrome = use_extension("//build_defs/chrome:extension.bzl", "chrome")
+chrome.download(
+    version = "122.0.6217.0",  # renovate: datasource=custom.chrome depName=chrome versioning=loose
 )
-use_repo(chrome_linux64, "chrome_linux64")
+use_repo(chrome, "chrome_chrome_linux64")
