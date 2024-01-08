@@ -2,7 +2,7 @@
   "name": "chrome-ssh-agent",
   "dependencies": {
     "@ungap/url-search-params": "^0.2.2",
-    "jsdom": "^23.1.0",
+    "jsdom": "^23.2.0",
     "mem-storage-area": "^1.0.3",
     "web-locks": "^0.0.8"
   },
