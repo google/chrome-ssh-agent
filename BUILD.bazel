@@ -1,6 +1,6 @@
 load("@gazelle//:def.bzl", "gazelle")
 load("@npm//:defs.bzl", "npm_link_all_packages")
-load("@rules_pkg//:pkg.bzl", "pkg_zip")
+load("@rules_pkg//pkg:pkg.bzl", "pkg_zip")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
 load("@rules_go//go:def.bzl", "TOOLS_NOGO", "nogo")
 
