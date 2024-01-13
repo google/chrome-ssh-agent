@@ -1,19 +1,19 @@
 module github.com/google/chrome-ssh-agent
 
-go 1.21.5
+go 1.21.6
 
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a
-	golang.org/x/crypto v0.17.0
+	golang.org/x/crypto v0.18.0
 )
 
 require (
-	github.com/bazelbuild/rules_go v0.44.2
+	github.com/bazelbuild/rules_go v0.45.0
 	github.com/chromedp/cdproto v0.0.0-20240102194822-c006b26f21c7
 	github.com/chromedp/chromedp v0.9.3
 	github.com/norunners/vert v0.0.0-20221203075838-106a353d42dd
-	golang.org/x/tools v0.16.1
+	golang.org/x/tools v0.17.0
 )
 
 require (
@@ -23,5 +23,5 @@ require (
 	github.com/gobwas/ws v1.3.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
 )
