@@ -21,7 +21,7 @@ jobs:
           tag: ${{ github.ref_name }}
           fileName: chrome-ssh-agent.zip
       - name: Publish to Webstore
-        uses: mnao305/chrome-extension-upload@v4.0.1
+        uses: mnao305/chrome-extension-upload@v5.0.0
         with:
           file-path: chrome-ssh-agent.zip
           extension-id: eechpbnaifiimgajnomdipfaamobdfha
