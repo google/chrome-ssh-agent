@@ -18,7 +18,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: bazelbuild/setup-bazelisk@v2
+      - uses: bazelbuild/setup-bazelisk@v3
       - name: Check Manifest
         run: |
           MANIFEST_VERSION=$(cat manifest-beta.json | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
