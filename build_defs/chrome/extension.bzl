@@ -20,7 +20,7 @@ filegroup(
             platform = platform,
         ),
         urls = [
-            "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/{version}/{platform}/{package}-{platform}.zip".format(
+            "https://storage.googleapis.com/chrome-for-testing-public/{version}/{platform}/{package}-{platform}.zip".format(
                 package = package,
                 platform = platform,
                 version = version,
