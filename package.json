@@ -7,7 +7,7 @@
     "web-locks": "^0.0.8"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.262",
-    "typescript": "^5.3.3"
+    "@types/chrome": "^0.0.263",
+    "typescript": "^5.4.2"
   }
 }

@@ -17,7 +17,7 @@ go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(
     name = "go_sdk",
     # Use semver-coerced to handle versions where patches are left off (e.g., 1.19).
-    version = "1.22.0",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
+    version = "1.22.1",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
 )
 go_sdk.nogo(
     nogo = "//:chrome_ssh_agent_nogo",
@@ -66,6 +66,6 @@ use_repo(rules_ts_ext, "npm_typescript")
 # Pull in Chrome for use in tests
 chrome = use_extension("//build_defs/chrome:extension.bzl", "chrome")
 chrome.download(
-    version = "124.0.6336.0",  # renovate: datasource=custom.chrome-for-testing depName=chrome versioning=loose
+    version = "124.0.6346.0",  # renovate: datasource=custom.chrome-for-testing depName=chrome versioning=loose
 )
 use_repo(chrome, "chrome_chrome_linux64")
