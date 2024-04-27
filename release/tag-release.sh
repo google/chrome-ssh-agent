@@ -1,5 +1,6 @@
-#!/bin/bash -eu
-#
+#!/bin/bash
+set -eu
+
 # Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,26 +19,25 @@
 #  (1) Update version in manifest.json and merge into master
 #  (2) Run tag-release.sh
 
-cd $(dirname $0)/..
+cd "$(dirname "$0")"/..
 
 function die() {
-  echo $1
+  echo "$1" >&2
   exit 1
 }
 
 # Read current version from manifest.
-readonly MANIFEST=${PWD}/manifest.json
-readonly MANIFEST_BETA=${PWD}/manifest-beta.json
-readonly VERSION=$(cat "${MANIFEST}" | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
-readonly VERSION_BETA=$(cat "${MANIFEST_BETA}" | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
-readonly TAG=v${VERSION}
+readonly MANIFEST="${PWD}/manifest.json"
+readonly MANIFEST_BETA="${PWD}/manifest-beta.json"
+readonly VERSION=$(jq -r '.version' "$MANIFEST")
+readonly TAG="v$VERSION"
 
 # Ensure we are currently in the master branch.
 test "$(git branch --show-current)" = "master" \
   || die "Must be in master to tag a new release"
 
 # Ensure there are no pending local changes.
-test "$(git status --porcelain | wc -l)" = "0" \
+test -z "$(git status --porcelain)" \
   || die "Cannot release when there are pending changes."
 
 # Pull must recent changes.  We don't want to release from outdated state.
@@ -45,19 +45,20 @@ git pull
 
 # Ensure both manifests have the same version. This could happen if only one of
 # the manifests was updated.
-test "${VERSION}" = "${VERSION_BETA}" \
-  || die "Prod and Beta versions do not match; Prod is ${VERSION}, Beta is ${VERSION_BETA}"
+readonly VERSION_BETA=$(jq -r '.version' "$MANIFEST_BETA")
+test "$VERSION" = "$VERSION_BETA" \
+  || die "Prod and Beta versions do not match; Prod is $VERSION, Beta is $VERSION_BETA"
 
 # Ensure the tag doesn't already exist.  This could happen if someone forgot to
 # update the version in manifest.json.
-test -z $(git tag | grep --line-regexp "${TAG}") \
-  || die "Version ${VERSION} already exists"
+git tag | grep -qFx "$TAG" \
+  && die "Version $VERSION already exists"
 
 # Ensure all tests pass.
 bazel test ...
 
 # Tag the release.
-git tag -a "${TAG}" -m "Tag version ${VERSION}"
+git tag -a "$TAG" -m "Tag version $VERSION"
 
 # Push to remote repository, both changes and tags.
 git push
