@@ -10,6 +10,8 @@ github.com/bazelbuild/rules_go v0.45.1 h1:kuiC/mK1SKoZ0lyX5gD9uVBGFWOoXT3I4W/ose
 github.com/bazelbuild/rules_go v0.45.1/go.mod h1:Dhcz716Kqg1RHNWos+N6MlXNkjNP2EwZQ0LukRKJfMs=
 github.com/bazelbuild/rules_go v0.46.0 h1:CTefzjN/D3Cdn3rkrM6qMWuQj59OBcuOjyIp3m4hZ7s=
 github.com/bazelbuild/rules_go v0.46.0/go.mod h1:Dhcz716Kqg1RHNWos+N6MlXNkjNP2EwZQ0LukRKJfMs=
+github.com/bazelbuild/rules_go v0.47.0 h1:TTl2buKt0lqJe5s6up5FtaB1F95Wg997Lv15MWetU88=
+github.com/bazelbuild/rules_go v0.47.0/go.mod h1:Dhcz716Kqg1RHNWos+N6MlXNkjNP2EwZQ0LukRKJfMs=
 github.com/chromedp/cdproto v0.0.0-20231011050154-1d073bb38998 h1:2zipcnjfFdqAjOQa8otCCh0Lk1M7RBzciy3s80YAKHk=
 github.com/chromedp/cdproto v0.0.0-20231011050154-1d073bb38998/go.mod h1:GKljq0VrfU4D5yc+2qA6OVr8pmO/MBbPEWqWQ/oqGEs=
 github.com/chromedp/cdproto v0.0.0-20231205062650-00455a960d61 h1:XD280QPATe9jaz20dylKe3vBsNcH1w3mkssGY0lidn8=
@@ -32,6 +34,8 @@ github.com/chromedp/cdproto v0.0.0-20240312231614-1e5096e63154 h1:jeAmkzyOAQBPRm
 github.com/chromedp/cdproto v0.0.0-20240312231614-1e5096e63154/go.mod h1:GKljq0VrfU4D5yc+2qA6OVr8pmO/MBbPEWqWQ/oqGEs=
 github.com/chromedp/cdproto v0.0.0-20240328024531-fe04f09ede24 h1:XLG3KlHtG6Wg75ed/daLltJtcj8VXjw7F9mzYenzFL0=
 github.com/chromedp/cdproto v0.0.0-20240328024531-fe04f09ede24/go.mod h1:GKljq0VrfU4D5yc+2qA6OVr8pmO/MBbPEWqWQ/oqGEs=
+github.com/chromedp/cdproto v0.0.0-20240501202034-ef67d660e9fd h1:5/HXKq8EaAWVmnl6Hnyl4SVq7FF5990DBW6AuTrWtVw=
+github.com/chromedp/cdproto v0.0.0-20240501202034-ef67d660e9fd/go.mod h1:GKljq0VrfU4D5yc+2qA6OVr8pmO/MBbPEWqWQ/oqGEs=
 github.com/chromedp/chromedp v0.9.3 h1:Wq58e0dZOdHsxaj9Owmfcf+ibtpYN1N0FWVbaxa/esg=
 github.com/chromedp/chromedp v0.9.3/go.mod h1:NipeUkUcuzIdFbBP8eNNvl9upcceOfWzoJn6cRe4ksA=
 github.com/chromedp/chromedp v0.9.4 h1:HWAQlqLbqvJ6MkHo+e6kNEE18RRr7OBPB/UQjMX2EBA=
@@ -62,6 +66,8 @@ github.com/orisano/pixelmatch v0.0.0-20220722002657-fb0b55479cde h1:x0TT0RDC7UhA
 github.com/orisano/pixelmatch v0.0.0-20220722002657-fb0b55479cde/go.mod h1:nZgzbfBr3hhjoZnS66nKrHmduYNpc34ny7RK4z5/HM0=
 github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a h1:fZHgsYlfvtyqToslyjUt3VOPF4J7aK/3MPcK7xp3PDk=
 github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a/go.mod h1:ul22v+Nro/R083muKhosV54bj5niojjWZvU8xrevuH4=
+github.com/youmark/pkcs8 v0.0.0-20240424034433-3c2c7870ae76 h1:tBiBTKHnIjovYoLX/TPkcf+OjqqKGQrPtGT3Foz+Pgo=
+github.com/youmark/pkcs8 v0.0.0-20240424034433-3c2c7870ae76/go.mod h1:SQliXeA7Dhkt//vS29v3zpbEwoa+zb2Cn5xj5uO4K5U=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/crypto v0.17.0 h1:r8bRNjWL3GshPW3gkd+RpvzWrZAwPS49OmTGZ/uhM4k=
