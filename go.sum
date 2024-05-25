@@ -14,6 +14,8 @@ github.com/bazelbuild/rules_go v0.47.0 h1:TTl2buKt0lqJe5s6up5FtaB1F95Wg997Lv15MW
 github.com/bazelbuild/rules_go v0.47.0/go.mod h1:Dhcz716Kqg1RHNWos+N6MlXNkjNP2EwZQ0LukRKJfMs=
 github.com/bazelbuild/rules_go v0.47.1 h1:9s9FA2l8IAxCbwV97E1WLu5ai21muLNrjZRV0+agTRs=
 github.com/bazelbuild/rules_go v0.47.1/go.mod h1:Dhcz716Kqg1RHNWos+N6MlXNkjNP2EwZQ0LukRKJfMs=
+github.com/bazelbuild/rules_go v0.48.0 h1:fZgo6mCUKeL/+GQiMWy5/QU1FjNXGPnTd5bAeao1pbg=
+github.com/bazelbuild/rules_go v0.48.0/go.mod h1:Dhcz716Kqg1RHNWos+N6MlXNkjNP2EwZQ0LukRKJfMs=
 github.com/chromedp/cdproto v0.0.0-20231011050154-1d073bb38998 h1:2zipcnjfFdqAjOQa8otCCh0Lk1M7RBzciy3s80YAKHk=
 github.com/chromedp/cdproto v0.0.0-20231011050154-1d073bb38998/go.mod h1:GKljq0VrfU4D5yc+2qA6OVr8pmO/MBbPEWqWQ/oqGEs=
 github.com/chromedp/cdproto v0.0.0-20231205062650-00455a960d61 h1:XD280QPATe9jaz20dylKe3vBsNcH1w3mkssGY0lidn8=
