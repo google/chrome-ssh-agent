@@ -10,7 +10,7 @@ require (
 
 require (
 	github.com/bazelbuild/rules_go v0.48.0
-	github.com/chromedp/cdproto v0.0.0-20240524221637-55927c2a4565
+	github.com/chromedp/cdproto v0.0.0-20240529195259-de715aab5f80
 	github.com/chromedp/chromedp v0.9.5
 	github.com/norunners/vert v0.0.0-20221203075838-106a353d42dd
 	golang.org/x/tools v0.21.0
