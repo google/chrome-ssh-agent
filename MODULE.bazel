@@ -7,8 +7,8 @@ bazel_dep(name = "gazelle", version = "0.37.0")
 bazel_dep(name = "rules_nodejs", version = "6.1.1")
 bazel_dep(name = "aspect_rules_js", version = "1.42.3")
 bazel_dep(name = "aspect_rules_ts", version = "2.4.1")
-bazel_dep(name = "aspect_rules_esbuild", version = "0.20.0")
-bazel_dep(name = "bazel_skylib", version = "1.6.1")
+bazel_dep(name = "aspect_rules_esbuild", version = "0.20.1")
+bazel_dep(name = "bazel_skylib", version = "1.7.0")
 bazel_dep(name = "rules_pkg", version = "0.10.1")
 bazel_dep(name = "rules_proto", version = "6.0.0-rc1")
 
@@ -66,6 +66,6 @@ use_repo(rules_ts_ext, "npm_typescript")
 # Pull in Chrome for use in tests
 chrome = use_extension("//build_defs/chrome:extension.bzl", "chrome")
 chrome.download(
-    version = "127.0.6509.0",  # renovate: datasource=custom.chrome-for-testing depName=chrome versioning=loose
+    version = "127.0.6512.0",  # renovate: datasource=custom.chrome-for-testing depName=chrome versioning=loose
 )
 use_repo(chrome, "chrome_chrome_linux64")
