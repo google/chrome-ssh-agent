@@ -6,9 +6,9 @@ bazel_dep(name = "rules_go", version = "0.48.0")
 bazel_dep(name = "gazelle", version = "0.37.0")
 bazel_dep(name = "rules_nodejs", version = "6.1.1")
 bazel_dep(name = "aspect_rules_js", version = "1.42.3")
-bazel_dep(name = "aspect_rules_ts", version = "2.4.1")
+bazel_dep(name = "aspect_rules_ts", version = "2.4.2")
 bazel_dep(name = "aspect_rules_esbuild", version = "0.20.1")
-bazel_dep(name = "bazel_skylib", version = "1.7.0")
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "rules_pkg", version = "0.10.1")
 bazel_dep(name = "rules_proto", version = "6.0.0-rc1")
 
@@ -17,7 +17,7 @@ go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(
     name = "go_sdk",
     # Use semver-coerced to handle versions where patches are left off (e.g., 1.19).
-    version = "1.22.3",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
+    version = "1.22.4",  # renovate: datasource=golang-version depName=golang versioning=semver-coerced
 )
 go_sdk.nogo(
     nogo = "//:chrome_ssh_agent_nogo",
@@ -66,6 +66,6 @@ use_repo(rules_ts_ext, "npm_typescript")
 # Pull in Chrome for use in tests
 chrome = use_extension("//build_defs/chrome:extension.bzl", "chrome")
 chrome.download(
-    version = "127.0.6515.0",  # renovate: datasource=custom.chrome-for-testing depName=chrome versioning=loose
+    version = "127.0.6520.0",  # renovate: datasource=custom.chrome-for-testing depName=chrome versioning=loose
 )
 use_repo(chrome, "chrome_chrome_linux64")
