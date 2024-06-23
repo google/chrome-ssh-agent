@@ -1,5 +1,5 @@
-load("//build_defs:wasm.bzl", "go_wasm_test")
 load("@rules_go//go:def.bzl", "go_library")
+load("//build_defs:wasm.bzl", "go_wasm_test")
 
 go_library(
     name = "keys",
