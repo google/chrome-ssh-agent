@@ -3,7 +3,7 @@
 cd $(dirname $0)/..
 
 # NPM dependencies
-pnpm install
+pnpm install --frozen-lockfile
 
 # Incorporate new dependencies in go.mod
 bazel run @rules_go//go -- mod tidy

@@ -1,6 +1,6 @@
+load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@aspect_rules_js//js:defs.bzl", "js_library")
 load("@aspect_rules_ts//ts:defs.bzl", "ts_config", "ts_project")
-load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files")
 
 # Typescript compiler inputs must be within our package. Copy it over.
