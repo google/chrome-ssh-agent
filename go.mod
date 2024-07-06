@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/youmark/pkcs8 v0.0.0-20240424034433-3c2c7870ae76
-	golang.org/x/crypto v0.24.0
+	golang.org/x/crypto v0.25.0
 )
 
 require (
@@ -23,5 +23,5 @@ require (
 	github.com/gobwas/ws v1.3.2 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 )
