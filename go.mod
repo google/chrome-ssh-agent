@@ -13,7 +13,7 @@ require (
 	github.com/chromedp/cdproto v0.0.0-20240626232640-f933b107c653
 	github.com/chromedp/chromedp v0.9.5
 	github.com/norunners/vert v0.0.0-20221203075838-106a353d42dd
-	golang.org/x/tools v0.22.0
+	golang.org/x/tools v0.23.0
 )
 
 require (
