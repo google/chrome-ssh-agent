@@ -4,7 +4,7 @@ go 1.22.2
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/youmark/pkcs8 v0.0.0-20240424034433-3c2c7870ae76
+	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
 	golang.org/x/crypto v0.25.0
 )
 
