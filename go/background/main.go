@@ -120,7 +120,7 @@ func (a *background) onConnectionDisconnect(_ jsutil.AsyncContext, _ js.Value, a
 	ap := a.ports.Lookup(port)
 	if ap == nil {
 		err := errors.New("onConnectionDisconnect: connection for port not found")
-		jsutil.LogError(err.Error())
+		jsutil.LogError("%v", err.Error())
 		return js.Undefined(), err
 	}
 
