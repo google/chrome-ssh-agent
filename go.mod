@@ -5,11 +5,11 @@ go 1.22.2
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
-	golang.org/x/crypto v0.26.0
+	golang.org/x/crypto v0.27.0
 )
 
 require (
-	github.com/bazelbuild/rules_go v0.50.0
+	github.com/bazelbuild/rules_go v0.50.1
 	github.com/chromedp/cdproto v0.0.0-20240810084448-b931b754e476
 	github.com/chromedp/chromedp v0.10.0
 	github.com/norunners/vert v0.0.0-20221203075838-106a353d42dd
@@ -23,5 +23,5 @@ require (
 	github.com/gobwas/ws v1.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
 )
