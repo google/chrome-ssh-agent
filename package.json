@@ -2,12 +2,12 @@
   "name": "chrome-ssh-agent",
   "dependencies": {
     "@ungap/url-search-params": "^0.2.2",
-    "jsdom": "^25.0.0",
+    "jsdom": "^25.0.1",
     "mem-storage-area": "^1.0.3",
     "web-locks": "^0.0.8"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.271",
+    "@types/chrome": "^0.0.272",
     "typescript": "^5.6.2"
   }
 }
