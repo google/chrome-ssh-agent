@@ -20,16 +20,16 @@ dependencies:
 
 devDependencies:
   '@types/chrome':
-    specifier: ^0.0.272
-    version: 0.0.272
+    specifier: ^0.0.277
+    version: 0.0.277
   typescript:
     specifier: ^5.6.2
     version: 5.6.2
 
 packages:
 
-  /@types/chrome@0.0.272:
-    resolution: {integrity: sha512-9cxDmmgyhXV8gsZvlRjqaDizNjIjbV0spsR0fIEaQUoHtbl9D8VkTOLyONgiBKK+guR38x5eMO3E3avUYOXwcQ==}
+  /@types/chrome@0.0.277:
+    resolution: {integrity: sha512-qoTgBcDWblSsX+jvFnpUlLUE3LAuOhZfBh9MyMWMQHDsQiYVgBvdZWu9COrdB9+aNnInEyXcFgfc2HE16sdSYQ==}
     dependencies:
       '@types/filesystem': 0.0.32
       '@types/har-format': 1.2.10
