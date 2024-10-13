@@ -4,9 +4,9 @@ module(
 
 bazel_dep(name = "rules_go", version = "0.50.1")
 bazel_dep(name = "gazelle", version = "0.39.1")
-bazel_dep(name = "rules_nodejs", version = "6.3.0")
-bazel_dep(name = "aspect_rules_js", version = "2.0.2")
-bazel_dep(name = "aspect_rules_ts", version = "3.2.0")
+bazel_dep(name = "rules_nodejs", version = "6.3.1")
+bazel_dep(name = "aspect_rules_js", version = "2.1.0")
+bazel_dep(name = "aspect_rules_ts", version = "3.2.1")
 bazel_dep(name = "aspect_rules_esbuild", version = "0.21.0")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
@@ -71,6 +71,6 @@ use_repo(rules_ts_ext, "npm_typescript")
 # Pull in Chrome for use in tests
 chrome = use_extension("//build_defs/chrome:extension.bzl", "chrome")
 chrome.download(
-    version = "131.0.6761.0",  # renovate: datasource=custom.chrome-for-testing depName=chrome versioning=loose
+    version = "131.0.6774.0",  # renovate: datasource=custom.chrome-for-testing depName=chrome versioning=loose
 )
 use_repo(chrome, "chrome_chrome_linux64")
