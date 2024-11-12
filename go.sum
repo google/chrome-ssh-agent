@@ -39,6 +39,8 @@ github.com/chromedp/chromedp v0.11.0 h1:1PT6O4g39sBAFjlljIHTpxmCSk8meeYL6+R+oXH4
 github.com/chromedp/chromedp v0.11.0/go.mod h1:jsD7OHrX0Qmskqb5Y4fn4jHnqquqW22rkMFgKbECsqg=
 github.com/chromedp/chromedp v0.11.1 h1:Spca8egFqUlv+JDW+yIs+ijlHlJDPufgrfXPwtq6NMs=
 github.com/chromedp/chromedp v0.11.1/go.mod h1:lr8dFRLKsdTTWb75C/Ttol2vnBKOSnt0BW8R9Xaupi8=
+github.com/chromedp/chromedp v0.11.2 h1:ZRHTh7DjbNTlfIv3NFTbB7eVeu5XCNkgrpcGSpn2oX0=
+github.com/chromedp/chromedp v0.11.2/go.mod h1:lr8dFRLKsdTTWb75C/Ttol2vnBKOSnt0BW8R9Xaupi8=
 github.com/chromedp/sysutil v1.0.0 h1:+ZxhTpfpZlmchB58ih/LBHX52ky7w2VhQVKQMucy3Ic=
 github.com/chromedp/sysutil v1.0.0/go.mod h1:kgWmDdq8fTzXYcKIBqIYvRRTnYb9aNS9moAV0xufSww=
 github.com/chromedp/sysutil v1.1.0 h1:PUFNv5EcprjqXZD9nJb9b/c9ibAbxiYo4exNWZyipwM=
