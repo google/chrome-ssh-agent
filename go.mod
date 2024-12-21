@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/bazelbuild/rules_go v0.50.1
+	github.com/bazelbuild/rules_go v0.51.0
 	github.com/chromedp/cdproto v0.0.0-20241202193831-ec840381567d
 	github.com/chromedp/chromedp v0.11.2
 	github.com/norunners/vert v0.0.0-20221203075838-106a353d42dd
