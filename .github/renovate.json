@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
+    "config:recommended",
     ":rebaseStalePrs",
     ":automergeMinor",
     "schedule:weekends",
@@ -10,12 +10,16 @@
   "packageRules": [
     {
       "description": "package.json specifies dependencies like ^1.0.0; bump them even when new version matches",
-      "matchManagers": ["npm"],
+      "matchManagers": [
+        "npm"
+      ],
       "rangeStrategy": "bump"
     },
     {
       "description": "Update chrome twice monthly to avoid daily PRs",
-      "matchDepNames": ["chrome"],
+      "matchDepNames": [
+        "chrome"
+      ],
       "schedule": "* 0-12 */14 * *"
     }
   ],
@@ -35,7 +39,7 @@
         "^MODULE.bazel$"
       ],
       "matchStrings": [
-       ".*?(?<currentValue>[\\d\\.]+)[^\\n]*?renovate:\\s+datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)\\s+(versioning=(?<versioning>\\S+))?"
+        ".*?(?<currentValue>[\\d\\.]+)[^\\n]*?renovate:\\s+datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)\\s+(versioning=(?<versioning>\\S+))?"
       ]
     }
   ]
