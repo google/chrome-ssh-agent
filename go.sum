@@ -2,6 +2,8 @@ github.com/bazelbuild/rules_go v0.51.0 h1:og6AqW7T4uFgcySRYn/EFg5VUHR2KY7jypYmVe
 github.com/bazelbuild/rules_go v0.51.0/go.mod h1:+jnXOJJO4C+WYH5v1v0SsPTncQ9sHGsCrAOgrflqSUE=
 github.com/chromedp/cdproto v0.0.0-20241202193831-ec840381567d h1:NREKtVrobTJQyJOV2ZEleGCLYBqpbGcs++3rezMQymE=
 github.com/chromedp/cdproto v0.0.0-20241202193831-ec840381567d/go.mod h1:4XqMl3iIW08jtieURWL6Tt5924w21pxirC6th662XUM=
+github.com/chromedp/cdproto v0.0.0-20241222144035-c16d098c0fb6 h1:dAUcp/W5RpJSZW/HksEHfAAoMBIvSFFIwslAFEte+6g=
+github.com/chromedp/cdproto v0.0.0-20241222144035-c16d098c0fb6/go.mod h1:4XqMl3iIW08jtieURWL6Tt5924w21pxirC6th662XUM=
 github.com/chromedp/chromedp v0.11.2 h1:ZRHTh7DjbNTlfIv3NFTbB7eVeu5XCNkgrpcGSpn2oX0=
 github.com/chromedp/chromedp v0.11.2/go.mod h1:lr8dFRLKsdTTWb75C/Ttol2vnBKOSnt0BW8R9Xaupi8=
 github.com/chromedp/sysutil v1.1.0 h1:PUFNv5EcprjqXZD9nJb9b/c9ibAbxiYo4exNWZyipwM=
