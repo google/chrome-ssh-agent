@@ -2,7 +2,7 @@ module(
     name = "chrome_ssh_agent",
 )
 
-bazel_dep(name = "rules_go", version = "0.50.1")
+bazel_dep(name = "rules_go", version = "0.51.0")
 bazel_dep(name = "gazelle", version = "0.40.0")
 bazel_dep(name = "rules_nodejs", version = "6.3.2")
 bazel_dep(name = "aspect_rules_js", version = "2.1.2")
