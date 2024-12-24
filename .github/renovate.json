@@ -18,6 +18,11 @@
       "description": "package.json specifies dependencies like ^1.0.0; bump them even when new version matches",
       "matchManagers": ["npm"],
       "rangeStrategy": "bump"
+    },
+    {
+      "description": "Update chrome twice monthly to avoid daily PRs",
+      "matchDepNames": ["chrome"],
+      "schedule": "* 0-12 */14 * *"
     }
   ],
   "customDatasources": {
