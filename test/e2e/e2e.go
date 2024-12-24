@@ -165,6 +165,7 @@ func TestWebApp(t *testing.T) {
 				chromedp.Flag("enable-logging", "stderr"),
 				chromedp.Flag("log-level", "1"),
 				chromedp.Flag("vlog", "0"),
+				// Tests fail in certain environments when sandbox is enabled.
 				chromedp.Flag("no-sandbox", true),
 			)
 
