@@ -9,15 +9,14 @@
   ],
   "packageRules": [
     {
-      "description": "rules_proto has versions like '4.0.0-3.19.2-2'.  Override the versioning scheme to better handle these.",
-      "matchManagers": ["bazel-module"],
-      "matchPackageNames": ["rules_proto"],
-      "versioning": "regex:(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>.+)$"
-    },
-    {
       "description": "package.json specifies dependencies like ^1.0.0; bump them even when new version matches",
       "matchManagers": ["npm"],
       "rangeStrategy": "bump"
+    },
+    {
+      "description": "Update chrome twice monthly to avoid daily PRs",
+      "matchDepNames": ["chrome"],
+      "schedule": "* 0-12 */14 * *"
     }
   ],
   "customDatasources": {
