@@ -2,7 +2,7 @@ module github.com/google/chrome-ssh-agent
 
 go 1.23
 
-toolchain go1.23.4
+toolchain go1.23.5
 
 require (
 	github.com/google/go-cmp v0.6.0
@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/bazelbuild/rules_go v0.51.0
+	github.com/bazelbuild/rules_go v0.52.0
 	github.com/chromedp/cdproto v0.0.0-20250109193942-1ec2f6cf5d86
 	github.com/chromedp/chromedp v0.11.2
 	github.com/norunners/vert v0.0.0-20221203075838-106a353d42dd
