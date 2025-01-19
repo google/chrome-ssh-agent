@@ -1,5 +1,7 @@
 github.com/bazelbuild/rules_go v0.51.0 h1:og6AqW7T4uFgcySRYn/EFg5VUHR2KY7jypYmVeIGh9k=
 github.com/bazelbuild/rules_go v0.51.0/go.mod h1:+jnXOJJO4C+WYH5v1v0SsPTncQ9sHGsCrAOgrflqSUE=
+github.com/bazelbuild/rules_go v0.52.0 h1:+ozpngVAW67pCAwfhepaXSSrG3yHcj8K9hNAxSYBno4=
+github.com/bazelbuild/rules_go v0.52.0/go.mod h1:M+YrupNArA7OiTlv++rFUgQ6Sm+ZXbQ5HPUj0cGa0us=
 github.com/chromedp/cdproto v0.0.0-20241202193831-ec840381567d h1:NREKtVrobTJQyJOV2ZEleGCLYBqpbGcs++3rezMQymE=
 github.com/chromedp/cdproto v0.0.0-20241202193831-ec840381567d/go.mod h1:4XqMl3iIW08jtieURWL6Tt5924w21pxirC6th662XUM=
 github.com/chromedp/cdproto v0.0.0-20241222144035-c16d098c0fb6 h1:dAUcp/W5RpJSZW/HksEHfAAoMBIvSFFIwslAFEte+6g=
