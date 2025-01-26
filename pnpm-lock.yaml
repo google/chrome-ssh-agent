@@ -20,8 +20,8 @@ dependencies:
 
 devDependencies:
   '@types/chrome':
-    specifier: ^0.0.297
-    version: 0.0.297
+    specifier: ^0.0.299
+    version: 0.0.299
   typescript:
     specifier: ^5.7.3
     version: 5.7.3
@@ -81,8 +81,8 @@ packages:
     engines: {node: '>=18'}
     dev: false
 
-  /@types/chrome@0.0.297:
-    resolution: {integrity: sha512-e7HM20aH/0Ate5zEP00il2Dzlt8HvO6nXGgxiXKuc1E5cVsNvcykBiTyrSvmWPPDzdZRC5QZvVDYXTihiF1Jfw==}
+  /@types/chrome@0.0.299:
+    resolution: {integrity: sha512-hPoHmFWUaKw2s3wDjUtMsvZqeh9lKL7nFQx6yaAYt7RxBKv/V3rDUaA4BgUR145nnpF6hpNhHaxhtcCSFJ5b7w==}
     dependencies:
       '@types/filesystem': 0.0.32
       '@types/har-format': 1.2.10
