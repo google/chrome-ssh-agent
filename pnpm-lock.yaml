@@ -20,11 +20,11 @@ dependencies:
 
 devDependencies:
   '@types/chrome':
-    specifier: ^0.0.304
-    version: 0.0.304
+    specifier: ^0.0.313
+    version: 0.0.313
   typescript:
-    specifier: ^5.7.3
-    version: 5.7.3
+    specifier: ^5.8.3
+    version: 5.8.3
 
 packages:
 
@@ -81,8 +81,8 @@ packages:
     engines: {node: '>=18'}
     dev: false
 
-  /@types/chrome@0.0.304:
-    resolution: {integrity: sha512-ms9CLILU+FEMK7gcmgz/Mtn2E81YQWiMIzCFF8ktp98EVNIIfoqaDTD4+ailOCq1sGjbnEmfJxQ1FAsQtk5M3A==}
+  /@types/chrome@0.0.313:
+    resolution: {integrity: sha512-9R5T7gTaYZhkxlu+Ho4wk9FL+y/werWQY2yjGWSqCuiTsqS7nL/BE5UMTP6rU7J+oIG2FRKqrEycHhJATeltVA==}
     dependencies:
       '@types/filesystem': 0.0.32
       '@types/har-format': 1.2.10
@@ -340,8 +340,8 @@ packages:
       punycode: 2.3.1
     dev: false
 
-  /typescript@5.7.3:
-    resolution: {integrity: sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==}
+  /typescript@5.8.3:
+    resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
     engines: {node: '>=14.17'}
     hasBin: true
     dev: true
