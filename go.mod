@@ -1,13 +1,13 @@
 module github.com/google/chrome-ssh-agent
 
-go 1.23
+go 1.23.0
 
 toolchain go1.23.6
 
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
-	golang.org/x/crypto v0.33.0
+	golang.org/x/crypto v0.35.0
 )
 
 require (
