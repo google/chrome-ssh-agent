@@ -22,7 +22,7 @@ jobs:
       - name: Check Manifest
         run: |
           MANIFEST_VERSION=$(cat manifest-beta.json | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
-          TAG_VERSION=${{ github.ref_name }}
+          TAG_VERSION=${GITHUB_REF_NAME}
           test "v${MANIFEST_VERSION}" = "${TAG_VERSION}"
       - run: bazel build ...
       - run: bazel test --test_output=errors ...

@@ -13,7 +13,7 @@ jobs:
       - name: Check Manifest
         run: |
           MANIFEST_VERSION=$(cat manifest.json | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
-          TAG_VERSION=${{ github.ref_name }}
+          TAG_VERSION=${GITHUB_REF_NAME}
           test "v${MANIFEST_VERSION}" = "${TAG_VERSION}"
       # Release artifacts were published with the beta. Fetch instead of rebuilding.
       - uses: robinraju/release-downloader@v1.11
