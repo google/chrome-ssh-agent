@@ -12,7 +12,7 @@ require (
 
 require (
 	github.com/bazelbuild/rules_go v0.52.0
-	github.com/chromedp/cdproto v0.0.0-20250210231439-aea867ea8506
+	github.com/chromedp/cdproto v0.0.0-20250803210736-d308e07a266d
 	github.com/chromedp/chromedp v0.12.1
 	github.com/norunners/vert v0.0.0-20221203075838-106a353d42dd
 	golang.org/x/tools v0.29.0
@@ -20,6 +20,7 @@ require (
 
 require (
 	github.com/chromedp/sysutil v1.1.0 // indirect
+	github.com/go-json-experiment/json v0.0.0-20250211171154-1ae217ad3535 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.4.0 // indirect
