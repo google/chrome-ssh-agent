@@ -4,10 +4,10 @@
     "@ungap/url-search-params": "^0.2.2",
     "jsdom": "^27.4.0",
     "mem-storage-area": "^1.0.3",
-    "web-locks": "^0.0.8"
+    "web-locks": "^0.0.9"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.304",
-    "typescript": "^5.7.3"
+    "@types/chrome": "^0.1.37",
+    "typescript": "^5.9.3"
   }
 }

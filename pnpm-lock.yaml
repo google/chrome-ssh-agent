@@ -15,16 +15,16 @@ dependencies:
     specifier: ^1.0.3
     version: 1.0.3
   web-locks:
-    specifier: ^0.0.8
-    version: 0.0.8
+    specifier: ^0.0.9
+    version: 0.0.9
 
 devDependencies:
   '@types/chrome':
-    specifier: ^0.0.304
-    version: 0.0.304
+    specifier: ^0.1.37
+    version: 0.1.37
   typescript:
-    specifier: ^5.7.3
-    version: 5.7.3
+    specifier: ^5.9.3
+    version: 5.9.3
 
 packages:
 
@@ -114,8 +114,8 @@ packages:
         optional: true
     dev: false
 
-  /@types/chrome@0.0.304:
-    resolution: {integrity: sha512-ms9CLILU+FEMK7gcmgz/Mtn2E81YQWiMIzCFF8ktp98EVNIIfoqaDTD4+ailOCq1sGjbnEmfJxQ1FAsQtk5M3A==}
+  /@types/chrome@0.1.37:
+    resolution: {integrity: sha512-IJE4ceuDO7lrEuua7Pow47zwNcI8E6qqkowRP7aFPaZ0lrjxh6y836OPqqkIZeTX64FTogbw+4RNH0+QrweCTQ==}
     dependencies:
       '@types/filesystem': 0.0.32
       '@types/har-format': 1.2.10
@@ -340,8 +340,8 @@ packages:
       punycode: 2.3.1
     dev: false
 
-  /typescript@5.7.3:
-    resolution: {integrity: sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==}
+  /typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
     dev: true
@@ -353,8 +353,8 @@ packages:
       xml-name-validator: 5.0.0
     dev: false
 
-  /web-locks@0.0.8:
-    resolution: {integrity: sha512-4K1HUuu9EjougZiaX3RQcR862nTaHwxpD9yJ+6dHXosw3L5MnFD8a8CJaN+AoP9IqhKYShMMc7efJF23/KGF/g==}
+  /web-locks@0.0.9:
+    resolution: {integrity: sha512-R6cikbftM76uQ0sRV8gV3q3Dw0bhoLJQe3le3w8dA3RCGkDvJkynuySTvzsZq0vmkJRmeW1G9tDADfIfNzNgnw==}
     engines: {node: '>=11.0.0'}
     dev: false
 
