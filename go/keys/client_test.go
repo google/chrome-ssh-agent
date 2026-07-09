@@ -28,6 +28,7 @@ type dummyManager struct {
 	ID             ID
 	Name           string
 	PEMPrivateKey  string
+	AuthorizedCert string
 	Passphrase     string
 	ConfiguredKeys []*ConfiguredKey
 	LoadedKeys     []*LoadedKey
@@ -39,9 +40,10 @@ func (m *dummyManager) Configured(_ jsutil.AsyncContext) ([]*ConfiguredKey, erro
 	return m.ConfiguredKeys, m.Err
 }
 
-func (m *dummyManager) Add(_ jsutil.AsyncContext, name string, pemPrivateKey string) error {
+func (m *dummyManager) Add(_ jsutil.AsyncContext, name string, pemPrivateKey string, authorizedCert string) error {
 	m.Name = name
 	m.PEMPrivateKey = pemPrivateKey
+	m.AuthorizedCert = authorizedCert
 	return m.Err
 }
 
@@ -112,16 +114,20 @@ func TestClientServerAdd(t *testing.T) {
 
 		wantName := "some-name"
 		wantPrivateKey := "private-key"
+		wantAuthorizedCert := "authorized-cert"
 		wantErr := errors.New("failed")
 
 		mgr.Err = wantErr
 
-		err := cli.Add(ctx, wantName, wantPrivateKey)
+		err := cli.Add(ctx, wantName, wantPrivateKey, wantAuthorizedCert)
 		if diff := cmp.Diff(mgr.Name, wantName); diff != "" {
 			t.Errorf("incorrect name; -got +want: %s", diff)
 		}
 		if diff := cmp.Diff(mgr.PEMPrivateKey, wantPrivateKey); diff != "" {
 			t.Errorf("incorrect private key; -got +want: %s", diff)
+		}
+		if diff := cmp.Diff(mgr.AuthorizedCert, wantAuthorizedCert); diff != "" {
+			t.Errorf("incorrect certificate; -got +want: %s", diff)
 		}
 		// Compare by error string; cmp.EquateErrors doesn't work since type
 		// information is lost on conversion to/from JSON in message hub.

@@ -109,8 +109,10 @@ type Manager interface {
 	Configured(ctx jsutil.AsyncContext) ([]*ConfiguredKey, error)
 
 	// Add configures a new key.  name is a human-readable name describing
-	// the key, and pemPrivateKey is the PEM-encoded private key.
-	Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error
+	// the key, pemPrivateKey is the PEM-encoded private key, and
+	// authorizedCert is an optional OpenSSH certificate in authorized_keys
+	// format.
+	Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string, authorizedCert string) error
 
 	// Remove removes the key with the specified ID.
 	//
@@ -158,9 +160,10 @@ type DefaultManager struct {
 // storedKey is the raw object stored in persistent storage for a configured
 // key.
 type storedKey struct {
-	ID            string `js:"id"`
-	Name          string `js:"name"`
-	PEMPrivateKey string `js:"pemPrivateKey"`
+	ID             string `js:"id"`
+	Name           string `js:"name"`
+	PEMPrivateKey  string `js:"pemPrivateKey"`
+	AuthorizedCert string `js:"authorizedCert"`
 }
 
 // EncryptedPKCS8 determines if the private key is an encrypted PKCS#8 formatted
@@ -216,8 +219,9 @@ func (s *storedKey) Encrypted() bool {
 // we need to resume without re-prompting the user for their passphrase each
 // time.
 type sessionKey struct {
-	ID         string `js:"id"`
-	PrivateKey string `js:"privateKey"`
+	ID             string `js:"id"`
+	PrivateKey     string `js:"privateKey"`
+	AuthorizedCert string `js:"authorizedCert"`
 }
 
 var (
@@ -287,7 +291,7 @@ func (m *DefaultManager) Configured(ctx jsutil.AsyncContext) ([]*ConfiguredKey, 
 var errInvalidName = errors.New("invalid name")
 
 // Add implements Manager.Add.
-func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error {
+func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string, authorizedCert string) error {
 	if name == "" {
 		return fmt.Errorf("%w: name must not be empty", errInvalidName)
 	}
@@ -298,9 +302,10 @@ func (m *DefaultManager) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey
 	}
 
 	sk := &storedKey{
-		ID:            i.String(),
-		Name:          name,
-		PEMPrivateKey: pemPrivateKey,
+		ID:             i.String(),
+		Name:           name,
+		PEMPrivateKey:  pemPrivateKey,
+		AuthorizedCert: authorizedCert,
 	}
 	return m.storedKeys.Write(ctx, sk)
 }
@@ -370,7 +375,7 @@ func (m *DefaultManager) LoadFromSession(ctx jsutil.AsyncContext) error {
 	// Attempt to load each into the agent.
 	jsutil.LogDebug("DefaultManager.LoadFromSession: Load session keys")
 	for _, k := range sessionKeys {
-		if err := m.addToAgent(ID(k.ID), decryptedKey(k.PrivateKey)); err != nil {
+		if err := m.addToAgent(ID(k.ID), decryptedKey(k.PrivateKey), k.AuthorizedCert); err != nil {
 			jsutil.LogError("failed to load session key ID %s into agent: %v; skipping", k.ID, err)
 		}
 	}
@@ -439,15 +444,48 @@ func parseDecryptedKey(pemPrivateKey decryptedKey) (interface{}, error) {
 	return ssh.ParseRawPrivateKey([]byte(pemPrivateKey))
 }
 
-func (m *DefaultManager) addToAgent(id ID, key decryptedKey) error {
+var errInvalidCertificate = errors.New("invalid certificate")
+
+func parseCertificate(authorizedCert string, priv interface{}) (*ssh.Certificate, error) {
+	if authorizedCert == "" {
+		return nil, nil
+	}
+
+	pub, _, _, _, err := ssh.ParseAuthorizedKey([]byte(authorizedCert))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errInvalidCertificate, err)
+	}
+	cert, ok := pub.(*ssh.Certificate)
+	if !ok {
+		return nil, fmt.Errorf("%w: parsed public key is not a certificate", errInvalidCertificate)
+	}
+
+	signer, err := ssh.NewSignerFromKey(priv)
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to derive public key: %w", errInvalidCertificate, err)
+	}
+	privPub := signer.PublicKey()
+	if string(cert.Key.Marshal()) != string(privPub.Marshal()) {
+		return nil, fmt.Errorf("%w: certificate does not match private key", errInvalidCertificate)
+	}
+
+	return cert, nil
+}
+
+func (m *DefaultManager) addToAgent(id ID, key decryptedKey, authorizedCert string) error {
 	priv, err := parseDecryptedKey(key)
+	if err != nil {
+		return err
+	}
+	cert, err := parseCertificate(authorizedCert, priv)
 	if err != nil {
 		return err
 	}
 
 	err = m.agent.Add(agent.AddedKey{
-		PrivateKey: priv,
-		Comment:    fmt.Sprintf("%s%s", commentPrefix, id),
+		PrivateKey:  priv,
+		Certificate: cert,
+		Comment:     fmt.Sprintf("%s%s", commentPrefix, id),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to add key to agent: %w", err)
@@ -471,13 +509,14 @@ func (m *DefaultManager) Load(ctx jsutil.AsyncContext, id ID, passphrase string)
 		return fmt.Errorf("failed to decrypt key: %w", err)
 	}
 
-	if err := m.addToAgent(id, decrypted); err != nil {
+	if err := m.addToAgent(id, decrypted, key.AuthorizedCert); err != nil {
 		return err
 	}
 
 	sk := &sessionKey{
-		ID:         string(id),
-		PrivateKey: string(decrypted),
+		ID:             string(id),
+		PrivateKey:     string(decrypted),
+		AuthorizedCert: key.AuthorizedCert,
 	}
 	if err := m.sessionKeys.Write(ctx, sk); err != nil {
 		return fmt.Errorf("failed to store loaded key to session: %w", err)
