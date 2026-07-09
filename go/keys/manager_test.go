@@ -30,16 +30,17 @@ import (
 )
 
 type initialKey struct {
-	Name          string
-	PEMPrivateKey string
-	Load          bool
-	Passphrase    string
+	Name           string
+	PEMPrivateKey  string
+	AuthorizedCert string
+	Load           bool
+	Passphrase     string
 }
 
 func newTestManager(ctx jsutil.AsyncContext, agent agent.Agent, syncStorage, sessionStorage storage.Area, keys []*initialKey) (*DefaultManager, error) {
 	mgr := NewManager(agent, syncStorage, sessionStorage)
 	for _, k := range keys {
-		if err := mgr.Add(ctx, k.Name, k.PEMPrivateKey); err != nil {
+		if err := mgr.Add(ctx, k.Name, k.PEMPrivateKey, k.AuthorizedCert); err != nil {
 			return nil, err
 		}
 
@@ -120,7 +121,7 @@ func TestAdd(t *testing.T) {
 				}
 
 				// Add the key.
-				err = mgr.Add(ctx, tc.name, tc.pemPrivateKey)
+				err = mgr.Add(ctx, tc.name, tc.pemPrivateKey, "")
 				if diff := cmp.Diff(err, tc.wantErr, cmpopts.EquateErrors()); diff != "" {
 					t.Errorf("incorrect error; -got +want: %s", diff)
 				}
@@ -432,6 +433,44 @@ func TestLoadAndLoaded(t *testing.T) {
 			wantLoaded: []string{
 				testdata.ED25519WithoutPassphrase.Blob,
 			},
+		},
+		{
+			description: "load key with certificate",
+			initial: []*initialKey{
+				{
+					Name:           "good-key",
+					PEMPrivateKey:  testdata.WithCertificate.Private,
+					AuthorizedCert: testdata.Certificate,
+				},
+			},
+			byName: "good-key",
+			wantLoaded: []string{
+				testdata.WithCertificate.Blob,
+			},
+		},
+		{
+			description: "fail on invalid certificate",
+			initial: []*initialKey{
+				{
+					Name:           "bad-key",
+					PEMPrivateKey:  testdata.WithCertificate.Private,
+					AuthorizedCert: "not-a-certificate",
+				},
+			},
+			byName:  "bad-key",
+			wantErr: errInvalidCertificate,
+		},
+		{
+			description: "fail on certificate for different key",
+			initial: []*initialKey{
+				{
+					Name:           "bad-key",
+					PEMPrivateKey:  testdata.WithCertificate.Private,
+					AuthorizedCert: testdata.MismatchedCertificate,
+				},
+			},
+			byName:  "bad-key",
+			wantErr: errInvalidCertificate,
 		},
 		{
 			description: "fail on invalid private key",
@@ -746,5 +785,55 @@ func TestLoadFromSession(t *testing.T) {
 				t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
 			}
 		}()
+	})
+}
+
+func TestLoadCertificateFromSession(t *testing.T) {
+	t.Parallel()
+
+	jut.DoSync(func(ctx jsutil.AsyncContext) {
+		syncStorage := storage.NewRaw(st.NewMemArea())
+		sessionStorage := storage.NewRaw(st.NewMemArea())
+
+		var wantID ID
+		func() {
+			mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, []*initialKey{
+				{
+					Name:           "good-key",
+					PEMPrivateKey:  testdata.WithCertificate.Private,
+					AuthorizedCert: testdata.Certificate,
+				},
+			})
+			if err != nil {
+				t.Fatalf("failed to initialize manager: %v", err)
+			}
+
+			wantID, err = findKey(ctx, mgr, InvalidID, "good-key")
+			if err != nil {
+				t.Fatalf("failed to find ID for good-key: %v", err)
+			}
+			if err = mgr.Load(ctx, wantID, ""); err != nil {
+				t.Fatalf("failed to load key: %v", err)
+			}
+		}()
+
+		mgr, err := newTestManager(ctx, agent.NewKeyring(), syncStorage, sessionStorage, nil)
+		if err != nil {
+			t.Fatalf("failed to initialize manager: %v", err)
+		}
+		if err = mgr.LoadFromSession(ctx); err != nil {
+			t.Fatalf("failed to load keys from session: %v", err)
+		}
+
+		loaded, err := mgr.Loaded(ctx)
+		if err != nil {
+			t.Fatalf("failed to enumerate loaded keys: %v", err)
+		}
+		if diff := cmp.Diff(loadedKeyIds(loaded), []ID{wantID}); diff != "" {
+			t.Errorf("incorrect loaded key IDs; -got +want: %s", diff)
+		}
+		if diff := cmp.Diff(loadedKeyBlobs(loaded), []string{testdata.WithCertificate.Blob}); diff != "" {
+			t.Errorf("incorrect loaded key blobs; -got +want: %s", diff)
+		}
 	})
 }

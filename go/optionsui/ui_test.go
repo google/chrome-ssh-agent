@@ -61,6 +61,7 @@ type testHarness struct {
 	addButton        js.Value
 	addName          js.Value
 	addKey           js.Value
+	addCertificate   js.Value
 	addOk            js.Value
 	addCancel        js.Value
 	passphraseDialog js.Value
@@ -142,6 +143,7 @@ func newHarness() *testHarness {
 		addButton:        domObj.GetElement("add"),
 		addName:          domObj.GetElement("addName"),
 		addKey:           domObj.GetElement("addKey"),
+		addCertificate:   domObj.GetElement("addCertificate"),
 		addOk:            domObj.GetElement("addOk"),
 		addCancel:        domObj.GetElement("addCancel"),
 		passphraseDialog: domObj.GetElement("passphraseDialog"),

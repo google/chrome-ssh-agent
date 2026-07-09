@@ -85,9 +85,10 @@ type rspLoaded struct {
 }
 
 type msgAdd struct {
-	Type          int    `js:"type"`
-	Name          string `js:"name"`
-	PEMPrivateKey string `js:"pemPrivateKey"`
+	Type           int    `js:"type"`
+	Name           string `js:"name"`
+	PEMPrivateKey  string `js:"pemPrivateKey"`
+	AuthorizedCert string `js:"authorizedCert"`
 }
 
 type rspAdd struct {
@@ -198,7 +199,7 @@ func (s *Server) OnMessage(ctx jsutil.AsyncContext, headerObj js.Value, _ js.Val
 			return s.makeErrorResponse(fmt.Errorf("failed to parse Add message: %w", err))
 		}
 		jsutil.LogDebug("Server.OnMessage(Add req): name=%s", m.Name)
-		err := s.mgr.Add(ctx, m.Name, m.PEMPrivateKey)
+		err := s.mgr.Add(ctx, m.Name, m.PEMPrivateKey, m.AuthorizedCert)
 		rsp := rspAdd{
 			Type: msgTypeAddRsp,
 			Err:  makeErrStr(err),
@@ -294,11 +295,12 @@ func (c *client) Loaded(ctx jsutil.AsyncContext) ([]*LoadedKey, error) {
 }
 
 // Add implements Manager.Add.
-func (c *client) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string) error {
+func (c *client) Add(ctx jsutil.AsyncContext, name string, pemPrivateKey string, authorizedCert string) error {
 	var msg msgAdd
 	msg.Type = msgTypeAdd
 	msg.Name = name
 	msg.PEMPrivateKey = pemPrivateKey
+	msg.AuthorizedCert = authorizedCert
 	jsutil.LogDebug("Client.Add(req): name=%s", msg.Name)
 	rspObj, err := c.msg.Send(ctx, vert.ValueOf(msg).JSValue())
 	jsutil.LogDebug("Client.Add(rsp)")
